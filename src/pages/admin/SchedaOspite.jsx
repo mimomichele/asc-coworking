@@ -19,6 +19,7 @@ export default function SchedaOspite() {
   const [saving, setSaving] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingMembro, setSavingMembro] = useState(false)
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -48,6 +49,22 @@ export default function SchedaOspite() {
   async function fetchTipi() {
     const { data } = await supabase.from('subscription_types').select('*').order('price')
     setTipiAbb(data || [])
+  }
+
+  async function deleteAccount() {
+    try {
+      // Elimina utente auth (cascade elimina tutto il resto)
+      const { data: profile } = await supabase
+        .from('profiles').select('id').eq('username', account.username).single()
+      if (profile) {
+        await supabaseAdmin.auth.admin.deleteUser(profile.id)
+      }
+      // Elimina account (cascade su members, subscriptions, bookings)
+      await supabase.from('accounts').delete().eq('id', id)
+      navigate('/admin/ospiti')
+    } catch (e) {
+      showToast('Errore durante eliminazione: ' + e.message, 'error')
+    }
   }
 
   async function saveEdit() {
@@ -191,12 +208,34 @@ export default function SchedaOspite() {
             </span>
           </div>
         </div>
-        <button className="btn-ghost" onClick={() => { setShowEdit(v => !v); setShowNuovoMembro(false) }}>
-          {showEdit ? 'Chiudi' : 'Modifica dati'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={() => { setShowEdit(v => !v); setShowNuovoMembro(false) }}>
+            {showEdit ? 'Chiudi' : 'Modifica dati'}
+          </button>
+          <button className="btn-danger" onClick={() => setShowConfirmDelete(true)}>Elimina ospite</button>
+        </div>
       </div>
 
-      {/* form modifica dati */}
+      {/* confirm delete */}
+      {showConfirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Elimina ospite</div>
+            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+              Stai per eliminare <strong>{account.name} {account.surname}</strong> e tutti i suoi dati (membri, abbonamenti, prenotazioni). Questa operazione non è reversibile.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-ghost" onClick={() => setShowConfirmDelete(false)}>Annulla</button>
+              <button style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                onClick={deleteAccount}>
+                Sì, elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* form modifica dati */}}
       {showEdit && (
         <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Modifica dati account</div>
