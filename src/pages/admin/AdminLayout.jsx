@@ -6,6 +6,7 @@ import NuovoOspite from './NuovoOspite.jsx'
 import SchedaOspite from './SchedaOspite.jsx'
 import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
+import RosticceriaPannello from './rosticceria/RosticceriaPannello.jsx'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
@@ -19,7 +20,8 @@ export default function AdminLayout() {
     <div style={styles.shell}>
       {/* TOP NAV */}
       <nav style={styles.topnav}>
-        <div style={styles.logo}>ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+        <div style={styles.logo}>
+          ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
           <span style={styles.adminBadge}>Admin</span>
         </div>
         <div style={styles.navLinks}>
@@ -28,6 +30,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/nuovo-ospite" style={navStyle}>+ Nuovo ospite</NavLink>
           <NavLink to="/admin/abbonamenti" style={navStyle}>Tipi abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={navStyle}>In esaurimento</NavLink>
+          <NavLink to="/admin/rosticceria" style={navStyleRosticceria}>Rosticceria</NavLink>
         </div>
         <button onClick={logout} style={styles.logoutBtn}>Esci</button>
       </nav>
@@ -41,6 +44,7 @@ export default function AdminLayout() {
           <Route path="nuovo-ospite" element={<NuovoOspite />} />
           <Route path="abbonamenti" element={<TipiAbbonamento />} />
           <Route path="esaurimento" element={<InEsaurimento />} />
+          <Route path="rosticceria/*" element={<RosticceriaPannello />} />
         </Routes>
       </main>
     </div>
@@ -57,6 +61,20 @@ function navStyle({ isActive }) {
     background: isActive ? '#F5C842' : 'transparent',
     textDecoration: 'none',
     transition: 'all 0.15s',
+  }
+}
+
+function navStyleRosticceria({ isActive }) {
+  return {
+    padding: '6px 14px',
+    borderRadius: 8,
+    fontSize: 13,
+    fontWeight: isActive ? 500 : 400,
+    color: isActive ? '#1a1a1a' : '#D85A30',
+    background: isActive ? '#D85A30' : 'rgba(216,90,48,0.1)',
+    textDecoration: 'none',
+    transition: 'all 0.15s',
+    border: '0.5px solid rgba(216,90,48,0.3)',
   }
 }
 

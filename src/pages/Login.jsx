@@ -8,24 +8,38 @@ export default function Login() {
   const [error, setError] = useState('')
 
   async function handleLogin(e) {
-  e.preventDefault()
-  setLoading(true)
-  setError('')
+    e.preventDefault()
+    setLoading(true)
+    setError('')
 
-  const usernameClean = username.trim().toLowerCase()
-  const email = `${usernameClean}@asc-coworking.internal`
+    const usernameClean = username.trim().toLowerCase()
 
-  const { error: loginError } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    // Cerca l'email reale dal profilo
+    const { data: profile, error: profileError } = await supabase
+  .from('profiles')
+  .select('email')
+  .eq('username', usernameClean)
+  .single()
 
-  if (loginError) {
-    setError('Nome utente o password non corretti')
+console.log('profile:', profile, 'error:', profileError)
+
+    if (profileError || !profile) {
+      setError('Nome utente o password non corretti')
+      setLoading(false)
+      return
+    }
+
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password,
+    })
+
+    if (loginError) {
+      setError('Nome utente o password non corretti')
+    }
+
+    setLoading(false)
   }
-
-  setLoading(false)
-}
 
   return (
     <div style={styles.page}>
