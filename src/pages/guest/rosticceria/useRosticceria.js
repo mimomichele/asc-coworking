@@ -62,4 +62,22 @@ export function useSlotOrari(date) {
         .from('delivery_slots')
         .select('*')
         .eq('date', date)
-        .eq('is_a
+        .eq('is_active', true)
+        .order('time')
+      if (error) throw error
+      setSlots(data || [])
+    } catch (err) {
+      console.error('Errore slot:', err)
+      setSlots([])
+    } finally {
+      setLoading(false)
+    }
+  }
+  return { slots, loading }
+}
+
+export function useInviaOrdine() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function inviaOrdine({ session, sl
