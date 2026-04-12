@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import Dashboard from './Dashboard.jsx'
@@ -10,11 +11,14 @@ import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   async function logout() {
     await supabase.auth.signOut()
     navigate('/')
   }
+
+  const closeMenu = () => setMenuOpen(false)
 
   return (
     <div style={styles.shell}>
@@ -24,6 +28,8 @@ export default function AdminLayout() {
           ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
           <span style={styles.adminBadge}>Admin</span>
         </div>
+
+        {/* DESKTOP LINKS */}
         <div style={styles.navLinks}>
           <NavLink to="/admin" end style={navStyle}>Dashboard</NavLink>
           <NavLink to="/admin/ospiti" style={navStyle}>Ospiti</NavLink>
@@ -32,8 +38,27 @@ export default function AdminLayout() {
           <NavLink to="/admin/esaurimento" style={navStyle}>In esaurimento</NavLink>
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria}>Rosticceria</NavLink>
         </div>
-        <button onClick={logout} style={styles.logoutBtn}>Esci</button>
+
+        <button onClick={logout} style={{...styles.logoutBtn, ...styles.desktopOnly}}>Esci</button>
+
+        {/* HAMBURGER */}
+        <button onClick={() => setMenuOpen(!menuOpen)} style={styles.hamburger}>
+          {menuOpen ? '✕' : '☰'}
+        </button>
       </nav>
+
+      {/* MOBILE MENU */}
+      {menuOpen && (
+        <div style={styles.mobileMenu}>
+          <NavLink to="/admin" end style={navStyle} onClick={closeMenu}>Dashboard</NavLink>
+          <NavLink to="/admin/ospiti" style={navStyle} onClick={closeMenu}>Ospiti</NavLink>
+          <NavLink to="/admin/nuovo-ospite" style={navStyle} onClick={closeMenu}>+ Nuovo ospite</NavLink>
+          <NavLink to="/admin/abbonamenti" style={navStyle} onClick={closeMenu}>Tipi abbonamento</NavLink>
+          <NavLink to="/admin/esaurimento" style={navStyle} onClick={closeMenu}>In esaurimento</NavLink>
+          <NavLink to="/admin/rosticceria" style={navStyleRosticceria} onClick={closeMenu}>Rosticceria</NavLink>
+          <button onClick={logout} style={styles.logoutBtn}>Esci</button>
+        </div>
+      )}
 
       {/* CONTENT */}
       <main style={styles.main}>
@@ -86,7 +111,22 @@ const styles = {
   },
   logo: { fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5, marginRight: 16, whiteSpace: 'nowrap' },
   adminBadge: { fontSize: 11, color: '#555', fontWeight: 400, marginLeft: 8, letterSpacing: 0 },
-  navLinks: { display: 'flex', gap: 4, flex: 1, flexWrap: 'wrap' },
-  logoutBtn: { background: 'none', border: '0.5px solid #444', color: '#888', padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
-  main: { padding: '24px', maxWidth: 1100, margin: '0 auto' },
-}
+  navLinks: {
+    display: 'flex', gap: 4, flex: 1, flexWrap: 'nowrap',
+    '@media (max-width: 768px)': { display: 'none' }
+  },
+  desktopOnly: {},
+  hamburger: {
+    display: 'none',
+    background: 'none', border: 'none', color: '#fff',
+    fontSize: 22, cursor: 'pointer', marginLeft: 'auto',
+    '@media (max-width: 768px)': { display: 'block' }
+  },
+  mobileMenu: {
+    background: '#1a1a1a', display: 'flex', flexDirection: 'column',
+    gap: 8, padding: '16px 24px', position: 'sticky', top: 54, zIndex: 99,
+  },
+  logoutBtn: {
+    background: 'none', border: '0.5px solid #444', color: '#888',
+    padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
+    width: 'fit-content',
