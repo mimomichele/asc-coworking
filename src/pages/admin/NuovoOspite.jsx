@@ -68,11 +68,11 @@ export default function NuovoOspite() {
 
     // 2. Inserisci profilo
     const { error: profileError } = await supabase.from('profiles').insert({
-      id: userId,
-      username: form.username,
-      email,
-      role: 'guest',
-    })
+  id: userId,
+  username: `${form.name} ${form.surname}`.trim(),
+  email,
+  role: 'guest',
+})
 
     if (profileError) {
       showToast('Errore profilo: ' + profileError.message, 'error')
