@@ -84,3 +84,24 @@ tbody tr:hover td { background: #fafafa; }
   .hide-mobile { display: none !important; }
   .card { padding: 14px; }
 }
+/* NAVBAR RESPONSIVE */
+@media (max-width: 768px) {
+  .nav-links-desktop {
+    display: none !important;
+  }
+  .hamburger-btn {
+    display: block !important;
+  }
+  .logout-desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger-btn {
+    display: none !important;
+  }
+  .mobile-menu {
+    display: none !important;
+  }
+}
