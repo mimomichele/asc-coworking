@@ -80,4 +80,55 @@ export function useInviaOrdine() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function inviaOrdine({ session, sl
+  async function inviaOrdine({ session, slotId, deliveryMode, roomNumber, notes, cartItems }) {
+    setLoading(true)
+    setError(null)
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single()
+
+      const customerName = profile?.username || session.user.email
+
+      const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
+
+      const { data: order, error: orderErr } = await supabase
+        .from('orders')
+        .insert({
+          user_id: session.user.id,
+          customer_name: customerName,
+          slot_id: slotId,
+          delivery_mode: deliveryMode,
+          room_number: deliveryMode === 'camera' ? roomNumber : null,
+          notes: notes || null,
+          total: total,
+        })
+        .select()
+        .single()
+      if (orderErr) throw orderErr
+
+      const orderItems = cartItems.map(item => ({
+        order_id: order.id,
+        product_id: item.productId,
+        product_name: item.name,
+        quantity: item.qty,
+        unit_price: item.price,
+      }))
+      const { error: itemsErr } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+      if (itemsErr) throw itemsErr
+
+      return { success: true, orderId: order.id }
+    } catch (err) {
+      setError(err.message)
+      return { success: false }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { inviaOrdine, loading, error }
+}
