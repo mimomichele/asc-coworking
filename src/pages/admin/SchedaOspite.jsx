@@ -235,7 +235,7 @@ export default function SchedaOspite() {
         </div>
       )}
 
-      {/* form modifica dati */}}
+      {/* form modifica dati */}
       {showEdit && (
         <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Modifica dati account</div>
