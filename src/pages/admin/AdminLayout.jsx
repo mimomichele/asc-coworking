@@ -6,7 +6,7 @@ import NuovoOspite from './NuovoOspite.jsx'
 import SchedaOspite from './SchedaOspite.jsx'
 import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
-import RosticceriaPannello from './rosticceria/RosticceriaPannello.jsx'
+import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
