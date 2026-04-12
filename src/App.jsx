@@ -5,7 +5,7 @@ import { supabase } from './lib/supabase'
 import Login from './pages/Login.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import GuestLayout from './pages/guest/GuestLayout.jsx'
-import RosticceriaLayout from './pages/Rosticceria/RosticceriaLayout.jsx'
+import RosticceriaLayout from './pages/rosticceria/RosticceriaLayout.jsx'
 
 export default function App() {
   const [session, setSession] = useState(null)
