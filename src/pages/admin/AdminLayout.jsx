@@ -30,7 +30,7 @@ export default function AdminLayout() {
         </div>
 
         {/* DESKTOP LINKS */}
-        <div style={styles.navLinks}>
+        <div style={styles.navLinks} className="nav-links-desktop">
           <NavLink to="/admin" end style={navStyle}>Dashboard</NavLink>
           <NavLink to="/admin/ospiti" style={navStyle}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle}>+ Nuovo ospite</NavLink>
@@ -39,17 +39,17 @@ export default function AdminLayout() {
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria}>Rosticceria</NavLink>
         </div>
 
-        <button onClick={logout} style={{...styles.logoutBtn, ...styles.desktopOnly}}>Esci</button>
+        <button onClick={logout} style={{ ...styles.logoutBtn }} className="logout-desktop">Esci</button>
 
         {/* HAMBURGER */}
-        <button onClick={() => setMenuOpen(!menuOpen)} style={styles.hamburger}>
+        <button onClick={() => setMenuOpen(!menuOpen)} style={styles.hamburger} className="hamburger-btn">
           {menuOpen ? '✕' : '☰'}
         </button>
       </nav>
 
       {/* MOBILE MENU */}
       {menuOpen && (
-        <div style={styles.mobileMenu}>
+        <div style={styles.mobileMenu} className="mobile-menu">
           <NavLink to="/admin" end style={navStyle} onClick={closeMenu}>Dashboard</NavLink>
           <NavLink to="/admin/ospiti" style={navStyle} onClick={closeMenu}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle} onClick={closeMenu}>+ Nuovo ospite</NavLink>
@@ -111,16 +111,10 @@ const styles = {
   },
   logo: { fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5, marginRight: 16, whiteSpace: 'nowrap' },
   adminBadge: { fontSize: 11, color: '#555', fontWeight: 400, marginLeft: 8, letterSpacing: 0 },
-  navLinks: {
-    display: 'flex', gap: 4, flex: 1, flexWrap: 'nowrap',
-    '@media (max-width: 768px)': { display: 'none' }
-  },
-  desktopOnly: {},
+  navLinks: { display: 'flex', gap: 4, flex: 1, flexWrap: 'nowrap' },
   hamburger: {
-    display: 'none',
     background: 'none', border: 'none', color: '#fff',
     fontSize: 22, cursor: 'pointer', marginLeft: 'auto',
-    '@media (max-width: 768px)': { display: 'block' }
   },
   mobileMenu: {
     background: '#1a1a1a', display: 'flex', flexDirection: 'column',
@@ -130,3 +124,6 @@ const styles = {
     background: 'none', border: '0.5px solid #444', color: '#888',
     padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
     width: 'fit-content',
+  },
+  main: { padding: '24px', maxWidth: 1100, margin: '0 auto' },
+}
