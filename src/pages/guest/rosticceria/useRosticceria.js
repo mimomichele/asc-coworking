@@ -98,13 +98,23 @@ export function useInviaOrdine() {
       // Recupera nome cliente dal profilo
       const { data: profile } = await supabase
         .from('profiles')
-        .select('name, surname')
+        .select('name, surname, username')
         .eq('id', session.user.id)
         .single()
 
-      const customerName = profile
-        ? `${profile.name} ${profile.surname}`.trim()
-        : session.user.email
+      let customerName = session.user.email
+      if (profile) {
+        if (profile.name && profile.surname) {
+          customerName = `${profile.name} ${profile.surname}`.trim()
+        } else if (profile.name) {
+          customerName = profile.name
+        } else if (profile.username) {
+          customerName = profile.username
+        }
+      }
+
+      // Calcola totale
+      const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
 
       // Crea ordine
       const { data: order, error: orderErr } = await supabase
@@ -116,10 +126,10 @@ export function useInviaOrdine() {
           delivery_mode: deliveryMode,
           room_number: deliveryMode === 'camera' ? roomNumber : null,
           notes: notes || null,
+          total: total,
         })
         .select()
         .single()
-
       if (orderErr) throw orderErr
 
       // Crea righe ordine
@@ -130,11 +140,9 @@ export function useInviaOrdine() {
         quantity: item.qty,
         unit_price: item.price,
       }))
-
       const { error: itemsErr } = await supabase
         .from('order_items')
         .insert(orderItems)
-
       if (itemsErr) throw itemsErr
 
       return { success: true, orderId: order.id }
