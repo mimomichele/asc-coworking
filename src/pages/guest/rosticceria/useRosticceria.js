@@ -6,24 +6,19 @@ export function useMenuDelGiorno(date) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-
   useEffect(() => {
     if (!date) return
     fetchMenu(date)
   }, [date])
-
   async function fetchMenu(date) {
     setLoading(true)
     setError(null)
     try {
-      // Carica categorie
       const { data: cats, error: catsErr } = await supabase
         .from('menu_categories')
         .select('*')
         .order('sort_order')
       if (catsErr) throw catsErr
-
-      // Carica menu del giorno con prodotti e categoria
       const { data: menu, error: menuErr } = await supabase
         .from('daily_menu')
         .select(`
@@ -41,9 +36,7 @@ export function useMenuDelGiorno(date) {
         `)
         .eq('date', date)
         .eq('is_active', true)
-
       if (menuErr) throw menuErr
-
       setCategories(cats || [])
       setItems(menu || [])
     } catch (err) {
@@ -52,19 +45,16 @@ export function useMenuDelGiorno(date) {
       setLoading(false)
     }
   }
-
   return { categories, items, loading, error }
 }
 
 export function useSlotOrari(date) {
   const [slots, setSlots] = useState([])
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     if (!date) return
     fetchSlots(date)
   }, [date])
-
   async function fetchSlots(date) {
     setLoading(true)
     try {
@@ -72,87 +62,4 @@ export function useSlotOrari(date) {
         .from('delivery_slots')
         .select('*')
         .eq('date', date)
-        .eq('is_active', true)
-        .order('time')
-      if (error) throw error
-      setSlots(data || [])
-    } catch (err) {
-      console.error('Errore slot:', err)
-      setSlots([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return { slots, loading }
-}
-
-export function useInviaOrdine() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  async function inviaOrdine({ session, slotId, deliveryMode, roomNumber, notes, cartItems }) {
-    setLoading(true)
-    setError(null)
-    try {
-      // Recupera nome cliente dal profilo
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('name, surname, username')
-        .eq('id', session.user.id)
-        .single()
-
-      let customerName = session.user.email
-      if (profile) {
-        if (profile.name && profile.surname) {
-          customerName = `${profile.name} ${profile.surname}`.trim()
-        } else if (profile.name) {
-          customerName = profile.name
-        } else if (profile.username) {
-          customerName = profile.username
-        }
-      }
-
-      // Calcola totale
-      const total = cartItems.reduce((sum, item) => sum + item.price * item.qty, 0)
-
-      // Crea ordine
-      const { data: order, error: orderErr } = await supabase
-        .from('orders')
-        .insert({
-          user_id: session.user.id,
-          customer_name: customerName,
-          slot_id: slotId,
-          delivery_mode: deliveryMode,
-          room_number: deliveryMode === 'camera' ? roomNumber : null,
-          notes: notes || null,
-          total: total,
-        })
-        .select()
-        .single()
-      if (orderErr) throw orderErr
-
-      // Crea righe ordine
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.productId,
-        product_name: item.name,
-        quantity: item.qty,
-        unit_price: item.price,
-      }))
-      const { error: itemsErr } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-      if (itemsErr) throw itemsErr
-
-      return { success: true, orderId: order.id }
-    } catch (err) {
-      setError(err.message)
-      return { success: false }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return { inviaOrdine, loading, error }
-}
+        .eq('is_a
