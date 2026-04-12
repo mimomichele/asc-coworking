@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 const fmt = (n) => '€ ' + Number(n).toFixed(2).replace('.', ',')
 const TODAY = new Date().toISOString().split('T')[0]
