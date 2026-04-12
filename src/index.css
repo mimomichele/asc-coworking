@@ -105,3 +105,17 @@ tbody tr:hover td { background: #fafafa; }
     display: none !important;
   }
 }
+/* FIX OVERFLOW MOBILE */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100%;
+}
