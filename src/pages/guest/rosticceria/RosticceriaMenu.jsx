@@ -302,7 +302,7 @@ function OrderConfirmation({ order, onBack }) {
       </div>
       <div>
         <button
-          onClick={onBack}
+          onClick={() => window.location.href = '/guest'}
           style={{
             background: '#D85A30', color: '#fff', border: 'none',
             borderRadius: 8, padding: '10px 24px',
