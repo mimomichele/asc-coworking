@@ -104,7 +104,7 @@ export default function NuovoOspite() {
     }).select().single()
 
     // 5. Abbonamento membro principale
-    if (subPrincipale.subscription_type_id && subPrincipale.expiry_date) {
+    if (subPrincipale.subscription_type_id) {
       const tipo = tipi.find(t => t.id === subPrincipale.subscription_type_id)
       await supabase.from('subscriptions').insert({
         member_id: membroPrincipale.id,
@@ -124,7 +124,7 @@ export default function NuovoOspite() {
         surname: m.surname,
       }).select().single()
 
-      if (m.subscription_type_id && m.expiry_date) {
+      if (m.subscription_type_id) {
         const tipo = tipi.find(t => t.id === m.subscription_type_id)
         await supabase.from('subscriptions').insert({
           member_id: membroNew.id,
