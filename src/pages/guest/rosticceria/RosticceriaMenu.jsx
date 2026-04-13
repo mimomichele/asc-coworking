@@ -1,22 +1,40 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useMenuDelGiorno, useSlotOrari } from './useRosticceria'
+import { supabase } from '../../../lib/supabase'
 import Checkout from './Checkout'
 
 const TODAY = new Date().toISOString().split('T')[0]
-
-const fmt = (n) =>
-  '€\u00a0' + Number(n).toFixed(2).replace('.', ',')
+const fmt = (n) => '€\u00a0' + Number(n).toFixed(2).replace('.', ',')
 
 export default function RosticceriaMenu({ session }) {
-  const [cart, setCart] = useState({})       // { [dailyMenuId]: { productId, name, price, qty } }
+  const [cart, setCart] = useState({})
   const [activeCat, setActiveCat] = useState('tutti')
   const [showCheckout, setShowCheckout] = useState(false)
   const [orderDone, setOrderDone] = useState(null)
+  const [myOrders, setMyOrders] = useState([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
 
   const { categories, items, loading, error } = useMenuDelGiorno(TODAY)
   const { slots } = useSlotOrari(TODAY)
 
-  // Raggruppamento per categoria
+  useEffect(() => { fetchMyOrders() }, [orderDone])
+
+  async function fetchMyOrders() {
+    setOrdersLoading(true)
+    const { data } = await supabase
+      .from('orders')
+      .select(`
+        id, delivery_mode, room_number, total, created_at, notes,
+        delivery_slots ( time ),
+        order_items ( product_name, quantity, unit_price )
+      `)
+      .eq('user_id', session.user.id)
+      .gte('created_at', TODAY + 'T00:00:00')
+      .order('created_at', { ascending: false })
+    setMyOrders(data || [])
+    setOrdersLoading(false)
+  }
+
   const grouped = useMemo(() => {
     const map = {}
     items.forEach((item) => {
@@ -36,7 +54,6 @@ export default function RosticceriaMenu({ session }) {
     const id = item.id
     const current = cart[id]?.qty || 0
     const next = Math.max(0, current + delta)
-    // Rispetta il limite porzioni
     const maxPortions = item.portions ?? Infinity
     if (delta > 0 && current >= maxPortions) return
     if (next === 0) {
@@ -192,6 +209,59 @@ export default function RosticceriaMenu({ session }) {
           </div>
         ))}
 
+      {/* I miei ordini oggi */}
+      <div style={{ marginTop: 24, marginBottom: 8 }}>
+        <p style={{ fontSize: 11, fontWeight: 500, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+          I miei ordini oggi
+        </p>
+        {ordersLoading && (
+          <div style={{ fontSize: 13, color: '#aaa', textAlign: 'center', padding: '12px 0' }}>Caricamento...</div>
+        )}
+        {!ordersLoading && myOrders.length === 0 && (
+          <div style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e8e4', padding: 16, fontSize: 13, color: '#aaa', textAlign: 'center' }}>
+            Nessun ordine effettuato oggi
+          </div>
+        )}
+        {myOrders.map((order) => {
+          const time = order.delivery_slots?.time?.slice(0, 5) || ''
+          const mode = order.delivery_mode
+          return (
+            <div key={order.id} style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e8e4', marginBottom: 8, overflow: 'hidden' }}>
+              <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '0.5px solid #f0f0ee' }}>
+                <span style={{ fontSize: 12, color: '#bbb' }}>#{order.id.slice(-4).toUpperCase()}</span>
+                <span style={{
+                  fontSize: 11, padding: '3px 8px', borderRadius: 20, fontWeight: 500,
+                  background: mode === 'reception' ? '#E6F1FB' : '#FAEEDA',
+                  color: mode === 'reception' ? '#185FA5' : '#854F0B',
+                }}>
+                  {mode === 'camera' ? `Camera ${order.room_number}` : 'Reception'}
+                </span>
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#888' }}>
+                  {mode === 'camera' ? 'Consegna' : 'Ritiro'} ore {time}
+                </span>
+              </div>
+              <div style={{ padding: '10px 14px' }}>
+                {order.order_items?.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#555', lineHeight: 1.9 }}>
+                    <span>{item.product_name} ×{item.quantity}</span>
+                    <span>{fmt(item.unit_price * item.quantity)}</span>
+                  </div>
+                ))}
+                {order.notes && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#aaa', background: '#f5f5f3', borderRadius: 8, padding: '5px 8px' }}>
+                    {order.notes}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '8px 14px', display: 'flex', justifyContent: 'space-between', borderTop: '0.5px solid #f0f0ee', background: '#fafaf8' }}>
+                <span style={{ fontSize: 12, color: '#888' }}>Totale</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{fmt(order.total)}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* Barra carrello fissa */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -300,16 +370,26 @@ function OrderConfirmation({ order, onBack }) {
       }}>
         Ordine <strong style={{ color: '#1a1a1a' }}>#{order.orderId?.slice(-4).toUpperCase()}</strong>
       </div>
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
         <button
-          onClick={() => window.location.href = '/guest'}
+          onClick={onBack}
           style={{
             background: '#D85A30', color: '#fff', border: 'none',
             borderRadius: 8, padding: '10px 24px',
             fontSize: 14, fontWeight: 500, cursor: 'pointer',
           }}
         >
-          Torna al menù
+          Aggiungi altro ordine
+        </button>
+        <button
+          onClick={() => window.location.href = '/guest'}
+          style={{
+            background: 'none', color: '#888', border: '0.5px solid #ddd',
+            borderRadius: 8, padding: '10px 24px',
+            fontSize: 14, cursor: 'pointer',
+          }}
+        >
+          Torna alla home
         </button>
       </div>
     </div>
