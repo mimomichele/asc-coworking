@@ -382,7 +382,7 @@ function OrderConfirmation({ order, onBack }) {
           Aggiungi altro ordine
         </button>
         <button
-          onClick={() => window.location.href = '/guest'}
+          onClick={() => window.location.replace('/guest')}
           style={{
             background: 'none', color: '#888', border: '0.5px solid #ddd',
             borderRadius: 8, padding: '10px 24px',
