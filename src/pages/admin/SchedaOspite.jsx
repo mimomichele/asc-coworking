@@ -103,10 +103,11 @@ export default function SchedaOspite() {
     }
 
     showToast('Dati aggiornati!')
-    setShowEdit(false)
-    setEditForm(f => ({ ...f, newPassword: '' }))
-    fetchData()
-    setSavingEdit(false)
+setShowEdit(false)
+setEditForm(f => ({ ...f, newPassword: '' }))
+setAccount(prev => ({ ...prev, type: editForm.type }))
+fetchData()
+setSavingEdit(false)
   }
 
   async function aggiungiMembro() {
