@@ -46,6 +46,13 @@ export default function NuovoOspite() {
     if (form.password.length < 6) {
       showToast('La password deve essere di almeno 6 caratteri', 'error'); return
     }
+
+    // Se c'è un membro in compilazione non ancora aggiunto, aggiungilo automaticamente
+    const membriFinali = [...membri]
+    if (nuovoMembro.name && nuovoMembro.surname) {
+      membriFinali.push({ ...nuovoMembro, id: Date.now() })
+    }
+
     setSaving(true)
 
     const email = `${form.username}@asc-coworking.internal`
@@ -67,12 +74,12 @@ export default function NuovoOspite() {
     const userId = authData.user.id
 
     // 2. Inserisci profilo
-   const { error: profileError } = await supabase.from('profiles').insert({
-  id: userId,
-  username: form.username,
-  email,
-  role: 'guest',
-})
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: userId,
+      username: form.username,
+      email,
+      role: 'guest',
+    })
 
     if (profileError) {
       showToast('Errore profilo: ' + profileError.message, 'error')
@@ -87,7 +94,7 @@ export default function NuovoOspite() {
       surname: form.surname,
       phone: form.phone,
       username: form.username,
-      type: form.type,
+      type: membriFinali.length > 0 ? 'family' : form.type,
     }).select().single()
 
     if (accError) {
@@ -97,11 +104,17 @@ export default function NuovoOspite() {
     }
 
     // 4. Crea membro principale
-    const { data: membroPrincipale } = await supabase.from('members').insert({
+    const { data: membroPrincipale, error: memPrincErr } = await supabase.from('members').insert({
       account_id: account.id,
       name: form.name,
       surname: form.surname,
     }).select().single()
+
+    if (memPrincErr) {
+      showToast('Errore membro principale: ' + memPrincErr.message, 'error')
+      setSaving(false)
+      return
+    }
 
     // 5. Abbonamento membro principale
     if (subPrincipale.subscription_type_id) {
@@ -117,12 +130,14 @@ export default function NuovoOspite() {
     }
 
     // 6. Membri familiari
-    for (const m of membri) {
-      const { data: membroNew } = await supabase.from('members').insert({
+    for (const m of membriFinali) {
+      const { data: membroNew, error: memErr } = await supabase.from('members').insert({
         account_id: account.id,
         name: m.name,
         surname: m.surname,
       }).select().single()
+
+      if (memErr) continue
 
       if (m.subscription_type_id) {
         const tipo = tipi.find(t => t.id === m.subscription_type_id)
@@ -131,7 +146,6 @@ export default function NuovoOspite() {
           subscription_type_id: m.subscription_type_id,
           entries_total: tipo.entries_total,
           entries_used: 0,
-          expiry_date: m.expiry_date,
           paid_amount: parseFloat(m.paid_amount) || tipo.price,
           active: true,
         })
@@ -231,6 +245,8 @@ export default function NuovoOspite() {
       {form.type === 'family' && (
         <div className="card" style={{ marginBottom: 14 }}>
           <div style={styles.sectionTitle}>Membri familiari</div>
+
+          {/* Lista membri già aggiunti */}
           {membri.map(m => (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fafafa', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
               <div>
@@ -240,11 +256,21 @@ export default function NuovoOspite() {
               <button className="btn-danger" onClick={() => rimuoviMembro(m.id)}>Rimuovi</button>
             </div>
           ))}
+
+          {/* Form nuovo membro */}
           <div style={{ borderTop: membri.length ? '0.5px solid #eee' : 'none', paddingTop: membri.length ? 14 : 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 10 }}>Aggiungi membro</div>
+            {membri.length > 0 && (
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 10 }}>Aggiungi altro membro</div>
+            )}
             <div style={styles.grid2}>
-              <div className="field"><label>Nome</label><input value={nuovoMembro.name} onChange={e => setNuovoMembro(m => ({ ...m, name: e.target.value }))} placeholder="es. Luca" /></div>
-              <div className="field"><label>Cognome</label><input value={nuovoMembro.surname} onChange={e => setNuovoMembro(m => ({ ...m, surname: e.target.value }))} placeholder="es. Rossi" /></div>
+              <div className="field">
+                <label>Nome</label>
+                <input value={nuovoMembro.name} onChange={e => setNuovoMembro(m => ({ ...m, name: e.target.value }))} placeholder="es. Luca" />
+              </div>
+              <div className="field">
+                <label>Cognome</label>
+                <input value={nuovoMembro.surname} onChange={e => setNuovoMembro(m => ({ ...m, surname: e.target.value }))} placeholder="es. Rossi" />
+              </div>
               <div className="field" style={{ gridColumn: '1/-1' }}>
                 <label>Tipo abbonamento</label>
                 <select value={nuovoMembro.subscription_type_id} onChange={e => {
@@ -255,9 +281,17 @@ export default function NuovoOspite() {
                   {tipi.map(t => <option key={t.id} value={t.id}>{t.name} — {t.entries_total} ingressi · € {t.price}</option>)}
                 </select>
               </div>
-              <div className="field"><label>Importo pagato (€)</label><input type="number" value={nuovoMembro.paid_amount} onChange={e => setNuovoMembro(m => ({ ...m, paid_amount: e.target.value }))} /></div>
+              <div className="field">
+                <label>Importo pagato (€)</label>
+                <input type="number" value={nuovoMembro.paid_amount} onChange={e => setNuovoMembro(m => ({ ...m, paid_amount: e.target.value }))} />
+              </div>
             </div>
-            <button className="btn-primary" style={{ fontSize: 12, padding: '7px 14px' }} onClick={aggiungiMembro}>+ Aggiungi membro</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+              <button className="btn-primary" style={{ fontSize: 12, padding: '7px 14px' }} onClick={aggiungiMembro}>
+                + Aggiungi altro membro
+              </button>
+              <span style={{ fontSize: 12, color: '#aaa' }}>oppure salva direttamente con "Salva ospite"</span>
+            </div>
           </div>
         </div>
       )}
