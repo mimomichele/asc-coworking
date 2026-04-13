@@ -67,9 +67,9 @@ export default function NuovoOspite() {
     const userId = authData.user.id
 
     // 2. Inserisci profilo
-    const { error: profileError } = await supabase.from('profiles').insert({
+   const { error: profileError } = await supabase.from('profiles').insert({
   id: userId,
-  username: `${form.name} ${form.surname}`.trim(),
+  username: form.username,
   email,
   role: 'guest',
 })
