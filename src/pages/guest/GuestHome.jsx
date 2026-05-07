@@ -28,7 +28,6 @@ export default function GuestHome({ session }) {
   today.setHours(0, 0, 0, 0)
   const todayStr = toLocalDateString(today)
 
-  // Genera 7 giorni a partire da oggi + weekOffset settimane
   const weekStart = new Date(today)
   weekStart.setDate(today.getDate() + weekOffset * 7)
 
@@ -96,12 +95,10 @@ export default function GuestHome({ session }) {
       await supabase.from('subscriptions')
         .update({ entries_used: activeSub.entries_used + 1 })
         .eq('id', activeSub.id)
-      // Aggiorna subito bookings in locale
       setBookings(prev => [newBooking, ...prev])
       showToast('Prenotazione confermata!')
       setSelectedDate(null)
       fetchData()
-      fetchHistory()
     } else {
       showToast('Errore nella prenotazione', 'error')
     }
@@ -117,12 +114,24 @@ export default function GuestHome({ session }) {
       .update({ entries_used: activeSub.entries_used - 1 })
       .eq('id', activeSub.id)
 
-    // Aggiorna subito lo stato locale — il giorno diventa prenotabile immediatamente
+    // Aggiorna subito locale — non chiamare fetchHistory() per non sovrascrivere
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b))
-
     showToast('Prenotazione cancellata')
     fetchData()
-    fetchHistory()
+  }
+
+  async function reactivateBooking(bookingId) {
+    const booking = bookings.find(b => b.id === bookingId)
+    if (!booking) return
+
+    await supabase.from('bookings').update({ status: 'booked' }).eq('id', bookingId)
+    await supabase.from('subscriptions')
+      .update({ entries_used: activeSub.entries_used + 1 })
+      .eq('id', activeSub.id)
+
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'booked' } : b))
+    showToast('Prenotazione riattivata!')
+    fetchData()
   }
 
   function showToast(msg, type = 'success') {
@@ -252,7 +261,8 @@ export default function GuestHome({ session }) {
               disabled={weekOffset === 0}
               style={{
                 width: 28, height: 28, borderRadius: '50%',
-                border: '0.5px solid #ddd', background: weekOffset === 0 ? '#f5f5f3' : '#fff',
+                border: '0.5px solid #ddd',
+                background: weekOffset === 0 ? '#f5f5f3' : '#fff',
                 color: weekOffset === 0 ? '#ccc' : '#1a1a1a',
                 fontSize: 16, cursor: weekOffset === 0 ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -285,7 +295,7 @@ export default function GuestHome({ session }) {
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     padding: '10px 4px', borderRadius: 10,
                     border: isToday && !isSelected ? '1.5px solid #1a1a1a' : '0.5px solid #eee',
-                    background: isSelected ? '#F5C842' : booked ? '#EAF3DE' : isPast ? '#fafafa' : '#fafafa',
+                    background: isSelected ? '#F5C842' : booked ? '#EAF3DE' : '#fafafa',
                     cursor: booked || isPast ? 'default' : 'pointer',
                     opacity: isPast ? 0.4 : 1,
                     transition: 'all 0.1s',
@@ -342,7 +352,10 @@ export default function GuestHome({ session }) {
             <div
               key={b.id}
               className="card"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', opacity: b.status === 'cancelled' ? 0.5 : 1 }}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 14px', opacity: b.status === 'cancelled' ? 0.6 : 1,
+              }}
             >
               <div>
                 <div style={{ fontWeight: 500, fontSize: 14 }}>{formatDate(b.date)}</div>
@@ -355,6 +368,17 @@ export default function GuestHome({ session }) {
                     ? <span className="pill pill-warn">Prenotato</span>
                     : <span className="pill pill-ok">Effettuato</span>
                 }
+                {/* Riattiva — solo per prenotazioni future cancellate */}
+                {b.status === 'cancelled' && isFuture && (
+                  <button
+                    className="btn-ghost"
+                    style={{ fontSize: 11, padding: '4px 10px' }}
+                    onClick={() => reactivateBooking(b.id)}
+                  >
+                    Riattiva
+                  </button>
+                )}
+                {/* Cancella */}
                 {isFuture && isActive && cancellable && (
                   <button
                     className="btn-danger"
