@@ -19,6 +19,7 @@ export default function GuestHome({ session }) {
   const [selectedMember, setSelectedMember] = useState(null)
   const [bookings, setBookings] = useState([])
   const [selectedDate, setSelectedDate] = useState(null)
+  const [weekOffset, setWeekOffset] = useState(0)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -27,9 +28,13 @@ export default function GuestHome({ session }) {
   today.setHours(0, 0, 0, 0)
   const todayStr = toLocalDateString(today)
 
+  // Genera 7 giorni a partire da oggi + weekOffset settimane
+  const weekStart = new Date(today)
+  weekStart.setDate(today.getDate() + weekOffset * 7)
+
   const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
     return toLocalDateString(d)
   })
 
@@ -55,7 +60,7 @@ export default function GuestHome({ session }) {
       .select('*')
       .eq('member_id', selectedMember)
       .order('date', { ascending: false })
-      .limit(20)
+      .limit(50)
     setBookings(data || [])
   }
 
@@ -79,18 +84,20 @@ export default function GuestHome({ session }) {
     if (!selectedDate || !activeSub) return
     setSaving(true)
 
-    const { error } = await supabase.from('bookings').insert({
+    const { data: newBooking, error } = await supabase.from('bookings').insert({
       member_id: selectedMember,
       account_id: account.id,
       subscription_id: activeSub.id,
       date: selectedDate,
       status: 'booked',
-    })
+    }).select().single()
 
-    if (!error) {
+    if (!error && newBooking) {
       await supabase.from('subscriptions')
         .update({ entries_used: activeSub.entries_used + 1 })
         .eq('id', activeSub.id)
+      // Aggiorna subito bookings in locale
+      setBookings(prev => [newBooking, ...prev])
       showToast('Prenotazione confermata!')
       setSelectedDate(null)
       fetchData()
@@ -110,7 +117,7 @@ export default function GuestHome({ session }) {
       .update({ entries_used: activeSub.entries_used - 1 })
       .eq('id', activeSub.id)
 
-    // Aggiorna subito lo stato locale senza aspettare il fetch
+    // Aggiorna subito lo stato locale — il giorno diventa prenotabile immediatamente
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b))
 
     showToast('Prenotazione cancellata')
@@ -127,6 +134,14 @@ export default function GuestHome({ session }) {
     const d = fromDateString(dateStr)
     if (dateStr === todayStr) return 'Oggi'
     return `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`
+  }
+
+  function weekLabel() {
+    const first = fromDateString(days[0])
+    const last = fromDateString(days[6])
+    if (weekOffset === 0) return 'Questa settimana'
+    if (weekOffset === 1) return 'Prossima settimana'
+    return `${first.getDate()} ${MONTH_NAMES[first.getMonth()]} – ${last.getDate()} ${MONTH_NAMES[last.getMonth()]}`
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Caricamento...</div>
@@ -228,24 +243,51 @@ export default function GuestHome({ session }) {
       {/* prenotazione */}
       {activeSub && rem > 0 && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 14 }}>Scegli il giorno</div>
+          <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 10 }}>Scegli il giorno</div>
+
+          {/* navigazione settimane */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <button
+              onClick={() => { setWeekOffset(w => Math.max(0, w - 1)); setSelectedDate(null) }}
+              disabled={weekOffset === 0}
+              style={{
+                width: 28, height: 28, borderRadius: '50%',
+                border: '0.5px solid #ddd', background: weekOffset === 0 ? '#f5f5f3' : '#fff',
+                color: weekOffset === 0 ? '#ccc' : '#1a1a1a',
+                fontSize: 16, cursor: weekOffset === 0 ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >‹</button>
+            <span style={{ fontSize: 12, color: '#888', fontWeight: 500 }}>{weekLabel()}</span>
+            <button
+              onClick={() => { setWeekOffset(w => w + 1); setSelectedDate(null) }}
+              style={{
+                width: 28, height: 28, borderRadius: '50%',
+                border: '0.5px solid #ddd', background: '#fff',
+                color: '#1a1a1a', fontSize: 16, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >›</button>
+          </div>
 
           <div style={styles.daysGrid}>
             {days.map((dateStr, i) => {
               const d = fromDateString(dateStr)
               const booked = isBooked(dateStr)
               const isSelected = selectedDate === dateStr
-              const isToday = i === 0
+              const isToday = dateStr === todayStr
+              const isPast = dateStr < todayStr
               return (
                 <div
                   key={dateStr}
-                  onClick={() => !booked && setSelectedDate(dateStr)}
+                  onClick={() => !booked && !isPast && setSelectedDate(dateStr)}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     padding: '10px 4px', borderRadius: 10,
                     border: isToday && !isSelected ? '1.5px solid #1a1a1a' : '0.5px solid #eee',
-                    background: isSelected ? '#F5C842' : booked ? '#EAF3DE' : '#fafafa',
-                    cursor: booked ? 'default' : 'pointer',
+                    background: isSelected ? '#F5C842' : booked ? '#EAF3DE' : isPast ? '#fafafa' : '#fafafa',
+                    cursor: booked || isPast ? 'default' : 'pointer',
+                    opacity: isPast ? 0.4 : 1,
                     transition: 'all 0.1s',
                   }}
                 >
