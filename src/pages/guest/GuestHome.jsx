@@ -4,6 +4,15 @@ import { supabase } from '../../lib/supabase'
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
 const MONTH_NAMES = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre']
 
+function toLocalDateString(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function fromDateString(str) {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 export default function GuestHome({ session }) {
   const [account, setAccount] = useState(null)
   const [members, setMembers] = useState([])
@@ -16,30 +25,28 @@ export default function GuestHome({ session }) {
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const todayStr = toLocalDateString(today)
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(today.getDate() + i)
+    return toLocalDateString(d)
+  })
 
   useEffect(() => { fetchData() }, [])
-  useEffect(() => { if (selectedMember) fetchBookings() }, [selectedMember])
+  useEffect(() => { if (selectedMember) fetchHistory() }, [selectedMember])
 
   async function fetchData() {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-    const { data: acc } = await supabase.from('accounts').select(`*, members(*, subscriptions(*, subscription_types(name)))`).eq('owner_id', session.user.id).single()
+    await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+    const { data: acc } = await supabase
+      .from('accounts')
+      .select(`*, members(*, subscriptions(*, subscription_types(name)))`)
+      .eq('owner_id', session.user.id)
+      .single()
     setAccount(acc)
     setMembers(acc?.members || [])
     if (acc?.members?.length) setSelectedMember(acc.members[0].id)
     setLoading(false)
-  }
-
-  async function fetchBookings() {
-    const from = new Date(today)
-    const to = new Date(today)
-    to.setDate(to.getDate() + 7)
-    const { data } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('member_id', selectedMember)
-      .gte('date', from.toISOString().split('T')[0])
-      .lte('date', to.toISOString().split('T')[0])
-    setBookings(data || [])
   }
 
   async function fetchHistory() {
@@ -52,47 +59,38 @@ export default function GuestHome({ session }) {
     setBookings(data || [])
   }
 
-  useEffect(() => { if (selectedMember) fetchHistory() }, [selectedMember])
-
   const member = members.find(m => m.id === selectedMember)
   const activeSub = member?.subscriptions?.find(s => s.active)
   const rem = activeSub ? activeSub.entries_total - activeSub.entries_used : 0
 
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() + i)
-    return d
-  })
-
-  function isBooked(date) {
-    const ds = date.toISOString().split('T')[0]
-    return bookings.some(b => b.date === ds && b.status !== 'cancelled')
+  function isBooked(dateStr) {
+    return bookings.some(b => b.date === dateStr && b.status !== 'cancelled')
   }
 
   function canCancelBooking(booking) {
-    const bookingDate = new Date(booking.date)
-    bookingDate.setHours(0, 0, 0, 0)
+    const bDate = fromDateString(booking.date)
     const now = new Date()
-    if (bookingDate > today) return true
-    if (bookingDate.getTime() === today.getTime()) return now.getHours() < 9
+    if (bDate > today) return true
+    if (bDate.getTime() === today.getTime()) return now.getHours() < 9
     return false
   }
 
   async function confirmBooking() {
     if (!selectedDate || !activeSub) return
     setSaving(true)
-    const ds = selectedDate.toISOString().split('T')[0]
 
     const { error } = await supabase.from('bookings').insert({
       member_id: selectedMember,
       account_id: account.id,
       subscription_id: activeSub.id,
-      date: ds,
+      date: selectedDate,
       status: 'booked',
     })
 
     if (!error) {
-      await supabase.from('subscriptions').update({ entries_used: activeSub.entries_used + 1 }).eq('id', activeSub.id)
+      await supabase.from('subscriptions')
+        .update({ entries_used: activeSub.entries_used + 1 })
+        .eq('id', activeSub.id)
       showToast('Prenotazione confermata!')
       setSelectedDate(null)
       fetchData()
@@ -106,8 +104,15 @@ export default function GuestHome({ session }) {
   async function cancelBooking(bookingId) {
     const booking = bookings.find(b => b.id === bookingId)
     if (!booking || !canCancelBooking(booking)) return
+
     await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId)
-    await supabase.from('subscriptions').update({ entries_used: activeSub.entries_used - 1 }).eq('id', activeSub.id)
+    await supabase.from('subscriptions')
+      .update({ entries_used: activeSub.entries_used - 1 })
+      .eq('id', activeSub.id)
+
+    // Aggiorna subito lo stato locale senza aspettare il fetch
+    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' } : b))
+
     showToast('Prenotazione cancellata')
     fetchData()
     fetchHistory()
@@ -118,16 +123,15 @@ export default function GuestHome({ session }) {
     setTimeout(() => setToast(null), 3000)
   }
 
-  function formatDate(d) {
-    const date = new Date(d)
-    const isToday = date.toISOString().split('T')[0] === today.toISOString().split('T')[0]
-    if (isToday) return 'Oggi'
-    return `${DAY_NAMES[date.getDay()]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`
+  function formatDate(dateStr) {
+    const d = fromDateString(dateStr)
+    if (dateStr === todayStr) return 'Oggi'
+    return `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${MONTH_NAMES[d.getMonth()]}`
   }
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Caricamento...</div>
 
-  const historyBookings = bookings.sort((a, b) => new Date(b.date) - new Date(a.date))
+  const historyBookings = [...bookings].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto' }}>
@@ -147,20 +151,26 @@ export default function GuestHome({ session }) {
         )}
       </div>
 
-      {/* alert ingressi esauriti */}
+      {/* alert ingressi in esaurimento */}
       {members.some(m => {
         const s = m.subscriptions?.find(sub => sub.active)
         return s && (s.entries_total - s.entries_used) <= 3
       }) && (
         <div style={styles.alertBar}>
-          {members.filter(m => {
-            const s = m.subscriptions?.find(sub => sub.active)
-            return s && (s.entries_total - s.entries_used) <= 3
-          }).map(m => {
-            const s = m.subscriptions?.find(sub => sub.active)
-            const rem = s.entries_total - s.entries_used
-            return <div key={m.id}>{m.name} ha {rem === 0 ? 'esaurito gli ingressi' : `solo ${rem} ingresso${rem > 1 ? 'i' : ''} rimasto${rem > 1 ? 'i' : ''}`}</div>
-          })}
+          {members
+            .filter(m => {
+              const s = m.subscriptions?.find(sub => sub.active)
+              return s && (s.entries_total - s.entries_used) <= 3
+            })
+            .map(m => {
+              const s = m.subscriptions?.find(sub => sub.active)
+              const r = s.entries_total - s.entries_used
+              return (
+                <div key={m.id}>
+                  {m.name} ha {r === 0 ? 'esaurito gli ingressi' : `solo ${r} ingresso${r > 1 ? 'i' : ''} rimasto${r > 1 ? 'i' : ''}`}
+                </div>
+              )
+            })}
         </div>
       )}
 
@@ -170,13 +180,17 @@ export default function GuestHome({ session }) {
           <div style={styles.sectionLabel}>Membro</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {members.map(m => (
-              <button key={m.id} onClick={() => { setSelectedMember(m.id); setSelectedDate(null) }} style={{
-                padding: '7px 16px', borderRadius: 20, fontSize: 13, cursor: 'pointer', border: 'none',
-                background: m.id === selectedMember ? '#1a1a1a' : '#fff',
-                color: m.id === selectedMember ? '#F5C842' : '#888',
-                fontWeight: m.id === selectedMember ? 500 : 400,
-              }}>
-                {m.name}{m.id === session.user.id ? ' (tu)' : ''}
+              <button
+                key={m.id}
+                onClick={() => { setSelectedMember(m.id); setSelectedDate(null) }}
+                style={{
+                  padding: '7px 16px', borderRadius: 20, fontSize: 13, cursor: 'pointer', border: 'none',
+                  background: m.id === selectedMember ? '#1a1a1a' : '#fff',
+                  color: m.id === selectedMember ? '#F5C842' : '#888',
+                  fontWeight: m.id === selectedMember ? 500 : 400,
+                }}
+              >
+                {m.name}
               </button>
             ))}
           </div>
@@ -217,14 +231,15 @@ export default function GuestHome({ session }) {
           <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 14 }}>Scegli il giorno</div>
 
           <div style={styles.daysGrid}>
-            {days.map((d, i) => {
-              const booked = isBooked(d)
-              const isSelected = selectedDate?.toISOString().split('T')[0] === d.toISOString().split('T')[0]
+            {days.map((dateStr, i) => {
+              const d = fromDateString(dateStr)
+              const booked = isBooked(dateStr)
+              const isSelected = selectedDate === dateStr
               const isToday = i === 0
               return (
                 <div
-                  key={i}
-                  onClick={() => !booked && setSelectedDate(new Date(d))}
+                  key={dateStr}
+                  onClick={() => !booked && setSelectedDate(dateStr)}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     padding: '10px 4px', borderRadius: 10,
@@ -234,8 +249,12 @@ export default function GuestHome({ session }) {
                     transition: 'all 0.1s',
                   }}
                 >
-                  <div style={{ fontSize: 10, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#888' }}>{DAY_NAMES[d.getDay()]}</div>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#1a1a1a' }}>{d.getDate()}</div>
+                  <div style={{ fontSize: 10, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#888' }}>
+                    {DAY_NAMES[d.getDay()]}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#1a1a1a' }}>
+                    {d.getDate()}
+                  </div>
                   <div style={{ width: 5, height: 5, borderRadius: '50%', background: booked ? '#3B6D11' : 'transparent' }} />
                 </div>
               )
@@ -264,7 +283,7 @@ export default function GuestHome({ session }) {
       )}
 
       {/* storico */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+      <div style={{ marginBottom: 10 }}>
         <div style={styles.sectionLabel}>Prenotazioni</div>
       </div>
 
@@ -273,14 +292,16 @@ export default function GuestHome({ session }) {
           <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessuna prenotazione</div>
         )}
         {historyBookings.map(b => {
-          const bDate = new Date(b.date)
-          bDate.setHours(0,0,0,0)
-          const isFuture = bDate >= today
+          const isFuture = b.date >= todayStr
           const cancellable = canCancelBooking(b)
           const isActive = b.status !== 'cancelled'
 
           return (
-            <div key={b.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', opacity: b.status === 'cancelled' ? 0.5 : 1 }}>
+            <div
+              key={b.id}
+              className="card"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', opacity: b.status === 'cancelled' ? 0.5 : 1 }}
+            >
               <div>
                 <div style={{ fontWeight: 500, fontSize: 14 }}>{formatDate(b.date)}</div>
                 <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{member?.name} {member?.surname}</div>
@@ -293,7 +314,11 @@ export default function GuestHome({ session }) {
                     : <span className="pill pill-ok">Effettuato</span>
                 }
                 {isFuture && isActive && cancellable && (
-                  <button className="btn-danger" style={{ fontSize: 11, padding: '4px 10px' }} onClick={() => cancelBooking(b.id)}>
+                  <button
+                    className="btn-danger"
+                    style={{ fontSize: 11, padding: '4px 10px' }}
+                    onClick={() => cancelBooking(b.id)}
+                  >
                     Cancella
                   </button>
                 )}
