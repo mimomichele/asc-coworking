@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { supabaseAdmin } from '../../lib/supabaseAdmin'
+import { adminUpdatePassword, adminDeleteUser } from '../../lib/adminUsers'
 import AlloggiatiFields, {
   emptyAlloggiati, alloggiatiFromMember, alloggiatiToPayload, validateAlloggiati,
 } from '../../components/AlloggiatiFields.jsx'
@@ -93,11 +93,15 @@ export default function SchedaOspite() {
 
   async function deleteAccount() {
     try {
-      // Elimina utente auth (cascade elimina tutto il resto)
+      // Elimina utente auth via Edge Function (cascade elimina tutto il resto)
       const { data: profile } = await supabase
         .from('profiles').select('id').eq('username', account.username).single()
       if (profile) {
-        await supabaseAdmin.auth.admin.deleteUser(profile.id)
+        const { error: delErr } = await adminDeleteUser({ user_id: profile.id })
+        if (delErr) {
+          showToast('Errore eliminazione utente: ' + delErr, 'error')
+          return
+        }
       }
       // Elimina account (cascade su members, subscriptions, bookings)
       await supabase.from('accounts').delete().eq('id', id)
@@ -131,11 +135,11 @@ export default function SchedaOspite() {
       const { data: profile } = await supabase
         .from('profiles').select('id').eq('username', editForm.username).single()
       if (profile) {
-        const { error: pwError } = await supabaseAdmin.auth.admin.updateUserById(
-          profile.id, { password: editForm.newPassword }
-        )
+        const { error: pwError } = await adminUpdatePassword({
+          user_id: profile.id, password: editForm.newPassword,
+        })
         if (pwError) {
-          showToast('Dati salvati ma errore cambio password: ' + pwError.message, 'error')
+          showToast('Dati salvati ma errore cambio password: ' + pwError, 'error')
           setSavingEdit(false)
           return
         }

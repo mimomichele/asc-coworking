@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { supabaseAdmin } from '../../lib/supabaseAdmin'
+import { adminCreateUser } from '../../lib/adminUsers'
 import AlloggiatiFields, { emptyAlloggiati, validateAlloggiati, alloggiatiToPayload } from '../../components/AlloggiatiFields.jsx'
 
 export default function NuovoOspite() {
@@ -72,16 +72,15 @@ export default function NuovoOspite() {
 
     const email = `${form.username}@asc-coworking.internal`
 
-    // 1. Crea utente con supabaseAdmin (service role)
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // 1. Crea utente via Edge Function (service role lato server)
+    const { data: authData, error: authError } = await adminCreateUser({
       email,
       password: form.password,
-      email_confirm: true,
       user_metadata: { role: 'guest' },
     })
 
     if (authError) {
-      showToast('Errore creazione utente: ' + authError.message, 'error')
+      showToast('Errore creazione utente: ' + authError, 'error')
       setSaving(false)
       return
     }
