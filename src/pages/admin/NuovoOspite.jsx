@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { adminCreateUser } from '../../lib/adminUsers'
-import AlloggiatiFields, { emptyAlloggiati, validateAlloggiati, alloggiatiToPayload } from '../../components/AlloggiatiFields.jsx'
+import AlloggiatiFields, { emptyAlloggiati, alloggiatiToPayload } from '../../components/AlloggiatiFields.jsx'
 
 export default function NuovoOspite() {
   const navigate = useNavigate()
@@ -38,8 +38,7 @@ export default function NuovoOspite() {
     if (!nuovoMembro.name?.trim() || !nuovoMembro.surname?.trim()) {
       showToast('Inserisci nome e cognome del membro', 'error'); return
     }
-    const err = validateAlloggiati(alloggiatiNuovo)
-    if (err) { showToast('Membro ' + nuovoMembro.name + ': ' + err, 'error'); return }
+    // I dati Alloggiati del membro sono facoltativi: nessuna validazione bloccante.
     setMembri(m => [...m, { ...nuovoMembro, alloggiati: alloggiatiNuovo, id: Date.now() }])
     setNuovoMembro({ name: '', surname: '', subscription_type_id: '', paid_amount: '' })
     setAlloggiatiNuovo(emptyAlloggiati())
@@ -59,11 +58,9 @@ export default function NuovoOspite() {
     // in seguito dalla scheda ospite. Nessuna validazione bloccante qui.
 
     // Se c'è un membro in compilazione non ancora aggiunto, lo aggiungiamo
-    // automaticamente — ma con validazione Alloggiati bloccante.
+    // automaticamente. I dati Alloggiati del membro sono facoltativi.
     const membriFinali = [...membri]
     if (nuovoMembro.name?.trim() && nuovoMembro.surname?.trim()) {
-      const errN = validateAlloggiati(alloggiatiNuovo)
-      if (errN) { showToast('Membro ' + nuovoMembro.name + ': ' + errN, 'error'); return }
       membriFinali.push({ ...nuovoMembro, alloggiati: alloggiatiNuovo, id: Date.now() })
     }
 
@@ -310,10 +307,10 @@ export default function NuovoOspite() {
               </div>
             </div>
 
-            {/* Dati Alloggiati del membro: obbligatori al pari dell'intestatario. */}
+            {/* Dati Alloggiati del membro: facoltativi, completabili dalla scheda ospite. */}
             <div style={{ marginTop: 8, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 6 }}>Dati Alloggiati Web — {nuovoMembro.name || 'nuovo membro'}</div>
-              <AlloggiatiFields value={alloggiatiNuovo} onChange={setAlloggiatiNuovo} />
+              <AlloggiatiFields value={alloggiatiNuovo} onChange={setAlloggiatiNuovo} requiredMarker={false} />
             </div>
 
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
