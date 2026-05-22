@@ -55,9 +55,8 @@ export default function NuovoOspite() {
       showToast('La password deve essere di almeno 6 caratteri', 'error'); return
     }
 
-    // Dati Alloggiati intestatario obbligatori al primo inserimento.
-    const errPrinc = validateAlloggiati(alloggiatiPrinc)
-    if (errPrinc) { showToast('Intestatario: ' + errPrinc, 'error'); return }
+    // I dati Alloggiati dell'intestatario sono facoltativi: si completano
+    // in seguito dalla scheda ospite. Nessuna validazione bloccante qui.
 
     // Se c'è un membro in compilazione non ancora aggiunto, lo aggiungiamo
     // automaticamente — ma con validazione Alloggiati bloccante.
@@ -239,9 +238,9 @@ export default function NuovoOspite() {
       <div className="card" style={{ marginBottom: 14 }}>
         <div style={styles.sectionTitle}>Dati Alloggiati Web — intestatario</div>
         <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
-          Obbligatori per la registrazione sul portale Alloggiati. Per i nati all'estero comune e provincia restano vuoti.
+          Facoltativi: si possono completare in seguito dalla scheda ospite. Per i nati all'estero comune e provincia restano vuoti.
         </div>
-        <AlloggiatiFields value={alloggiatiPrinc} onChange={setAlloggiatiPrinc} />
+        <AlloggiatiFields value={alloggiatiPrinc} onChange={setAlloggiatiPrinc} requiredMarker={false} />
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
