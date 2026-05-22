@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { supabaseAdmin } from '../../lib/supabaseAdmin'
+import AlloggiatiFields, {
+  emptyAlloggiati, alloggiatiFromMember, alloggiatiToPayload, validateAlloggiati,
+} from '../../components/AlloggiatiFields.jsx'
 
 export default function SchedaOspite() {
   const { id } = useParams()
@@ -13,36 +16,73 @@ export default function SchedaOspite() {
   const [showForm, setShowForm] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showNuovoMembro, setShowNuovoMembro] = useState(false)
+  const [showAlloggiati, setShowAlloggiati] = useState(false)
   const [form, setForm] = useState({ subscription_type_id: '', paid_amount: '' })
   const [editForm, setEditForm] = useState({ name: '', surname: '', phone: '', username: '', type: '', newPassword: '' })
   const [nuovoMembroForm, setNuovoMembroForm] = useState({ name: '', surname: '', subscription_type_id: '', paid_amount: '' })
+  const [nuovoMembroAlloggiati, setNuovoMembroAlloggiati] = useState(emptyAlloggiati())
+  const [alloggiatiForm, setAlloggiatiForm] = useState(emptyAlloggiati())
   const [saving, setSaving] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingMembro, setSavingMembro] = useState(false)
+  const [savingAlloggiati, setSavingAlloggiati] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [creatingHead, setCreatingHead] = useState(false)
 
   useEffect(() => { fetchData(); fetchTipi() }, [id])
 
+  // Sync di alloggiatiForm SOLO al cambio del membro selezionato.
+  // NON ricarichiamo su [members] perche' un refetch globale (es. dopo
+  // saveAbbonamento o aggiungiMembro) sovrascriverebbe le modifiche in corso
+  // o ripristinerebbe valori stale se PostgREST e' lento a propagare.
+  // L'apertura dell'editor fa il proprio fetch fresco del singolo membro
+  // (vedi openAlloggiatiEditor), e il save applica in-place la riga restituita.
+  useEffect(() => {
+    if (!selectedMember) { setAlloggiatiForm(emptyAlloggiati()); setShowAlloggiati(false); return }
+    const m = members.find(x => x.id === selectedMember)
+    if (!m) return
+    setAlloggiatiForm(alloggiatiFromMember(m))
+    setShowAlloggiati(false)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMember])
+
   async function fetchData() {
     const { data: acc } = await supabase.from('accounts').select('*').eq('id', id).single()
+    if (!acc) { setLoading(false); return }
+
+    const memSelect = `*, subscriptions(*, subscription_types(name, entries_total, price)), bookings(date, status, created_at)`
     const { data: mems } = await supabase
-      .from('members')
-      .select(`*, subscriptions(*, subscription_types(name, entries_total, price)), bookings(date, status, created_at)`)
-      .eq('account_id', id)
-      .order('created_at')
+      .from('members').select(memSelect).eq('account_id', id).order('created_at')
+
+    // Nota: NON creiamo qui il membro intestatario per account "orfani".
+    // L'invariante "ogni account ha almeno l'intestatario come membro" e'
+    // responsabilita' di NuovoOspite (alla creazione dell'account). Un
+    // auto-fix lazy qui in dev con React.StrictMode causava duplicazioni
+    // (useEffect invocato 2x -> 2 SELECT con 0 righe entrambe -> 2 INSERT).
+    // Il caso orfano (account inserito a mano nel DB senza membri) e' gestito
+    // sotto da una UI di emergenza con bottone manuale idempotente.
+
     setAccount(acc)
     setEditForm({
-      name: acc?.name || '',
-      surname: acc?.surname || '',
-      phone: acc?.phone || '',
-      username: acc?.username || '',
-      type: acc?.type || 'single',
+      name: acc.name || '',
+      surname: acc.surname || '',
+      phone: acc.phone || '',
+      username: acc.username || '',
+      type: acc.type || 'single',
       newPassword: '',
     })
     setMembers(mems || [])
-    if (mems?.length && !selectedMember) setSelectedMember(mems[0].id)
+    // Mantieni il membro selezionato solo se esiste ancora nel nuovo account,
+    // altrimenti torna al primo. Senza questo, navigando tra account il
+    // selectedMember resta "stale" e la sezione Alloggiati non rende.
+    if (mems?.length) {
+      const stillValid = selectedMember && mems.some(m => m.id === selectedMember)
+      if (!stillValid) setSelectedMember(mems[0].id)
+    } else {
+      setSelectedMember(null)
+    }
     setLoading(false)
   }
 
@@ -114,13 +154,16 @@ setSavingEdit(false)
     if (!nuovoMembroForm.name || !nuovoMembroForm.surname) {
       showToast('Inserisci nome e cognome del membro', 'error'); return
     }
+    const errA = validateAlloggiati(nuovoMembroAlloggiati)
+    if (errA) { showToast(errA, 'error'); return }
     setSavingMembro(true)
 
-    // Crea membro
+    // Crea membro con dati Alloggiati
     const { data: nuovoMembro, error: memError } = await supabase.from('members').insert({
       account_id: id,
       name: nuovoMembroForm.name,
       surname: nuovoMembroForm.surname,
+      ...alloggiatiToPayload(nuovoMembroAlloggiati),
     }).select().single()
 
     if (memError) {
@@ -149,6 +192,7 @@ setSavingEdit(false)
 
     showToast('Membro aggiunto!')
     setNuovoMembroForm({ name: '', surname: '', subscription_type_id: '', paid_amount: '' })
+    setNuovoMembroAlloggiati(emptyAlloggiati())
     setShowNuovoMembro(false)
     fetchData()
     setSavingMembro(false)
@@ -172,6 +216,105 @@ setSavingEdit(false)
     setForm({ subscription_type_id: '', paid_amount: '' })
     fetchData()
     setSaving(false)
+  }
+
+  // Recovery esplicito per account legacy/orfani senza membri.
+  // Doppia barriera anti-duplicazione:
+  //  1) flag creatingHead disabilita il bottone (no doppio click / doppia esecuzione)
+  //  2) SELECT esplicito appena prima dell'INSERT (no race con altre sessioni
+  //     o con un altro tab che ha gia' creato il membro)
+  async function creaMembroIntestatario() {
+    if (creatingHead || !account) return
+    setCreatingHead(true)
+    try {
+      // Verifica idempotente: se nel frattempo qualcuno l'ha gia' creato, esci.
+      const { data: existing, error: selErr } = await supabase
+        .from('members').select('id').eq('account_id', account.id).limit(1)
+      if (selErr) {
+        showToast('Errore verifica: ' + selErr.message, 'error'); return
+      }
+      if (existing && existing.length > 0) {
+        showToast('Esiste gia\' un membro per questo account.', 'error')
+        await fetchData()
+        return
+      }
+      const { error: insErr } = await supabase.from('members').insert({
+        account_id: account.id,
+        name: account.name,
+        surname: account.surname,
+      })
+      if (insErr) {
+        showToast('Errore creazione: ' + insErr.message, 'error'); return
+      }
+      showToast('Membro intestatario creato')
+      await fetchData()
+    } finally {
+      setCreatingHead(false)
+    }
+  }
+
+  // Apertura editor: rilegge il singolo membro dal DB per garantire dati
+  // freschi (utile quando la scheda e' rimasta aperta in background o e'
+  // appena stata navigata da un'altra sessione/persona).
+  async function openAlloggiatiEditor() {
+    if (!selectedMember) return
+    const { data: m, error } = await supabase
+      .from('members').select('*').eq('id', selectedMember).maybeSingle()
+    if (error) {
+      console.error('openAlloggiatiEditor refetch failed:', error)
+      showToast('Errore caricamento: ' + error.message, 'error')
+      return
+    }
+    if (m) {
+      setAlloggiatiForm(alloggiatiFromMember(m))
+      // riallinea la riga nello state locale (preserva subscriptions/bookings)
+      setMembers(prev => prev.map(x => x.id === m.id ? { ...x, ...m } : x))
+    }
+    setShowAlloggiati(true)
+    setShowEdit(false)
+    setShowNuovoMembro(false)
+    setShowForm(false)
+  }
+
+  // Salvataggio: UPDATE ... RETURNING * in un solo round-trip e apply in-place.
+  // Niente fetchData() globale: evita race condition tra UPDATE e il SELECT
+  // successivo (che poteva restituire una vista stale e "annullare" lo save).
+  // La reception puo' lasciare campi parziali — nessuna validazione bloccante.
+  async function saveAlloggiati() {
+    if (!selectedMember) return
+    setSavingAlloggiati(true)
+    const payload = alloggiatiToPayload(alloggiatiForm)
+    const { data: updated, error } = await supabase
+      .from('members')
+      .update(payload)
+      .eq('id', selectedMember)
+      .select('*')
+      .maybeSingle()
+    if (error) {
+      console.error('saveAlloggiati failed:', error, 'payload:', payload)
+      showToast('Errore: ' + error.message, 'error')
+      setSavingAlloggiati(false)
+      return
+    }
+    if (updated) {
+      // riallinea il form con cio' che e' effettivamente nel DB (canonico)
+      setAlloggiatiForm(alloggiatiFromMember(updated))
+      setMembers(prev => prev.map(x => x.id === updated.id ? { ...x, ...updated } : x))
+    }
+    showToast('Dati Alloggiati salvati')
+    setShowAlloggiati(false)
+    setSavingAlloggiati(false)
+  }
+
+  // Stato di completezza Alloggiati per la pillola accanto al nome del membro.
+  function alloggiatiStatus(m) {
+    if (!m) return { label: 'Da compilare', cls: 'pill-gray' }
+    const base = m.sesso && m.data_nascita && m.stato_nascita_cod && m.cittadinanza_cod
+    if (!base) return { label: 'Da compilare', cls: 'pill-gray' }
+    if (m.documento_acquisito && m.tipo_documento_cod && m.numero_documento) {
+      return { label: 'Dati + documento OK', cls: 'pill-ok' }
+    }
+    return { label: 'Documento mancante', cls: 'pill-warn' }
   }
 
   function showToast(msg, type = 'success') {
@@ -210,7 +353,7 @@ setSavingEdit(false)
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn-ghost" onClick={() => { setShowEdit(v => !v); setShowNuovoMembro(false) }}>
+          <button className="btn-ghost" onClick={() => { setShowEdit(v => !v); setShowNuovoMembro(false); setShowAlloggiati(false) }}>
             {showEdit ? 'Chiudi' : 'Modifica dati'}
           </button>
           <button className="btn-danger" onClick={() => setShowConfirmDelete(true)}>Elimina ospite</button>
@@ -277,11 +420,36 @@ setSavingEdit(false)
         </div>
       )}
 
+      {/* Recovery: account orfano senza membri. Caso raro (account creato a
+          mano nel DB senza membri). NuovoOspite garantisce l'invariante per
+          gli account creati dall'app. */}
+      {members.length === 0 && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #E24B4A', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#A32D2D', marginBottom: 6 }}>
+            Account senza membri
+          </div>
+          <div style={{ fontSize: 12, color: '#854F0B', marginBottom: 12 }}>
+            Questo account non ha alcun membro collegato. Crea il membro intestatario
+            (con nome <strong>{account.name} {account.surname}</strong>) per poter
+            registrare dati Alloggiati, abbonamenti e prenotazioni. Eventuali familiari
+            si aggiungono dopo dal pulsante "+ Aggiungi membro".
+          </div>
+          <button
+            className="btn-primary"
+            style={{ fontSize: 13, padding: '8px 16px' }}
+            disabled={creatingHead}
+            onClick={creaMembroIntestatario}
+          >
+            {creatingHead ? 'Creazione…' : 'Crea membro intestatario'}
+          </button>
+        </div>
+      )}
+
       {/* selezione membro + aggiungi membro */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
           <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>MEMBRI</div>
-          <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => { setShowNuovoMembro(v => !v); setShowEdit(false) }}>
+          <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => { setShowNuovoMembro(v => !v); setShowEdit(false); setShowAlloggiati(false) }}>
             {showNuovoMembro ? 'Chiudi' : '+ Aggiungi membro'}
           </button>
         </div>
@@ -324,7 +492,18 @@ setSavingEdit(false)
               </div>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 4 }}>
+              Dati Alloggiati Web — {nuovoMembroForm.name || 'nuovo membro'}
+            </div>
+            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+              Obbligatori. Per i nati all'estero comune e provincia restano vuoti.
+            </div>
+            <AlloggiatiFields value={nuovoMembroAlloggiati} onChange={setNuovoMembroAlloggiati} />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
             <button className="btn-ghost" onClick={() => setShowNuovoMembro(false)}>Annulla</button>
             <button className="btn-primary" onClick={aggiungiMembro} disabled={savingMembro}>
               {savingMembro ? 'Salvataggio...' : 'Aggiungi membro'}
@@ -332,6 +511,45 @@ setSavingEdit(false)
           </div>
         </div>
       )}
+
+      {/* dati alloggiati web */}
+      {member && (() => {
+        const stato = alloggiatiStatus(member)
+        return (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, gap: 10, flexWrap: 'wrap' }}>
+              <h3 style={{ fontSize: 15, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                Dati Alloggiati Web — {member.name} {member.surname}
+                <span className={`pill ${stato.cls}`}>{stato.label}</span>
+              </h3>
+              <button
+                className="btn-ghost"
+                style={{ fontSize: 12 }}
+                onClick={() => showAlloggiati ? setShowAlloggiati(false) : openAlloggiatiEditor()}
+              >
+                {showAlloggiati ? 'Chiudi' : 'Compila / modifica'}
+              </button>
+            </div>
+
+            {showAlloggiati && (
+              <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+                  Campi del tracciato ALLOGGIATI WEB. Qui in modifica i campi possono essere lasciati
+                  parziali (la reception li completa nel tempo). Alla creazione di un nuovo ospite o
+                  membro invece sono tutti obbligatori.
+                </div>
+                <AlloggiatiFields value={alloggiatiForm} onChange={setAlloggiatiForm} requiredMarker={false} />
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+                  <button className="btn-ghost" onClick={() => setShowAlloggiati(false)}>Annulla</button>
+                  <button className="btn-primary" onClick={saveAlloggiati} disabled={savingAlloggiati}>
+                    {savingAlloggiati ? 'Salvataggio...' : 'Salva dati Alloggiati'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* abbonamenti */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>

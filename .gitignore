@@ -1,1 +1,21 @@
-.env\nnode_modules\n.DS_Store
+# Dipendenze
+node_modules
+
+# Variabili d'ambiente — NON committare (contiene chiavi Supabase)
+.env
+.env.*
+!.env.example
+
+# Build
+dist
+
+# Sistema
+.DS_Store
+
+# Progetto separato — non fa parte del gestionale Day Use
+turni-bagnini
+turni-bagnini.zip
+
+# Log
+*.log
+npm-debug.log*

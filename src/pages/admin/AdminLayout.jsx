@@ -7,6 +7,7 @@ import NuovoOspite from './NuovoOspite.jsx'
 import SchedaOspite from './SchedaOspite.jsx'
 import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
+import Camere from './Camere.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 
 export default function AdminLayout() {
@@ -34,6 +35,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end style={navStyle}>Dashboard</NavLink>
           <NavLink to="/admin/ospiti" style={navStyle}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle}>+ Nuovo ospite</NavLink>
+          <NavLink to="/admin/camere" style={navStyle}>Camere</NavLink>
           <NavLink to="/admin/abbonamenti" style={navStyle}>Tipi abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={navStyle}>In esaurimento</NavLink>
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria}>Rosticceria</NavLink>
@@ -53,6 +55,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end style={navStyle} onClick={closeMenu}>Dashboard</NavLink>
           <NavLink to="/admin/ospiti" style={navStyle} onClick={closeMenu}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle} onClick={closeMenu}>+ Nuovo ospite</NavLink>
+          <NavLink to="/admin/camere" style={navStyle} onClick={closeMenu}>Camere</NavLink>
           <NavLink to="/admin/abbonamenti" style={navStyle} onClick={closeMenu}>Tipi abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={navStyle} onClick={closeMenu}>In esaurimento</NavLink>
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria} onClick={closeMenu}>Rosticceria</NavLink>
@@ -69,6 +72,7 @@ export default function AdminLayout() {
           <Route path="nuovo-ospite" element={<NuovoOspite />} />
           <Route path="abbonamenti" element={<TipiAbbonamento />} />
           <Route path="esaurimento" element={<InEsaurimento />} />
+          <Route path="camere" element={<Camere />} />
           <Route path="rosticceria/*" element={<RosticceriaPannello />} />
         </Routes>
       </main>

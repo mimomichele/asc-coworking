@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../../lib/supabase'
 
 const fmt = (n) => '€ ' + Number(n).toFixed(2).replace('.', ',')
-const TODAY = new Date().toISOString().split('T')[0]
 const DAYS = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato']
 const MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre']
+
+// Formatta una Date in 'YYYY-MM-DD' usando i componenti LOCALI.
+// NON usare toISOString(): converte in UTC e nel fuso IT (UTC+1/+2) fa
+// slittare la data, rompendo l'aritmetica dei giorni (frecce del menù).
+function toDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const TODAY = toDateStr(new Date())
 
 function fmtDate(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -14,7 +22,7 @@ function fmtDate(dateStr) {
 function addDays(dateStr, n) {
   const d = new Date(dateStr + 'T00:00:00')
   d.setDate(d.getDate() + n)
-  return d.toISOString().split('T')[0]
+  return toDateStr(d)
 }
 
 const S = {

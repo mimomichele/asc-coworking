@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { supabaseAdmin } from '../../lib/supabaseAdmin'
+import AlloggiatiFields, { emptyAlloggiati, validateAlloggiati, alloggiatiToPayload } from '../../components/AlloggiatiFields.jsx'
 
 export default function NuovoOspite() {
   const navigate = useNavigate()
@@ -12,9 +13,11 @@ export default function NuovoOspite() {
   const [form, setForm] = useState({
     name: '', surname: '', phone: '', username: '', password: '', type: 'single',
   })
+  const [alloggiatiPrinc, setAlloggiatiPrinc] = useState(emptyAlloggiati())
   const [subPrincipale, setSubPrincipale] = useState({ subscription_type_id: '', paid_amount: '' })
   const [membri, setMembri] = useState([])
   const [nuovoMembro, setNuovoMembro] = useState({ name: '', surname: '', subscription_type_id: '', paid_amount: '' })
+  const [alloggiatiNuovo, setAlloggiatiNuovo] = useState(emptyAlloggiati())
 
   useEffect(() => { fetchTipi() }, [])
 
@@ -32,9 +35,14 @@ export default function NuovoOspite() {
   }
 
   function aggiungiMembro() {
-    if (!nuovoMembro.name || !nuovoMembro.surname) return
-    setMembri(m => [...m, { ...nuovoMembro, id: Date.now() }])
+    if (!nuovoMembro.name?.trim() || !nuovoMembro.surname?.trim()) {
+      showToast('Inserisci nome e cognome del membro', 'error'); return
+    }
+    const err = validateAlloggiati(alloggiatiNuovo)
+    if (err) { showToast('Membro ' + nuovoMembro.name + ': ' + err, 'error'); return }
+    setMembri(m => [...m, { ...nuovoMembro, alloggiati: alloggiatiNuovo, id: Date.now() }])
     setNuovoMembro({ name: '', surname: '', subscription_type_id: '', paid_amount: '' })
+    setAlloggiatiNuovo(emptyAlloggiati())
   }
 
   function rimuoviMembro(id) { setMembri(m => m.filter(x => x.id !== id)) }
@@ -47,10 +55,17 @@ export default function NuovoOspite() {
       showToast('La password deve essere di almeno 6 caratteri', 'error'); return
     }
 
-    // Se c'è un membro in compilazione non ancora aggiunto, aggiungilo automaticamente
+    // Dati Alloggiati intestatario obbligatori al primo inserimento.
+    const errPrinc = validateAlloggiati(alloggiatiPrinc)
+    if (errPrinc) { showToast('Intestatario: ' + errPrinc, 'error'); return }
+
+    // Se c'è un membro in compilazione non ancora aggiunto, lo aggiungiamo
+    // automaticamente — ma con validazione Alloggiati bloccante.
     const membriFinali = [...membri]
-    if (nuovoMembro.name && nuovoMembro.surname) {
-      membriFinali.push({ ...nuovoMembro, id: Date.now() })
+    if (nuovoMembro.name?.trim() && nuovoMembro.surname?.trim()) {
+      const errN = validateAlloggiati(alloggiatiNuovo)
+      if (errN) { showToast('Membro ' + nuovoMembro.name + ': ' + errN, 'error'); return }
+      membriFinali.push({ ...nuovoMembro, alloggiati: alloggiatiNuovo, id: Date.now() })
     }
 
     setSaving(true)
@@ -103,11 +118,12 @@ export default function NuovoOspite() {
       return
     }
 
-    // 4. Crea membro principale
+    // 4. Crea membro principale (con dati Alloggiati)
     const { data: membroPrincipale, error: memPrincErr } = await supabase.from('members').insert({
       account_id: account.id,
       name: form.name,
       surname: form.surname,
+      ...alloggiatiToPayload(alloggiatiPrinc),
     }).select().single()
 
     if (memPrincErr) {
@@ -129,12 +145,13 @@ export default function NuovoOspite() {
       })
     }
 
-    // 6. Membri familiari
+    // 6. Membri familiari (con dati Alloggiati)
     for (const m of membriFinali) {
       const { data: membroNew, error: memErr } = await supabase.from('members').insert({
         account_id: account.id,
         name: m.name,
         surname: m.surname,
+        ...alloggiatiToPayload(m.alloggiati || emptyAlloggiati()),
       }).select().single()
 
       if (memErr) continue
@@ -221,6 +238,14 @@ export default function NuovoOspite() {
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
+        <div style={styles.sectionTitle}>Dati Alloggiati Web — intestatario</div>
+        <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+          Obbligatori per la registrazione sul portale Alloggiati. Per i nati all'estero comune e provincia restano vuoti.
+        </div>
+        <AlloggiatiFields value={alloggiatiPrinc} onChange={setAlloggiatiPrinc} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
         <div style={styles.sectionTitle}>Abbonamento — {form.name || 'ospite principale'}</div>
         <div style={styles.grid2}>
           <div className="field" style={{ gridColumn: '1/-1' }}>
@@ -286,7 +311,14 @@ export default function NuovoOspite() {
                 <input type="number" value={nuovoMembro.paid_amount} onChange={e => setNuovoMembro(m => ({ ...m, paid_amount: e.target.value }))} />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
+
+            {/* Dati Alloggiati del membro: obbligatori al pari dell'intestatario. */}
+            <div style={{ marginTop: 8, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 6 }}>Dati Alloggiati Web — {nuovoMembro.name || 'nuovo membro'}</div>
+              <AlloggiatiFields value={alloggiatiNuovo} onChange={setAlloggiatiNuovo} />
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
               <button className="btn-primary" style={{ fontSize: 12, padding: '7px 14px' }} onClick={aggiungiMembro}>
                 + Aggiungi altro membro
               </button>
