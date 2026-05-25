@@ -97,6 +97,83 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true })
     }
 
+    // Disattivazione "soft": ban Auth (di fatto permanente) + flag DB
+    // accounts.attivo=false + cancellazione bookings future.
+    // Tutti i dati restano in DB per contabilita'; reversibile con 'enable'.
+    if (action === 'disable') {
+      const { user_id } = body
+      if (!user_id) return json({ error: 'user_id obbligatorio' })
+
+      // 1. Ban Auth: 876000h ~ 100 anni = di fatto permanente.
+      //    Supabase Auth non ha un flag "permanent": una durata molto lunga
+      //    e' la convenzione. Per riattivare, ban_duration: 'none'.
+      const { error: banErr } = await admin.auth.admin.updateUserById(user_id, {
+        ban_duration: '876000h',
+      })
+      if (banErr) {
+        console.error('admin-users disable: ban failed:', banErr.message)
+        return json({ error: 'Impossibile bannare l\'utente auth: ' + banErr.message })
+      }
+
+      // 2. Recupera l'account collegato (owner_id = user_id).
+      const { data: acc, error: accErr } = await admin
+        .from('accounts').select('id').eq('owner_id', user_id).maybeSingle()
+      if (accErr) console.error('admin-users disable: select account:', accErr.message)
+
+      let cancelled_bookings = 0
+      if (acc?.id) {
+        // 3. Flag DB attivo=false.
+        const { error: updErr } = await admin
+          .from('accounts').update({ attivo: false }).eq('id', acc.id)
+        if (updErr) console.error('admin-users disable: update accounts:', updErr.message)
+
+        // 4. Cancella le prenotazioni future (oggi e seguenti) non gia' cancellate.
+        //    "Oggi" in fuso Europe/Rome (Edge Function gira in UTC).
+        //    NB: entries_used delle subscriptions NON viene toccato:
+        //    disattivazione amministrativa, non rimborso.
+        const todayIT = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' })
+        const { data: cancelled, error: bkErr } = await admin
+          .from('bookings')
+          .update({ status: 'cancelled' })
+          .eq('account_id', acc.id)
+          .gte('date', todayIT)
+          .neq('status', 'cancelled')
+          .select('id')
+        if (bkErr) console.error('admin-users disable: cancel bookings:', bkErr.message)
+        cancelled_bookings = cancelled?.length ?? 0
+      }
+
+      return json({ ok: true, cancelled_bookings })
+    }
+
+    // Riattivazione: speculare a 'disable'. Le bookings cancellate restano
+    // cancellate (non si ripristinano): se l'ospite riprende, riprenota.
+    if (action === 'enable') {
+      const { user_id } = body
+      if (!user_id) return json({ error: 'user_id obbligatorio' })
+
+      // 1. Unban Auth.
+      const { error: unbanErr } = await admin.auth.admin.updateUserById(user_id, {
+        ban_duration: 'none',
+      })
+      if (unbanErr) {
+        console.error('admin-users enable: unban failed:', unbanErr.message)
+        return json({ error: 'Impossibile riattivare l\'utente auth: ' + unbanErr.message })
+      }
+
+      // 2. Flag DB attivo=true.
+      const { data: acc, error: accErr } = await admin
+        .from('accounts').select('id').eq('owner_id', user_id).maybeSingle()
+      if (accErr) console.error('admin-users enable: select account:', accErr.message)
+      if (acc?.id) {
+        const { error: updErr } = await admin
+          .from('accounts').update({ attivo: true }).eq('id', acc.id)
+        if (updErr) console.error('admin-users enable: update accounts:', updErr.message)
+      }
+
+      return json({ ok: true })
+    }
+
     return json({ error: 'Azione non riconosciuta: ' + action })
   } catch (e) {
     return json({ error: 'Errore interno: ' + (e instanceof Error ? e.message : String(e)) }, 500)

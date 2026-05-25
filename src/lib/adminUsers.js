@@ -33,6 +33,23 @@ export function adminUpdatePassword({ user_id, password }) {
 }
 
 // Elimina un utente auth. Ritorna { data: { ok } } o { error }.
+// NB: il flusso UI attuale usa disable/enable (soft-deactivation),
+// non la cancellazione distruttiva. Questa resta disponibile per usi
+// amministrativi diretti (es. GDPR, cleanup manuale).
 export function adminDeleteUser({ user_id }) {
   return callAdminUsers('delete', { user_id })
+}
+
+// Disattiva un ospite: ban Auth (di fatto permanente) + flag DB
+// accounts.attivo=false + cancellazione prenotazioni future.
+// Reversibile con adminEnableUser. Storico/contabilita' intatti.
+// Ritorna { data: { ok, cancelled_bookings } } o { error }.
+export function adminDisableUser({ user_id }) {
+  return callAdminUsers('disable', { user_id })
+}
+
+// Riattiva un ospite precedentemente disattivato.
+// Ritorna { data: { ok } } o { error }.
+export function adminEnableUser({ user_id }) {
+  return callAdminUsers('enable', { user_id })
 }
