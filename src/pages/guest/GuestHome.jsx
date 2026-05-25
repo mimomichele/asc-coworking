@@ -85,6 +85,10 @@ export default function GuestHome({ session }) {
 
     const { data: newBooking, error } = await supabase.from('bookings').insert({
       member_id: selectedMember,
+      // bookings.head_member_id e' NOT NULL dalla migration 20260525120000.
+      // Nel flusso attuale "uno-booking-per-membro" coincide col booker; verra'
+      // ripensato in Fase 2 col modello "una prenotazione per nucleo".
+      head_member_id: selectedMember,
       account_id: account.id,
       subscription_id: activeSub.id,
       date: selectedDate,
