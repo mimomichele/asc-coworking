@@ -52,9 +52,14 @@ export default function SchedaOspite() {
     const { data: acc } = await supabase.from('accounts').select('*').eq('id', id).single()
     if (!acc) { setLoading(false); return }
 
-    const memSelect = `*, subscriptions(*, subscription_types(name, entries_total, price)), bookings(date, status, created_at)`
-    const { data: mems } = await supabase
+    // bookings!member_id: bookings ha 2 FK verso members (member_id +
+    // head_member_id dalla migration di Fase 2). Senza disambiguazione
+    // l'embed dà PGRST201 → storico ingressi silenziosamente vuoto.
+    // Vogliamo le prenotazioni dove il membro è il booker.
+    const memSelect = `*, subscriptions(*, subscription_types(name, entries_total, price)), bookings!member_id(date, status, created_at)`
+    const { data: mems, error: memsErr } = await supabase
       .from('members').select(memSelect).eq('account_id', id).order('created_at')
+    if (memsErr) console.error('[SchedaOspite.fetchData members]', memsErr)
 
     // Nota: NON creiamo qui il membro intestatario per account "orfani".
     // L'invariante "ogni account ha almeno l'intestatario come membro" e'

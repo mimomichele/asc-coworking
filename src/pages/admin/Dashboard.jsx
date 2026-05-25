@@ -40,11 +40,15 @@ export default function Dashboard() {
 
   async function fetchIngressi(date) {
     setLoadingIngressi(true)
-    const { data } = await supabase
+    // members!member_id: bookings ha 2 FK verso members (member_id + head_member_id
+    // dalla migration di Fase 2). Senza la disambiguazione l'embed dà PGRST201 e
+    // l'intera response è null. Vogliamo il booker, non il capo nucleo.
+    const { data, error } = await supabase
       .from('bookings')
-      .select('*, members(name, surname), accounts(name, surname)')
+      .select('*, members!member_id(name, surname), accounts(name, surname)')
       .eq('date', date)
       .order('created_at', { ascending: true })
+    if (error) console.error('[Dashboard.fetchIngressi]', error)
     setIngressi(data || [])
     setLoadingIngressi(false)
   }
