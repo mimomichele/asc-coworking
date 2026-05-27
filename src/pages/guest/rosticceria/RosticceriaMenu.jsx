@@ -92,7 +92,78 @@ export default function RosticceriaMenu({ session }) {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      {/* Header */}
+      {/* Brand card rosticceria — logo, indirizzo (cliccabile → Maps), CTA chiama/WhatsApp */}
+      <div style={{
+        background: '#fff',
+        borderRadius: 12,
+        border: '0.5px solid #e8e8e4',
+        padding: 14,
+        marginBottom: 16,
+      }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 14 }}>
+          <img
+            src="/logo-rosticceria-103.png"
+            alt="Rosticceria 103"
+            width={64}
+            height={64}
+            style={{ width: 64, height: 64, borderRadius: 8, flexShrink: 0, display: 'block' }}
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+              Rosticceria 103
+            </div>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Via+della+Chimera+103+52100+Arezzo"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 12, color: '#888', textDecoration: 'none',
+                display: 'block', lineHeight: 1.45,
+              }}
+            >
+              <span style={{ marginRight: 4 }}>📍</span>
+              Via della Chimera 103<br />52100 Arezzo (AR)
+            </a>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <a
+            href="tel:+390575356202"
+            style={{
+              flex: 1, padding: '12px 14px', borderRadius: 10,
+              background: '#D85A30', color: '#fff',
+              textAlign: 'center', textDecoration: 'none',
+              fontSize: 14, fontWeight: 500,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }} aria-hidden="true">
+              <path d="M20 15.5c-1.25 0-2.45-.2-3.57-.57a1 1 0 0 0-1.01.24l-2.2 2.2a15.07 15.07 0 0 1-6.59-6.59l2.2-2.2a1 1 0 0 0 .25-1.01A11.36 11.36 0 0 1 8.5 4a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1c0 9.39 7.61 17 17 17a1 1 0 0 0 1-1v-3.5a1 1 0 0 0-1-1Z" />
+            </svg>
+            Chiama
+          </a>
+          <a
+            href="https://wa.me/393500334300"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              flex: 1, padding: '12px 14px', borderRadius: 10,
+              background: '#25D366', color: '#fff',
+              textAlign: 'center', textDecoration: 'none',
+              fontSize: 14, fontWeight: 500,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }} aria-hidden="true">
+              <path d="M20.5 3.5A11.07 11.07 0 0 0 12 0C5.92 0 1 4.92 1 11c0 1.95.51 3.79 1.4 5.4L1 23l6.78-1.38A10.95 10.95 0 0 0 12 22c6.08 0 11-4.92 11-11 0-2.96-1.15-5.74-3.5-7.5Zm-3.94 13.31c-.32.88-1.6 1.65-2.34 1.74-.6.07-1.37.1-2.21-.14-.51-.16-1.16-.38-2-.74-3.52-1.52-5.82-5.08-6-5.31-.18-.23-1.44-1.92-1.44-3.66 0-1.74.92-2.6 1.25-2.95.32-.35.7-.44.94-.44h.67c.21 0 .5-.08.78.6.32.78 1.09 2.7 1.18 2.89.09.19.16.42.03.66-.13.23-.19.38-.39.59-.19.21-.41.46-.59.62-.19.16-.4.34-.17.66.23.32 1.03 1.7 2.21 2.75 1.52 1.35 2.8 1.77 3.13 1.97.32.19.51.16.7-.1.19-.26.81-.94 1.03-1.27.21-.32.42-.27.71-.16.29.1 1.85.87 2.17 1.03.32.16.53.24.61.37.07.13.07.75-.25 1.63Z" />
+            </svg>
+            WhatsApp
+          </a>
+        </div>
+      </div>
+
+      {/* Header (titolo del giorno) */}
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: 20, fontWeight: 500, color: '#1a1a1a', margin: 0 }}>
           Rosticceria
