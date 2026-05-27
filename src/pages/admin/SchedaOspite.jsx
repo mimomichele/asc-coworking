@@ -52,7 +52,14 @@ export default function SchedaOspite() {
   }, [selectedMember])
 
   async function fetchData() {
-    const { data: acc } = await supabase.from('accounts').select('*').eq('id', id).single()
+    // maybeSingle: 0 righe non e' errore (account non trovato lo gestiamo sotto);
+    // l'errore lo destrutturiamo per non lasciarlo muto.
+    const { data: acc, error: accErr } = await supabase
+      .from('accounts').select('*').eq('id', id).maybeSingle()
+    if (accErr) {
+      console.error('[SchedaOspite.fetchData account]', accErr)
+      showToast('Errore caricamento account: ' + accErr.message, 'error')
+    }
     if (!acc) { setLoading(false); return }
 
     // bookings!member_id: bookings ha 2 FK verso members (member_id +
@@ -180,17 +187,24 @@ export default function SchedaOspite() {
     }
 
     if (editForm.newPassword && editForm.newPassword.length >= 6) {
-      const { data: profile } = await supabase
-        .from('profiles').select('id').eq('username', editForm.username).single()
-      if (profile) {
-        const { error: pwError } = await adminUpdatePassword({
-          user_id: profile.id, password: editForm.newPassword,
-        })
-        if (pwError) {
-          showToast('Dati salvati ma errore cambio password: ' + pwError, 'error')
-          setSavingEdit(false)
-          return
-        }
+      // L'auth user id e' gia' disponibile come account.owner_id
+      // (stesso pattern usato da disableAccount/enableAccount).
+      // Niente lookup cieco su profiles dal client: RLS profiles_own
+      // ne blocca la lettura per l'admin, l'errore "0 rows" del .single()
+      // veniva mangiato in silenzio e adminUpdatePassword non veniva
+      // mai chiamato -> la password reale non cambiava mai. Bug fixato.
+      if (!account?.owner_id) {
+        showToast('Dati salvati ma impossibile cambiare la password (manca owner_id)', 'error')
+        setSavingEdit(false)
+        return
+      }
+      const { error: pwError } = await adminUpdatePassword({
+        user_id: account.owner_id, password: editForm.newPassword,
+      })
+      if (pwError) {
+        showToast('Dati salvati ma errore cambio password: ' + pwError, 'error')
+        setSavingEdit(false)
+        return
       }
     }
 
