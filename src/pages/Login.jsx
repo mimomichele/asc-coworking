@@ -35,7 +35,16 @@ console.log('profile:', profile, 'error:', profileError)
     })
 
     if (loginError) {
-      setError('Nome utente o password non corretti')
+      // Distinguiamo l'account disattivato (ban Supabase Auth) dalle credenziali
+      // sbagliate. Supabase espone error.code='user_banned' nelle versioni
+      // recenti di supabase-js; fallback su error.message per sicurezza.
+      const isBanned =
+        loginError.code === 'user_banned' ||
+        /ban(ned)?|disabled/i.test(loginError.message || '')
+      setError(isBanned
+        ? 'Account disattivato — contatta la reception'
+        : 'Nome utente o password non corretti'
+      )
     }
 
     setLoading(false)

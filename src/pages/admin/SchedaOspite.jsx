@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { adminUpdatePassword, adminDeleteUser } from '../../lib/adminUsers'
+import { adminUpdatePassword, adminDisableUser, adminEnableUser } from '../../lib/adminUsers'
 import AlloggiatiFields, {
   emptyAlloggiati, alloggiatiFromMember, alloggiatiToPayload, validateAlloggiati,
 } from '../../components/AlloggiatiFields.jsx'
@@ -26,7 +26,10 @@ export default function SchedaOspite() {
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingMembro, setSavingMembro] = useState(false)
   const [savingAlloggiati, setSavingAlloggiati] = useState(false)
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showConfirmDisable, setShowConfirmDisable] = useState(false)
+  const [futureBookings, setFutureBookings] = useState(0)
+  const [disabling, setDisabling] = useState(false)
+  const [enabling, setEnabling] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
   const [creatingHead, setCreatingHead] = useState(false)
@@ -96,24 +99,64 @@ export default function SchedaOspite() {
     setTipiAbb(data || [])
   }
 
-  async function deleteAccount() {
-    try {
-      // Elimina utente auth via Edge Function (cascade elimina tutto il resto)
-      const { data: profile } = await supabase
-        .from('profiles').select('id').eq('username', account.username).single()
-      if (profile) {
-        const { error: delErr } = await adminDeleteUser({ user_id: profile.id })
-        if (delErr) {
-          showToast('Errore eliminazione utente: ' + delErr, 'error')
-          return
-        }
-      }
-      // Elimina account (cascade su members, subscriptions, bookings)
-      await supabase.from('accounts').delete().eq('id', id)
-      navigate('/admin/ospiti')
-    } catch (e) {
-      showToast('Errore durante eliminazione: ' + e.message, 'error')
+  // Disattivazione "soft": ban Auth + accounts.attivo=false + cancella
+  // bookings future. Reversibile con riattivazione. Storico preservato.
+  // L'auth user id e' gia' disponibile come account.owner_id (FK 1:1 con
+  // profiles.id che e' anche auth.users.id).
+  async function openDisableConfirm() {
+    // Count prenotazioni future non gia' cancellate, per mostrarlo nella modale.
+    // "Oggi" in fuso Europe/Rome (coerente con la Edge Function).
+    const todayIT = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Rome' })
+    const { count, error: cntErr } = await supabase
+      .from('bookings')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_id', id)
+      .gte('date', todayIT)
+      .neq('status', 'cancelled')
+    if (cntErr) console.error('[SchedaOspite.openDisableConfirm count]', cntErr)
+    setFutureBookings(count ?? 0)
+    setShowConfirmDisable(true)
+  }
+
+  async function disableAccount() {
+    if (!account?.owner_id) {
+      showToast('Account senza owner_id: impossibile disattivare', 'error')
+      setShowConfirmDisable(false)
+      return
     }
+    setDisabling(true)
+    const { data, error: dErr } = await adminDisableUser({ user_id: account.owner_id })
+    if (dErr) {
+      showToast('Errore disattivazione: ' + dErr, 'error')
+      setDisabling(false)
+      return
+    }
+    const cancelled = data?.cancelled_bookings ?? 0
+    showToast(
+      cancelled > 0
+        ? `Ospite disattivato — ${cancelled} prenotazion${cancelled === 1 ? 'e' : 'i'} futur${cancelled === 1 ? 'a' : 'e'} annullat${cancelled === 1 ? 'a' : 'e'}`
+        : 'Ospite disattivato',
+    )
+    setShowConfirmDisable(false)
+    setDisabling(false)
+    fetchData()  // ricarica account per riflettere attivo=false e cambiare il bottone in "Riattiva"
+  }
+
+  async function enableAccount() {
+    if (!account?.owner_id) {
+      showToast('Account senza owner_id: impossibile riattivare', 'error')
+      return
+    }
+    setEnabling(true)
+    const { error: eErr } = await adminEnableUser({ user_id: account.owner_id })
+    if (eErr) {
+      showToast('Errore riattivazione: ' + eErr, 'error')
+      setEnabling(false)
+      return
+    }
+    showToast('Ospite riattivato')
+    setEnabling(false)
+    fetchData()
   }
 
   async function saveEdit() {
@@ -355,33 +398,73 @@ setSavingEdit(false)
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 500 }}>{account.name} {account.surname}</div>
           <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{account.phone} · @{account.username}</div>
-          <div style={{ marginTop: 6, display: 'flex', gap: 6 }}>
+          <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className={`pill ${account.type === 'family' ? 'pill-info' : 'pill-gray'}`}>
               {account.type === 'family' ? 'Account familiare' : 'Account singolo'}
             </span>
+            {account.attivo === false && (
+              <span className="pill pill-alert">Disattivato</span>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-ghost" onClick={() => { setShowEdit(v => !v); setShowNuovoMembro(false); setShowAlloggiati(false) }}>
             {showEdit ? 'Chiudi' : 'Modifica dati'}
           </button>
-          <button className="btn-danger" onClick={() => setShowConfirmDelete(true)}>Elimina ospite</button>
+          {account.attivo === false ? (
+            <button
+              className="btn-primary"
+              style={{ background: '#1D9E75', fontSize: 13, padding: '8px 16px' }}
+              onClick={enableAccount}
+              disabled={enabling}
+            >
+              {enabling ? 'Riattivazione…' : 'Riattiva ospite'}
+            </button>
+          ) : (
+            <button className="btn-danger" onClick={openDisableConfirm}>Disattiva ospite</button>
+          )}
         </div>
       </div>
 
-      {/* confirm delete */}
-      {showConfirmDelete && (
+      {/* banner "account disattivato" */}
+      {account.attivo === false && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #E24B4A', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#A32D2D', marginBottom: 4 }}>
+            Account disattivato
+          </div>
+          <div style={{ fontSize: 12, color: '#854F0B' }}>
+            Questo ospite non può accedere all'app. Storico, abbonamenti e pagamenti sono conservati.
+            Premi "Riattiva ospite" in alto per riabilitare l'accesso (le prenotazioni future annullate alla disattivazione NON vengono ripristinate).
+          </div>
+        </div>
+      )}
+
+      {/* confirm disable */}
+      {showConfirmDisable && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
-            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Elimina ospite</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
-              Stai per eliminare <strong>{account.name} {account.surname}</strong> e tutti i suoi dati (membri, abbonamenti, prenotazioni). Questa operazione non è reversibile.
+          <div className="card" style={{ maxWidth: 440, width: '90%', padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Disattiva ospite</div>
+            <div style={{ fontSize: 13, color: '#444', marginBottom: 16, lineHeight: 1.55 }}>
+              Disattivare <strong>{account.name} {account.surname}</strong>?
             </div>
+            <ul style={{ fontSize: 13, color: '#555', margin: '0 0 16px 18px', padding: 0, lineHeight: 1.7 }}>
+              <li>non potrà più accedere all'app (login bloccato)</li>
+              <li>
+                {futureBookings === 0
+                  ? 'nessuna prenotazione futura da annullare'
+                  : <>le <strong>{futureBookings}</strong> prenotazion{futureBookings === 1 ? 'e futura sarà annullata' : 'i future saranno annullate'}</>}
+              </li>
+              <li>storico, abbonamenti e pagamenti restano conservati</li>
+              <li>puoi riattivarlo in qualunque momento</li>
+            </ul>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button className="btn-ghost" onClick={() => setShowConfirmDelete(false)}>Annulla</button>
-              <button style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-                onClick={deleteAccount}>
-                Sì, elimina
+              <button className="btn-ghost" onClick={() => setShowConfirmDisable(false)} disabled={disabling}>Annulla</button>
+              <button
+                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: disabling ? 'default' : 'pointer', opacity: disabling ? 0.6 : 1 }}
+                onClick={disableAccount}
+                disabled={disabling}
+              >
+                {disabling ? 'Disattivazione…' : 'Sì, disattiva'}
               </button>
             </div>
           </div>

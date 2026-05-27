@@ -8,19 +8,21 @@ export default function Ospiti() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('surname') // surname | rem_asc | rem_desc
+  const [showDisattivati, setShowDisattivati] = useState(false)
 
   useEffect(() => { fetchAccounts() }, [])
 
   async function fetchAccounts() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('accounts')
       .select(`
-        id, name, surname, phone, type,
+        id, name, surname, phone, type, attivo,
         members (
           id, name, surname,
           subscriptions ( entries_used, entries_total, paid_amount, active )
         )
       `)
+    if (error) console.error('[Ospiti.fetchAccounts]', error)
     setAccounts(data || [])
     setLoading(false)
   }
@@ -33,8 +35,10 @@ export default function Ospiti() {
     }, 0)
   }
 
-  // cerca sia nel titolare che nei familiari
+  // cerca sia nel titolare che nei familiari, e nasconde i disattivati
+  // di default (toggle "Mostra anche disattivati" per includerli).
   const filtered = accounts.filter(a => {
+    if (!showDisattivati && a.attivo === false) return false
     const q = search.toLowerCase()
     if (!q) return true
     const titolare = `${a.name} ${a.surname}`.toLowerCase()
@@ -56,6 +60,9 @@ export default function Ospiti() {
 
   // totale membri (inclusi familiari)
   const totalMembri = accounts.reduce((s, a) => s + (a.members || []).length, 0)
+  // contatori attivi/disattivati
+  const numAttivi = accounts.filter(a => a.attivo !== false).length
+  const numDisattivi = accounts.length - numAttivi
 
   if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
 
@@ -64,7 +71,11 @@ export default function Ospiti() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 500 }}>Ospiti ({accounts.length} account)</h2>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{totalMembri} membri totali inclusi i familiari</div>
+          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+            {numAttivi} attiv{numAttivi === 1 ? 'o' : 'i'}
+            {numDisattivi > 0 && <> · {numDisattivi} disattivat{numDisattivi === 1 ? 'o' : 'i'}</>}
+            {' · '}{totalMembri} membri totali inclusi i familiari
+          </div>
         </div>
         <button className="btn-primary" onClick={() => navigate('/admin/nuovo-ospite')}>+ Nuovo ospite</button>
       </div>
@@ -86,6 +97,20 @@ export default function Ospiti() {
           <option value="rem_asc">Ordina: Ingressi rimasti ↑</option>
           <option value="rem_desc">Ordina: Ingressi rimasti ↓</option>
         </select>
+        <label style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8,
+          background: '#fff', fontSize: 13, color: '#888',
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}>
+          <input
+            type="checkbox"
+            checked={showDisattivati}
+            onChange={e => setShowDisattivati(e.target.checked)}
+            style={{ accentColor: '#F5C842' }}
+          />
+          Mostra disattivati
+        </label>
       </div>
 
       <div className="table-wrap">
@@ -105,13 +130,17 @@ export default function Ospiti() {
               const totalPaid = members.reduce((s, m) =>
                 s + (m.subscriptions || []).reduce((ss, sub) => ss + (sub.paid_amount || 0), 0), 0)
 
+              const disattivato = account.attivo === false
               return (
-                <tr key={account.id}>
+                <tr key={account.id} style={{ opacity: disattivato ? 0.55 : 1 }}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div className="avatar">{account.name?.[0]}{account.surname?.[0]}</div>
                       <div>
-                        <div style={{ fontWeight: 500 }}>{account.name} {account.surname}</div>
+                        <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <span>{account.name} {account.surname}</span>
+                          {disattivato && <span className="pill pill-alert" style={{ fontSize: 10 }}>Disattivato</span>}
+                        </div>
                         {members.length > 1 && (
                           <div style={{ fontSize: 11, color: '#888' }}>
                             + {members
