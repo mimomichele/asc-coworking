@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { adminUpdatePassword, adminDisableUser, adminEnableUser } from '../../lib/adminUsers'
+import { fetchLastSignatureForUser, getSignedPdfUrl } from '../../lib/contract'
 import AlloggiatiFields, {
   emptyAlloggiati, alloggiatiFromMember, alloggiatiToPayload, validateAlloggiati,
 } from '../../components/AlloggiatiFields.jsx'
@@ -33,6 +34,10 @@ export default function SchedaOspite() {
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
   const [creatingHead, setCreatingHead] = useState(false)
+  // Stato firma contratto: null = ancora da fetchare; oggetto = firmato;
+  // false = mai firmato (assenza di righe in contract_signatures).
+  const [contractSignature, setContractSignature] = useState(null)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
   useEffect(() => { fetchData(); fetchTipi() }, [id])
 
@@ -98,6 +103,17 @@ export default function SchedaOspite() {
     } else {
       setSelectedMember(null)
     }
+
+    // Stato firma contratto: l'admin ha RLS sig_admin_read, vede tutto.
+    // owner_id e' l'auth user id (= profiles.id = user_id in contract_signatures).
+    if (acc.owner_id) {
+      const { data: sig } = await fetchLastSignatureForUser(acc.owner_id)
+      // sig: null se mai firmato; oggetto se firmato.
+      setContractSignature(sig || false)
+    } else {
+      setContractSignature(false)
+    }
+
     setLoading(false)
   }
 
@@ -319,6 +335,17 @@ setSavingEdit(false)
     }
   }
 
+  // Scarica il PDF del contratto firmato: l'admin ha RLS storage
+  // sig_pdf_admin_read, il signed URL viene emesso e aperto in nuova tab.
+  async function downloadPdf() {
+    if (!contractSignature?.pdf_path) return
+    setDownloadingPdf(true)
+    const { url, error } = await getSignedPdfUrl(contractSignature.pdf_path, 60)
+    setDownloadingPdf(false)
+    if (error) { showToast('Errore download PDF: ' + error, 'error'); return }
+    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   // Apertura editor: rilegge il singolo membro dal DB per garantire dati
   // freschi (utile quando la scheda e' rimasta aperta in background o e'
   // appena stata navigata da un'altra sessione/persona).
@@ -449,6 +476,40 @@ setSavingEdit(false)
           <div style={{ fontSize: 12, color: '#854F0B' }}>
             Questo ospite non può accedere all'app. Storico, abbonamenti e pagamenti sono conservati.
             Premi "Riattiva ospite" in alto per riabilitare l'accesso (le prenotazioni future annullate alla disattivazione NON vengono ripristinate).
+          </div>
+        </div>
+      )}
+
+      {/* Stato contratto di membership */}
+      {contractSignature && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #3B6D11', borderRadius: '0 12px 12px 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span className="pill pill-ok">Contratto firmato</span>
+              </div>
+              <div style={{ fontSize: 12, color: '#888' }}>
+                il <strong style={{ color: '#1a1a1a' }}>{fmtSignedAt(contractSignature.signed_at)}</strong>
+              </div>
+            </div>
+            <button
+              className="btn-ghost"
+              onClick={downloadPdf}
+              disabled={downloadingPdf}
+              style={{ fontSize: 12 }}
+            >
+              {downloadingPdf ? 'Apertura…' : '↓ Scarica PDF'}
+            </button>
+          </div>
+        </div>
+      )}
+      {contractSignature === false && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #BA7517', borderRadius: '0 12px 12px 0', background: '#FAEEDA' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#854F0B', marginBottom: 4 }}>
+            <span className="pill pill-warn" style={{ marginRight: 8 }}>Contratto non firmato</span>
+          </div>
+          <div style={{ fontSize: 12, color: '#854F0B' }}>
+            L'ospite vedrà la schermata di firma del contratto al prossimo accesso e non potrà usare l'app finché non firma.
           </div>
         </div>
       )}
@@ -760,4 +821,18 @@ setSavingEdit(false)
       </div>
     </div>
   )
+}
+
+// Formatta un timestamptz ISO in italiano "GG/MM/AAAA alle HH:MM" (fuso Europe/Rome).
+function fmtSignedAt(iso) {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (isNaN(date.getTime())) return ''
+  const f = new Intl.DateTimeFormat('it-IT', {
+    timeZone: 'Europe/Rome',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  }).formatToParts(date)
+  const get = (t) => f.find(p => p.type === t)?.value || ''
+  return `${get('day')}/${get('month')}/${get('year')} alle ${get('hour')}:${get('minute')}`
 }
