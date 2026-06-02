@@ -1,11 +1,13 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
+import { fetchUserHasSigned } from './lib/contract'
 
 import Login from './pages/Login.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import GuestLayout from './pages/guest/GuestLayout.jsx'
 import RosticceriaLayout from './pages/rosticceria/RosticceriaLayout.jsx'
+import ContrattoFirma from './pages/guest/ContrattoFirma.jsx'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -13,6 +15,8 @@ export default function App() {
   // null = ancora da determinare; true = ospite attivo / N/A per altri ruoli;
   // false = ospite disattivato → schermata di stop.
   const [accountAttivo, setAccountAttivo] = useState(null)
+  // null = ancora da determinare; true = ha firmato / N/A; false = deve firmare.
+  const [hasSigned, setHasSigned] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -25,7 +29,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) fetchRoleAndStatus(session.user.id)
-      else { setRole(null); setAccountAttivo(null); setLoading(false) }
+      else { setRole(null); setAccountAttivo(null); setHasSigned(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
@@ -38,18 +42,23 @@ export default function App() {
     const r = profile?.role || 'guest'
     setRole(r)
 
-    // Per il ruolo guest fetcho anche accounts.attivo per il gating.
-    // Per admin/rosticceria non serve (non hanno il flag attivo, e comunque
-    // non passano per accounts.owner_id).
+    // Per il ruolo guest fetcho anche accounts.attivo + lo stato di firma
+    // per i gating. Per admin/rosticceria non servono (non hanno membership).
     if (r === 'guest') {
+      // attivo?
       const { data: acc, error: accErr } = await supabase
         .from('accounts').select('attivo').eq('owner_id', userId).maybeSingle()
       if (accErr) console.error('[App.fetchRoleAndStatus account]', accErr)
       // Default true: se il record non esiste o attivo è null/undefined, NON blocco.
       // Blocco solo se attivo è esplicitamente false.
       setAccountAttivo(acc?.attivo !== false)
+
+      // ha firmato il contratto?
+      const { hasSigned: signed } = await fetchUserHasSigned(userId)
+      setHasSigned(signed)
     } else {
       setAccountAttivo(true)
+      setHasSigned(true)
     }
     setLoading(false)
   }
@@ -62,9 +71,22 @@ export default function App() {
 
   if (!session) return <Login />
 
-  // Gating: guest disattivato non entra da nessuna parte.
+  // Gating ORDINATO:
+  //   1. guest disattivato → schermata "Account disattivato"
+  //   2. guest che non ha ancora firmato → schermata di firma contratto
+  //   3. resto: routing normale per ruolo
+  // L'ordine è importante: un disattivato non firma (la sua membership è
+  // sospesa); un attivo che non ha firmato vede solo la schermata firma.
   if (role === 'guest' && accountAttivo === false) {
     return <AccountDisattivato />
+  }
+  if (role === 'guest' && hasSigned === false) {
+    return (
+      <ContrattoFirma
+        session={session}
+        onSigned={() => fetchRoleAndStatus(session.user.id)}
+      />
+    )
   }
 
   return (
