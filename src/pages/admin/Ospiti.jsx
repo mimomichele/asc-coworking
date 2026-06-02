@@ -9,21 +9,36 @@ export default function Ospiti() {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('surname') // surname | rem_asc | rem_desc
   const [showDisattivati, setShowDisattivati] = useState(false)
+  const [showOnlyToSign, setShowOnlyToSign] = useState(false)
+  // Set degli auth user_id che hanno almeno una firma in contract_signatures.
+  // Caricato in parallelo agli accounts. RLS sig_admin_read consente all'admin
+  // di leggere tutte le righe.
+  const [signedUserIds, setSignedUserIds] = useState(() => new Set())
 
   useEffect(() => { fetchAccounts() }, [])
 
   async function fetchAccounts() {
-    const { data, error } = await supabase
-      .from('accounts')
-      .select(`
-        id, name, surname, phone, type, attivo,
-        members (
-          id, name, surname,
-          subscriptions ( entries_used, entries_total, paid_amount, active )
-        )
-      `)
-    if (error) console.error('[Ospiti.fetchAccounts]', error)
-    setAccounts(data || [])
+    // accounts + signatures in parallelo (no dipendenza tra le due).
+    const [
+      { data: accs, error: accsErr },
+      { data: sigs, error: sigsErr },
+    ] = await Promise.all([
+      supabase
+        .from('accounts')
+        .select(`
+          id, name, surname, phone, type, attivo, owner_id,
+          members (
+            id, name, surname,
+            subscriptions ( entries_used, entries_total, paid_amount, active )
+          )
+        `),
+      // user_id duplicati possibili in futuro (re-firma): il Set deduplica.
+      supabase.from('contract_signatures').select('user_id'),
+    ])
+    if (accsErr) console.error('[Ospiti.fetchAccounts accounts]', accsErr)
+    if (sigsErr) console.error('[Ospiti.fetchAccounts signatures]', sigsErr)
+    setAccounts(accs || [])
+    setSignedUserIds(new Set((sigs || []).map(s => s.user_id)))
     setLoading(false)
   }
 
@@ -35,10 +50,12 @@ export default function Ospiti() {
     }, 0)
   }
 
-  // cerca sia nel titolare che nei familiari, e nasconde i disattivati
-  // di default (toggle "Mostra anche disattivati" per includerli).
+  // cerca sia nel titolare che nei familiari, nasconde i disattivati
+  // di default e (opzionalmente) restringe ai soli "da firmare".
+  // Tutti e tre i filtri compongono in AND.
   const filtered = accounts.filter(a => {
     if (!showDisattivati && a.attivo === false) return false
+    if (showOnlyToSign && signedUserIds.has(a.owner_id)) return false
     const q = search.toLowerCase()
     if (!q) return true
     const titolare = `${a.name} ${a.surname}`.toLowerCase()
@@ -63,6 +80,8 @@ export default function Ospiti() {
   // contatori attivi/disattivati
   const numAttivi = accounts.filter(a => a.attivo !== false).length
   const numDisattivi = accounts.length - numAttivi
+  // ospiti senza firma sul contratto (qualsiasi stato attivo/disattivato).
+  const numToSign = accounts.filter(a => !signedUserIds.has(a.owner_id)).length
 
   if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
 
@@ -75,6 +94,9 @@ export default function Ospiti() {
             {numAttivi} attiv{numAttivi === 1 ? 'o' : 'i'}
             {numDisattivi > 0 && <> · {numDisattivi} disattivat{numDisattivi === 1 ? 'o' : 'i'}</>}
             {' · '}{totalMembri} membri totali inclusi i familiari
+            {numToSign > 0 && (
+              <> · <span style={{ color: '#854F0B', fontWeight: 500 }}>{numToSign} da firmare</span></>
+            )}
           </div>
         </div>
         <button className="btn-primary" onClick={() => navigate('/admin/nuovo-ospite')}>+ Nuovo ospite</button>
@@ -111,6 +133,20 @@ export default function Ospiti() {
           />
           Mostra disattivati
         </label>
+        <label style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8,
+          background: '#fff', fontSize: 13, color: '#888',
+          cursor: 'pointer', whiteSpace: 'nowrap',
+        }}>
+          <input
+            type="checkbox"
+            checked={showOnlyToSign}
+            onChange={e => setShowOnlyToSign(e.target.checked)}
+            style={{ accentColor: '#BA7517' }}
+          />
+          Solo da firmare
+        </label>
       </div>
 
       <div className="table-wrap">
@@ -131,6 +167,7 @@ export default function Ospiti() {
                 s + (m.subscriptions || []).reduce((ss, sub) => ss + (sub.paid_amount || 0), 0), 0)
 
               const disattivato = account.attivo === false
+              const firmato = signedUserIds.has(account.owner_id)
               return (
                 <tr key={account.id} style={{ opacity: disattivato ? 0.55 : 1 }}>
                   <td>
@@ -140,6 +177,10 @@ export default function Ospiti() {
                         <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           <span>{account.name} {account.surname}</span>
                           {disattivato && <span className="pill pill-alert" style={{ fontSize: 10 }}>Disattivato</span>}
+                          {firmato
+                            ? <span className="pill pill-ok" style={{ fontSize: 10 }}>✓ Firmato</span>
+                            : <span className="pill pill-warn" style={{ fontSize: 10 }}>Da firmare</span>
+                          }
                         </div>
                         {members.length > 1 && (
                           <div style={{ fontSize: 11, color: '#888' }}>
