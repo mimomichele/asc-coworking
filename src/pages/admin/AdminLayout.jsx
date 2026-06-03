@@ -9,6 +9,9 @@ import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
 import Camere from './Camere.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
+import PlannerTurni from './Turni/PlannerTurni.jsx'
+import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
+import Dipendenti from './Turni/Dipendenti.jsx'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
@@ -36,6 +39,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/ospiti" style={navStyle}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle}>+ Nuovo ospite</NavLink>
           <NavLink to="/admin/camere" style={navStyle}>Camere</NavLink>
+          <NavLink to="/admin/turni" style={navStyle}>Turni</NavLink>
           <NavLink to="/admin/abbonamenti" style={navStyle}>Tipi abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={navStyle}>In esaurimento</NavLink>
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria}>Rosticceria</NavLink>
@@ -56,6 +60,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/ospiti" style={navStyle} onClick={closeMenu}>Ospiti</NavLink>
           <NavLink to="/admin/nuovo-ospite" style={navStyle} onClick={closeMenu}>+ Nuovo ospite</NavLink>
           <NavLink to="/admin/camere" style={navStyle} onClick={closeMenu}>Camere</NavLink>
+          <NavLink to="/admin/turni" style={navStyle} onClick={closeMenu}>Turni</NavLink>
           <NavLink to="/admin/abbonamenti" style={navStyle} onClick={closeMenu}>Tipi abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={navStyle} onClick={closeMenu}>In esaurimento</NavLink>
           <NavLink to="/admin/rosticceria" style={navStyleRosticceria} onClick={closeMenu}>Rosticceria</NavLink>
@@ -73,6 +78,9 @@ export default function AdminLayout() {
           <Route path="abbonamenti" element={<TipiAbbonamento />} />
           <Route path="esaurimento" element={<InEsaurimento />} />
           <Route path="camere" element={<Camere />} />
+          <Route path="turni" element={<PlannerTurni />} />
+          <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
+          <Route path="turni/dipendenti" element={<Dipendenti />} />
           <Route path="rosticceria/*" element={<RosticceriaPannello />} />
         </Routes>
       </main>
