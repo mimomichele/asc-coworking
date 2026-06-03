@@ -12,16 +12,18 @@ function fmtBreve(ds) {
 export default function Richieste() {
   const [changeReqs, setChangeReqs] = useState([])
   const [ferie, setFerie] = useState([])
+  const [ferieApprovate, setFerieApprovate] = useState([])
   const [malattie, setMalattie] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [busy, setBusy] = useState(null) // id in elaborazione
+  const [confirmDelete, setConfirmDelete] = useState(null) // { leave, type }
 
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
     setLoading(true)
-    const [scr, fer, mal] = await Promise.all([
+    const [scr, fer, ferApp, mal] = await Promise.all([
       supabase.from('shift_change_requests')
         .select('*, dipendenti(nome,cognome), shifts(data,start_time,end_time)')
         .eq('stato', 'pending').order('created_at', { ascending: false }),
@@ -30,11 +32,15 @@ export default function Richieste() {
         .eq('type', 'ferie').eq('stato', 'pending').order('created_at', { ascending: false }),
       supabase.from('leave_requests')
         .select('*, dipendenti(nome,cognome)')
+        .eq('type', 'ferie').eq('stato', 'approved').order('start_date', { ascending: false }).limit(50),
+      supabase.from('leave_requests')
+        .select('*, dipendenti(nome,cognome)')
         .eq('type', 'malattia').order('start_date', { ascending: false }).limit(50),
     ])
     if (scr.error) showToast('Errore: ' + scr.error.message, 'error')
     setChangeReqs(scr.data || [])
     setFerie(fer.data || [])
+    setFerieApprovate(ferApp.data || [])
     setMalattie(mal.data || [])
     setLoading(false)
   }
@@ -101,6 +107,22 @@ export default function Richieste() {
     window.open(data.signedUrl, '_blank')
   }
 
+  async function eliminaLeave() {
+    if (!confirmDelete) return
+    const { leave, type } = confirmDelete
+    setBusy(leave.id)
+    // Solo DELETE della riga: l'admin ha RLS admin-full.
+    // NOTA: per le malattie il file certificato nel bucket 'certificati' NON viene
+    // cancellato → resta orfano. Scelta voluta per ora. Pulizia futura possibile con
+    // supabase.storage.from('certificati').remove([leave.certificate_url]) prima del delete.
+    const { error } = await supabase.from('leave_requests').delete().eq('id', leave.id)
+    if (error) { showToast('Errore: ' + error.message, 'error'); setBusy(null); return }
+    showToast(type === 'malattia' ? 'Malattia eliminata' : 'Ferie eliminate')
+    setBusy(null)
+    setConfirmDelete(null)
+    fetchAll()
+  }
+
   if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
 
   return (
@@ -152,6 +174,28 @@ export default function Richieste() {
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button className="btn-ghost" disabled={busy === r.id} onClick={() => risolviFerie(r, 'rejected')}>Rifiuta</button>
                   <button className="btn-primary" disabled={busy === r.id} onClick={() => risolviFerie(r, 'approved')}>Approva</button>
+                  <button className="btn-danger" disabled={busy === r.id} onClick={() => setConfirmDelete({ leave: r, type: 'ferie' })}>Elimina</button>
+                </div>
+              </div>
+            </div>
+          ))}
+      </Sezione>
+
+      {/* FERIE APPROVATE */}
+      <Sezione titolo={`Ferie approvate (${ferieApprovate.length})`}>
+        {ferieApprovate.length === 0
+          ? <Vuoto testo="Nessuna ferie approvata." />
+          : ferieApprovate.map(r => (
+            <div key={r.id} className="card" style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{nomeDipendente(r.dipendenti || {})}</div>
+                  <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{fmtBreve(r.start_date)} – {fmtBreve(r.end_date)}</div>
+                  {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span className="pill pill-ok">Approvata</span>
+                  <button className="btn-danger" disabled={busy === r.id} onClick={() => setConfirmDelete({ leave: r, type: 'ferie' })}>Elimina</button>
                 </div>
               </div>
             </div>
@@ -170,11 +214,39 @@ export default function Richieste() {
                   <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{fmtBreve(r.start_date)} – {fmtBreve(r.end_date)}</div>
                   {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
                 </div>
-                <button className="btn-ghost" onClick={() => scaricaCertificato(r.certificate_url)}>Certificato</button>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <button className="btn-ghost" onClick={() => scaricaCertificato(r.certificate_url)}>Certificato</button>
+                  <button className="btn-danger" disabled={busy === r.id} onClick={() => setConfirmDelete({ leave: r, type: 'malattia' })}>Elimina</button>
+                </div>
               </div>
             </div>
           ))}
       </Sezione>
+
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
+              Elimina {confirmDelete.type === 'malattia' ? 'malattia' : 'ferie'}
+            </div>
+            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+              Stai per eliminare la richiesta di <strong>{nomeDipendente(confirmDelete.leave.dipendenti || {})}</strong>
+              {' '}({fmtBreve(confirmDelete.leave.start_date)} – {fmtBreve(confirmDelete.leave.end_date)}).
+              L'operazione è definitiva.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-ghost" onClick={() => setConfirmDelete(null)}>Annulla</button>
+              <button
+                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                disabled={busy === confirmDelete.leave.id}
+                onClick={eliminaLeave}
+              >
+                Sì, elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
