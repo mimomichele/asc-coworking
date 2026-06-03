@@ -5,7 +5,6 @@ import { supabase } from '../../lib/supabase'
 // App esterne (progetti separati: aprono in nuova scheda, nessuna integrazione).
 const APP_ESTERNE = [
   { label: 'Ristorante', url: 'https://ristorante.aschotel.com' },
-  { label: 'Compliance', url: 'https://asc-compliance.vercel.app' },
   { label: 'Pulizie', url: 'https://gregarious-raindrop-4cea90.netlify.app' },
   { label: 'Turni Bagnini', url: 'https://turni-bagnini.vercel.app' },
 ]

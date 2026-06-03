@@ -2,7 +2,6 @@
 // Solo link in nuova scheda, nessuna integrazione/route interna/DB.
 
 const APPS = [
-  { label: 'Compliance', url: 'https://asc-compliance.vercel.app', desc: 'Gestione adempimenti e conformità' },
   { label: 'Pulizie', url: 'https://gregarious-raindrop-4cea90.netlify.app', desc: 'Programmazione e check pulizie' },
   { label: 'Turni Bagnini', url: 'https://turni-bagnini.vercel.app', desc: 'Preferenze e turni bagnini' },
 ]
