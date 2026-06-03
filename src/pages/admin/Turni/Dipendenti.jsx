@@ -1,8 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import {
+  createDipendenteCredentials,
+  resetDipendenteCodice,
+  revokeDipendenteCredentials,
+} from '../../../lib/dipendentiAccount'
 
 const emptyForm = { nome: '', cognome: '', ruolo: '', attivo: true }
+
+// Suggerisce uno username dal nome/cognome: iniziale nome + cognome, ripulito.
+function suggestUsername(d) {
+  const base = ((d.nome || '').trim()[0] || '') + (d.cognome || '').trim()
+  return base.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '')
+}
 
 export default function Dipendenti() {
   const [dipendenti, setDipendenti] = useState([])
@@ -13,6 +24,11 @@ export default function Dipendenti() {
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  // gestione credenziali
+  const [credPanel, setCredPanel] = useState(null) // { dip, mode: 'create' | 'reset' }
+  const [credForm, setCredForm] = useState({ username: '', codice: '' })
+  const [credSaving, setCredSaving] = useState(false)
+  const [confirmRevoke, setConfirmRevoke] = useState(null)
 
   useEffect(() => { fetchDipendenti() }, [])
 
@@ -77,6 +93,47 @@ export default function Dipendenti() {
     }
     showToast('Dipendente eliminato')
     setConfirmDelete(null)
+    fetchDipendenti()
+  }
+
+  function openCreateCred(d) {
+    setCredForm({ username: suggestUsername(d), codice: '' })
+    setCredPanel({ dip: d, mode: 'create' })
+  }
+
+  function openResetCred(d) {
+    setCredForm({ username: d.username || '', codice: '' })
+    setCredPanel({ dip: d, mode: 'reset' })
+  }
+
+  function closeCred() {
+    setCredPanel(null)
+    setCredForm({ username: '', codice: '' })
+  }
+
+  async function salvaCred() {
+    if (!credPanel) return
+    const { dip, mode } = credPanel
+    if (mode === 'create' && !credForm.username.trim()) { showToast('Inserisci uno username', 'error'); return }
+    if (!credForm.codice.trim() || credForm.codice.trim().length < 6) {
+      showToast('Il codice deve avere almeno 6 caratteri', 'error'); return
+    }
+    setCredSaving(true)
+    const res = mode === 'create'
+      ? await createDipendenteCredentials({ dipendente_id: dip.id, username: credForm.username.trim(), codice: credForm.codice.trim() })
+      : await resetDipendenteCodice({ dipendente_id: dip.id, codice: credForm.codice.trim() })
+    if (res.error) { showToast('Errore: ' + res.error, 'error'); setCredSaving(false); return }
+    showToast(mode === 'create' ? 'Accesso creato' : 'Codice aggiornato')
+    setCredSaving(false)
+    closeCred()
+    fetchDipendenti()
+  }
+
+  async function revoke(d) {
+    const res = await revokeDipendenteCredentials({ dipendente_id: d.id })
+    if (res.error) { showToast('Errore: ' + res.error, 'error'); setConfirmRevoke(null); return }
+    showToast('Accesso rimosso')
+    setConfirmRevoke(null)
     fetchDipendenti()
   }
 
@@ -177,15 +234,76 @@ export default function Dipendenti() {
         </div>
       )}
 
+      {credPanel && (
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #185FA5', borderRadius: '0 12px 12px 0' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+            {credPanel.mode === 'create' ? 'Crea accesso' : 'Reset codice'} — {credPanel.dip.nome} {credPanel.dip.cognome || ''}
+          </div>
+          <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+            {credPanel.mode === 'create'
+              ? 'Il dipendente accederà con questo username e codice dalla schermata di login.'
+              : 'Imposta un nuovo codice. Lo username non cambia.'}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="field">
+              <label>Username</label>
+              <input
+                value={credForm.username}
+                onChange={e => setCredForm(f => ({ ...f, username: e.target.value.toLowerCase() }))}
+                disabled={credPanel.mode === 'reset'}
+                autoCapitalize="none" autoCorrect="off"
+                placeholder="es. mrossi"
+              />
+            </div>
+            <div className="field">
+              <label>Codice {credPanel.mode === 'reset' ? 'nuovo' : ''} (min 6)</label>
+              <input
+                value={credForm.codice}
+                onChange={e => setCredForm(f => ({ ...f, codice: e.target.value }))}
+                placeholder="es. piscina26"
+              />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
+            <button className="btn-ghost" onClick={closeCred}>Annulla</button>
+            <button className="btn-primary" onClick={salvaCred} disabled={credSaving}>
+              {credSaving ? 'Salvataggio...' : credPanel.mode === 'create' ? 'Crea accesso' : 'Aggiorna codice'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmRevoke && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
+            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Rimuovi accesso</div>
+            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+              L'account di accesso di <strong>{confirmRevoke.nome} {confirmRevoke.cognome || ''}</strong> verrà
+              eliminato e non potrà più effettuare il login. Il dipendente e i suoi turni restano in archivio.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-ghost" onClick={() => setConfirmRevoke(null)}>Annulla</button>
+              <button
+                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                onClick={() => revoke(confirmRevoke)}
+              >
+                Sì, rimuovi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="table-wrap">
         <table>
           <thead>
             <tr>
-              <th style={{ width: '28%' }}>Nome</th>
-              <th style={{ width: '24%' }}>Cognome</th>
+              <th style={{ width: '20%' }}>Nome</th>
+              <th style={{ width: '16%' }}>Cognome</th>
               <th>Ruolo</th>
-              <th style={{ width: '14%' }}>Stato</th>
-              <th style={{ width: 220 }}></th>
+              <th style={{ width: '12%' }}>Stato</th>
+              <th style={{ width: '22%' }}>Accesso</th>
+              <th style={{ width: 200 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -200,6 +318,20 @@ export default function Dipendenti() {
                   </span>
                 </td>
                 <td>
+                  {d.profile_id ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+                      <span className="pill pill-ok">@{d.username || '—'}</span>
+                      <button className="btn-ghost" onClick={() => openResetCred(d)}>Reset codice</button>
+                      <button className="btn-danger" onClick={() => setConfirmRevoke(d)}>Rimuovi</button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span className="pill pill-gray">Nessun accesso</span>
+                      <button className="btn-ghost" onClick={() => openCreateCred(d)}>Crea accesso</button>
+                    </div>
+                  )}
+                </td>
+                <td>
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                     <button className="btn-ghost" onClick={() => toggleActive(d)}>{d.attivo ? 'Disattiva' : 'Attiva'}</button>
                     <button className="btn-ghost" onClick={() => openEdit(d)}>Modifica</button>
@@ -210,7 +342,7 @@ export default function Dipendenti() {
             ))}
             {dipendenti.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ color: '#888', textAlign: 'center', padding: 24 }}>
+                <td colSpan={6} style={{ color: '#888', textAlign: 'center', padding: 24 }}>
                   Nessun dipendente. Aggiungi il primo per iniziare a inserire i turni.
                 </td>
               </tr>
