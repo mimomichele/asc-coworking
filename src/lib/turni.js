@@ -77,3 +77,42 @@ export function iniziali(d) {
   const b = (d.cognome || '').trim()[0] || ''
   return (a + b).toUpperCase() || '?'
 }
+
+// ---- Helper vista mensile ----
+
+// Primo giorno del mese che contiene ds → 'YYYY-MM-01'.
+export function primoDelMese(ds) {
+  const d = new Date(ds + 'T00:00:00')
+  return toDateStr(new Date(d.getFullYear(), d.getMonth(), 1))
+}
+
+// Primo del mese spostato di n mesi.
+export function addMesi(ds, n) {
+  const d = new Date(ds + 'T00:00:00')
+  return toDateStr(new Date(d.getFullYear(), d.getMonth() + n, 1))
+}
+
+// Nome mese + anno, es. "giugno 2026".
+export function fmtMeseAnno(ds) {
+  const d = new Date(ds + 'T00:00:00')
+  return `${MESI[d.getMonth()]} ${d.getFullYear()}`
+}
+
+// Matrice del mese: array di settimane (ognuna 7 stringhe data Lun–Dom) che
+// copre interamente il mese, inclusi i giorni a cavallo dei mesi adiacenti.
+export function settimaneDelMese(primoMeseStr) {
+  const first = new Date(primoMeseStr + 'T00:00:00')
+  const ultimoGiorno = toDateStr(new Date(first.getFullYear(), first.getMonth() + 1, 0))
+  const weeks = []
+  let cur = lunediDellaSettimana(primoMeseStr) // lunedì on/prima del giorno 1
+  do {
+    weeks.push(giorniSettimana(cur))
+    cur = addDays(cur, 7)
+  } while (cur <= ultimoGiorno)
+  return weeks
+}
+
+// True se ds appartiene al mese visibile (stesso anno-mese).
+export function inMese(ds, primoMeseStr) {
+  return ds.slice(0, 7) === primoMeseStr.slice(0, 7)
+}

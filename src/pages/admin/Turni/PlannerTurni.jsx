@@ -2,16 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import CellaPopover from './CellaPopover'
+import CalendarioMensile from './CalendarioMensile'
 import {
   GIORNI, addDays, oggiStr, giorniSettimana, lunediDellaSettimana,
   fmtRangeSettimana, fmtRangeOrario, nomeDipendente, iniziali,
 } from '../../../lib/turni'
 
 export default function PlannerTurni() {
+  const [vista, setVista] = useState('settimana') // 'settimana' | 'mese'
   const [monday, setMonday] = useState(() => lunediDellaSettimana(oggiStr()))
   const [dipendenti, setDipendenti] = useState([])
   const [templates, setTemplates] = useState([])
   const [shifts, setShifts] = useState([])
+  const [leaves, setLeaves] = useState([])
+  const [pendingCount, setPendingCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState(null)
   const [popover, setPopover] = useState(null) // { dipendente, dateStr, shift, anchorRect }
@@ -25,13 +29,19 @@ export default function PlannerTurni() {
 
   async function fetchAll() {
     setLoading(true)
-    const [dipRes, tplRes, shiftRes] = await Promise.all([
+    const weekEnd = addDays(monday, 6)
+    const [dipRes, tplRes, shiftRes, leaveRes, scrCount, ferieCount] = await Promise.all([
       supabase.from('dipendenti').select('*').eq('attivo', true)
         .order('ordine', { nullsFirst: false }).order('cognome').order('nome'),
       supabase.from('shift_templates').select('*').order('start_time'),
       supabase.from('shifts').select('*')
-        .gte('data', monday).lte('data', addDays(monday, 6))
+        .gte('data', monday).lte('data', weekEnd)
         .order('start_time'),
+      // ferie/malattie approvate che intersecano la settimana
+      supabase.from('leave_requests').select('dipendente_id,type,start_date,end_date')
+        .eq('stato', 'approved').lte('start_date', weekEnd).gte('end_date', monday),
+      supabase.from('shift_change_requests').select('id', { count: 'exact', head: true }).eq('stato', 'pending'),
+      supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('type', 'ferie').eq('stato', 'pending'),
     ])
     if (dipRes.error) showToast('Errore dipendenti: ' + dipRes.error.message, 'error')
     if (tplRes.error) showToast('Errore predefiniti: ' + tplRes.error.message, 'error')
@@ -39,6 +49,8 @@ export default function PlannerTurni() {
     setDipendenti(dipRes.data || [])
     setTemplates(tplRes.data || [])
     setShifts(shiftRes.data || [])
+    setLeaves(leaveRes.data || [])
+    setPendingCount((scrCount.count || 0) + (ferieCount.count || 0))
     setLoading(false)
   }
 
@@ -51,6 +63,21 @@ export default function PlannerTurni() {
     }
     return m
   }, [shifts])
+
+  // mappa assenze approvate { dipendente_id: { 'YYYY-MM-DD': 'ferie'|'malattia' } }
+  // (la malattia ha priorità sul badge se nello stesso giorno).
+  const leaveMap = useMemo(() => {
+    const m = {}
+    for (const l of leaves) {
+      for (const d of weekDays) {
+        if (d >= l.start_date && d <= l.end_date) {
+          ;(m[l.dipendente_id] ||= {})
+          if (m[l.dipendente_id][d] !== 'malattia') m[l.dipendente_id][d] = l.type
+        }
+      }
+    }
+    return m
+  }, [leaves, weekDays])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -124,13 +151,41 @@ export default function PlannerTurni() {
           <h2 style={{ fontSize: 20, fontWeight: 500 }}>Turni</h2>
           <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Pianificatore settimanale</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn-ghost" onClick={preparaCopia}>Copia settimana precedente</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* TOGGLE VISTA */}
+          <div style={{ display: 'inline-flex', border: '0.5px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+            {[['settimana', 'Settimana'], ['mese', 'Mese']].map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => setVista(k)}
+                style={{
+                  border: 'none', padding: '7px 14px', fontSize: 13, cursor: 'pointer',
+                  background: vista === k ? '#F5C842' : '#fff',
+                  color: vista === k ? '#1a1a1a' : '#888', fontWeight: vista === k ? 500 : 400,
+                }}
+              >{label}</button>
+            ))}
+          </div>
+          <Link to="/admin/turni/richieste" className="btn-ghost" style={{ textDecoration: 'none', position: 'relative' }}>
+            Richieste
+            {pendingCount > 0 && (
+              <span style={{
+                marginLeft: 6, background: '#E24B4A', color: '#fff', borderRadius: 10,
+                fontSize: 11, fontWeight: 600, padding: '1px 7px',
+              }}>{pendingCount}</span>
+            )}
+          </Link>
+          {vista === 'settimana' && (
+            <button className="btn-ghost" onClick={preparaCopia}>Copia settimana precedente</button>
+          )}
           <Link to="/admin/turni/predefiniti" className="btn-ghost" style={{ textDecoration: 'none' }}>Turni predefiniti</Link>
           <Link to="/admin/turni/dipendenti" className="btn-ghost" style={{ textDecoration: 'none' }}>Dipendenti</Link>
         </div>
       </div>
 
+      {vista === 'mese' && <CalendarioMensile />}
+
+      {vista === 'settimana' && (<>
       {/* NAV SETTIMANA */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
         <button className="btn-ghost" onClick={() => setMonday(m => addDays(m, -7))}>◀</button>
@@ -185,6 +240,7 @@ export default function PlannerTurni() {
                   </td>
                   {weekDays.map((d, i) => {
                     const cellShifts = shiftMap[dip.id]?.[d] || []
+                    const leave = leaveMap[dip.id]?.[d]
                     const isToday = d === TODAY
                     const isWeekend = i >= 5
                     return (
@@ -196,6 +252,16 @@ export default function PlannerTurni() {
                           background: isToday ? '#FFFBF2' : isWeekend ? '#fbfaf7' : '#fff',
                         }}
                       >
+                        {leave && (
+                          <div style={{
+                            fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 4px', marginBottom: 4,
+                            textAlign: 'center',
+                            background: leave === 'malattia' ? '#FCEBEB' : '#E6F1FB',
+                            color: leave === 'malattia' ? '#A32D2D' : '#185FA5',
+                          }}>
+                            {leave === 'malattia' ? 'Malattia' : 'Ferie'}
+                          </div>
+                        )}
                         {cellShifts.length === 0 ? (
                           <div style={{ minHeight: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: 16 }}>+</div>
                         ) : (
@@ -226,6 +292,7 @@ export default function PlannerTurni() {
           </table>
         </div>
       )}
+      </>)}
 
       {popover && (
         <CellaPopover
