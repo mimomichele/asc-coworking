@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx'
 import AdminLayout from './pages/admin/AdminLayout.jsx'
 import GuestLayout from './pages/guest/GuestLayout.jsx'
 import RosticceriaLayout from './pages/rosticceria/RosticceriaLayout.jsx'
+import DipendenteLayout from './pages/dipendente/DipendenteLayout.jsx'
 import ContrattoFirma from './pages/guest/ContrattoFirma.jsx'
 
 export default function App() {
@@ -97,6 +98,9 @@ export default function App() {
       {role === 'rosticceria' && (
         <Route path="/rosticceria/*" element={<RosticceriaLayout />} />
       )}
+      {role === 'dipendente' && (
+        <Route path="/dipendente/*" element={<DipendenteLayout session={session} />} />
+      )}
       {role === 'guest' && (
         <Route path="/guest/*" element={<GuestLayout session={session} />} />
       )}
@@ -107,6 +111,7 @@ export default function App() {
             to={
               role === 'admin' ? '/admin' :
               role === 'rosticceria' ? '/rosticceria' :
+              role === 'dipendente' ? '/dipendente' :
               '/guest'
             }
             replace
