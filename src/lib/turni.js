@@ -116,3 +116,38 @@ export function settimaneDelMese(primoMeseStr) {
 export function inMese(ds, primoMeseStr) {
   return ds.slice(0, 7) === primoMeseStr.slice(0, 7)
 }
+
+// ---- Helper report ore ----
+
+// Minuti tra due time 'HH:MM[:SS]'. Turno oltre mezzanotte (end < start) → +24h.
+export function durataMinuti(start, end) {
+  const toMin = t => {
+    const [h, m] = String(t || '').split(':')
+    return Number(h) * 60 + Number(m || 0)
+  }
+  let diff = toMin(end) - toMin(start)
+  if (diff < 0) diff += 24 * 60
+  return diff
+}
+
+// Minuti totali → 'H:MM' (ore senza cap a 24, es. 168:30).
+export function fmtOreMinuti(min) {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+// Ultimo giorno del mese di ds → 'YYYY-MM-DD'.
+export function ultimoDelMese(ds) {
+  const d = new Date(ds + 'T00:00:00')
+  return toDateStr(new Date(d.getFullYear(), d.getMonth() + 1, 0))
+}
+
+// Array inclusivo di stringhe data da aStr a bStr (vuoto se bStr < aStr).
+export function giorniTra(aStr, bStr) {
+  if (bStr < aStr) return []
+  const out = []
+  let cur = aStr
+  while (cur <= bStr) { out.push(cur); cur = addDays(cur, 1) }
+  return out
+}

@@ -13,6 +13,7 @@ import PlannerTurni from './Turni/PlannerTurni.jsx'
 import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
 import Dipendenti from './Turni/Dipendenti.jsx'
 import Richieste from './Turni/Richieste.jsx'
+import ReportOre from './Turni/ReportOre.jsx'
 
 export default function AdminLayout() {
   const navigate = useNavigate()
@@ -83,6 +84,7 @@ export default function AdminLayout() {
           <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
           <Route path="turni/dipendenti" element={<Dipendenti />} />
           <Route path="turni/richieste" element={<Richieste />} />
+          <Route path="turni/report" element={<ReportOre />} />
           <Route path="rosticceria/*" element={<RosticceriaPannello />} />
         </Routes>
       </main>
