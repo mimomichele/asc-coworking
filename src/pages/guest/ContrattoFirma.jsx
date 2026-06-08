@@ -23,6 +23,7 @@ import {
   validateItalianCF,
   CF_REGEX,
 } from '../../lib/contract'
+import BirthDatePicker from '../../components/BirthDatePicker.jsx'
 
 const emptyForm = {
   luogo_nascita: '',
@@ -244,12 +245,14 @@ export default function ContrattoFirma({ session, onSigned }) {
               />
             </Field>
             <Field label="Data di nascita" required={!locked.data_nascita}>
-              <input
-                type="date"
+              {/* 3 select (giorno/mese/anno) al posto di <input type="date">
+                  per evitare il selettore nativo Android inutilizzabile per
+                  anni di nascita lontani. Stessa interfaccia value/onChange
+                  con stringa ISO 'YYYY-MM-DD'. */}
+              <BirthDatePicker
                 value={form.data_nascita}
-                onChange={e => setForm(f => ({ ...f, data_nascita: e.target.value }))}
-                readOnly={locked.data_nascita}
-                style={S.input(locked.data_nascita)}
+                onChange={iso => setForm(f => ({ ...f, data_nascita: iso }))}
+                disabled={locked.data_nascita}
               />
             </Field>
 
