@@ -38,7 +38,7 @@ export default function Ospiti() {
           id, name, surname, phone, type, attivo, owner_id,
           members (
             id, name, surname,
-            subscriptions ( id, entries_used, entries_total, paid_amount, active )
+            subscriptions ( id, created_at, entries_used, entries_total, paid_amount, active )
           )
         `),
       // user_id duplicati possibili in futuro (re-firma): il Set deduplica.
@@ -57,6 +57,18 @@ export default function Ospiti() {
       const sub = (m.subscriptions || []).find(x => x.active)
       return s + (sub ? sub.entries_total - sub.entries_used : 0)
     }, 0)
+  }
+
+  // Data di creazione dell'abbonamento piu' recente del nucleo (qualsiasi
+  // stato, anche scaduti/disattivati — chi ha rinnovato di recente sta in
+  // cima). Ritorna null per account senza abbonamenti → ordinati in fondo.
+  function lastSubDate(account) {
+    const dates = (account.members || [])
+      .flatMap(m => m.subscriptions || [])
+      .map(s => s.created_at)
+      .filter(Boolean)
+    if (dates.length === 0) return null
+    return dates.reduce((max, d) => d > max ? d : max)
   }
 
   // cerca sia nel titolare che nei familiari, nasconde i disattivati
@@ -81,6 +93,14 @@ export default function Ospiti() {
     if (sortBy === 'surname') return a.surname.localeCompare(b.surname)
     if (sortBy === 'rem_asc') return totalRem(a) - totalRem(b)
     if (sortBy === 'rem_desc') return totalRem(b) - totalRem(a)
+    if (sortBy === 'sub_recent') {
+      const da = lastSubDate(a)
+      const db = lastSubDate(b)
+      if (da === null && db === null) return 0
+      if (da === null) return 1   // a (senza sub) in fondo
+      if (db === null) return -1  // b (senza sub) in fondo
+      return db.localeCompare(da) // ISO desc = piu' recente in cima
+    }
     return 0
   })
 
@@ -132,6 +152,7 @@ export default function Ospiti() {
           <option value="surname">Ordina: Cognome A→Z</option>
           <option value="rem_asc">Ordina: Ingressi rimasti ↑</option>
           <option value="rem_desc">Ordina: Ingressi rimasti ↓</option>
+          <option value="sub_recent">Ordina: Abbonamento più recente</option>
         </select>
         <label style={{
           display: 'flex', alignItems: 'center', gap: 6,
