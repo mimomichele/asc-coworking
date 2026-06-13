@@ -71,7 +71,7 @@ export default function SchedaOspite() {
     // head_member_id dalla migration di Fase 2). Senza disambiguazione
     // l'embed dà PGRST201 → storico ingressi silenziosamente vuoto.
     // Vogliamo le prenotazioni dove il membro è il booker.
-    const memSelect = `*, subscriptions(*, subscription_types(name, entries_total, price)), bookings!member_id(date, status, created_at)`
+    const memSelect = `*, subscriptions(*, subscription_types(name, entries_total, price)), bookings!member_id(date, status, source, created_at)`
     const { data: mems, error: memsErr } = await supabase
       .from('members').select(memSelect).eq('account_id', id).order('created_at')
     if (memsErr) console.error('[SchedaOspite.fetchData members]', memsErr)
@@ -806,7 +806,12 @@ setSavingEdit(false)
               <tbody>
                 {bookings.map((b, i) => (
                   <tr key={i}>
-                    <td>{new Date(b.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                    <td>
+                      <div>{new Date(b.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                      {b.source === 'admin_walkin' && (
+                        <span style={walkinBadge}>registrato dalla direzione</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`pill ${b.status === 'confirmed' ? 'pill-ok' : b.status === 'cancelled' ? 'pill-alert' : 'pill-warn'}`}>
                         {b.status === 'confirmed' ? 'Effettuato' : b.status === 'cancelled' ? 'Cancellato' : 'Prenotato'}
@@ -821,6 +826,19 @@ setSavingEdit(false)
       </div>
     </div>
   )
+}
+
+// Pillina soft per gli ingressi walk-in (registrati da admin a posteriori).
+const walkinBadge = {
+  display: 'inline-block',
+  fontSize: 10,
+  padding: '2px 8px',
+  borderRadius: 10,
+  background: '#FAEEDA',
+  color: '#854F0B',
+  fontWeight: 500,
+  marginTop: 4,
+  whiteSpace: 'nowrap',
 }
 
 // Formatta un timestamptz ISO in italiano "GG/MM/AAAA alle HH:MM" (fuso Europe/Rome).
