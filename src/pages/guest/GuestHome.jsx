@@ -434,6 +434,9 @@ export default function GuestHome({ session }) {
             >
               <div>
                 <div style={{ fontWeight: 500, fontSize: 14 }}>{formatDate(b.date)}</div>
+                {b.source === 'admin_walkin' && (
+                  <span style={styles.walkinBadge}>registrato dalla direzione</span>
+                )}
                 <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{member?.name} {member?.surname}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -481,6 +484,7 @@ const styles = {
   alertBar: { background: '#FAEEDA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14 },
   walkinBanner: { background: '#FAEEDA', borderLeft: '3px solid #BA7517', borderRadius: '0 10px 10px 0', padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 10 },
   walkinDismiss: { background: 'transparent', border: 'none', color: '#854F0B', fontSize: 16, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 },
+  walkinBadge: { display: 'inline-block', fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#FAEEDA', color: '#854F0B', fontWeight: 500, marginTop: 4, marginBottom: 2, whiteSpace: 'nowrap' },
   sectionLabel: { fontSize: 11, fontWeight: 500, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
   subCard: { background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 },
   circle: { width: 64, height: 64, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
