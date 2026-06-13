@@ -23,6 +23,9 @@ export default function GuestHome({ session }) {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [loading, setLoading] = useState(true)
+  // Walk-in registrati dall'admin con notifica_da_mostrare=true.
+  // Mostrati in banner non-bloccante in cima alla home.
+  const [walkinPending, setWalkinPending] = useState([])
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -39,6 +42,8 @@ export default function GuestHome({ session }) {
 
   useEffect(() => { fetchData() }, [])
   useEffect(() => { if (selectedMember) fetchHistory() }, [selectedMember])
+  // Banner walk-in: fetch separato che dipende da account.id (post-fetchData).
+  useEffect(() => { if (account?.id) fetchWalkinPending() }, [account?.id])
 
   async function fetchData() {
     await supabase.from('profiles').select('*').eq('id', session.user.id).single()
@@ -61,6 +66,37 @@ export default function GuestHome({ session }) {
       .order('date', { ascending: false })
       .limit(50)
     setBookings(data || [])
+  }
+
+  // Walk-in con notifica pendente per l'intero account (tutti i membri della famiglia).
+  async function fetchWalkinPending() {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, date')
+      .eq('account_id', account.id)
+      .eq('source', 'admin_walkin')
+      .eq('notifica_da_mostrare', true)
+      .order('date', { ascending: false })
+    if (error) console.error('[GuestHome.fetchWalkinPending]', error)
+    setWalkinPending(data || [])
+  }
+
+  // Dismiss banner: UPDATE batch notifica_da_mostrare=false su tutti gli ID pendenti.
+  // Il trigger lock_walkin_columns permette al guest SOLO la transizione true→false:
+  // il banner non puo' riapparire dopo il dismiss.
+  async function dismissWalkinNotifications() {
+    if (!walkinPending.length) return
+    const ids = walkinPending.map(b => b.id)
+    const { error } = await supabase
+      .from('bookings')
+      .update({ notifica_da_mostrare: false })
+      .in('id', ids)
+    if (error) {
+      console.error('[GuestHome.dismissWalkinNotifications]', error)
+      showToast('Errore nel chiudere la notifica', 'error')
+      return
+    }
+    setWalkinPending([])
   }
 
   const member = members.find(m => m.id === selectedMember)
@@ -143,6 +179,24 @@ export default function GuestHome({ session }) {
     setTimeout(() => setToast(null), 3000)
   }
 
+  // Formatta data ISO 'YYYY-MM-DD' in 'GG/MM/AAAA' per il banner walk-in.
+  function fmtDateIt(iso) {
+    if (!iso) return ''
+    const [y, m, d] = iso.split('-')
+    return `${d}/${m}/${y}`
+  }
+
+  // Concatena N date in stringa italiana:
+  //   1: "12/06/2026"
+  //   2: "11/06/2026 e 12/06/2026"
+  //   3+: "10/06/2026, 11/06/2026 e 12/06/2026"
+  function joinDatesIt(items) {
+    if (items.length === 0) return ''
+    if (items.length === 1) return items[0]
+    if (items.length === 2) return `${items[0]} e ${items[1]}`
+    return `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`
+  }
+
   function formatDate(dateStr) {
     const d = fromDateString(dateStr)
     if (dateStr === todayStr) return 'Oggi'
@@ -178,6 +232,23 @@ export default function GuestHome({ session }) {
           <div style={styles.yellowPill}>{members.length} membri</div>
         )}
       </div>
+
+      {/* banner walk-in registrati dalla direzione (non-bloccante, dismissibile) */}
+      {walkinPending.length > 0 && (
+        <div style={styles.walkinBanner}>
+          <div style={{ flex: 1 }}>
+            {walkinPending.length === 1
+              ? <>La direzione ha registrato un tuo ingresso del <strong>{fmtDateIt(walkinPending[0].date)}</strong> non prenotato</>
+              : <>La direzione ha registrato <strong>{walkinPending.length}</strong> tuoi ingressi non prenotati: <strong>{joinDatesIt(walkinPending.map(b => fmtDateIt(b.date)))}</strong></>
+            }
+          </div>
+          <button
+            onClick={dismissWalkinNotifications}
+            style={styles.walkinDismiss}
+            aria-label="Chiudi notifica"
+          >✕</button>
+        </div>
+      )}
 
       {/* alert ingressi in esaurimento */}
       {members.some(m => {
@@ -408,6 +479,8 @@ const styles = {
   hero: { background: '#1a1a1a', borderRadius: 16, padding: '20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   yellowPill: { background: '#F5C842', color: '#1a1a1a', fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap' },
   alertBar: { background: '#FAEEDA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14 },
+  walkinBanner: { background: '#FAEEDA', borderLeft: '3px solid #BA7517', borderRadius: '0 10px 10px 0', padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 10 },
+  walkinDismiss: { background: 'transparent', border: 'none', color: '#854F0B', fontSize: 16, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 },
   sectionLabel: { fontSize: 11, fontWeight: 500, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
   subCard: { background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 },
   circle: { width: 64, height: 64, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
