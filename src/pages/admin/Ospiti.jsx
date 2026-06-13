@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import WalkinModal from '../../components/WalkinModal.jsx'
 
 export default function Ospiti() {
   const navigate = useNavigate()
@@ -14,8 +15,16 @@ export default function Ospiti() {
   // Caricato in parallelo agli accounts. RLS sig_admin_read consente all'admin
   // di leggere tutte le righe.
   const [signedUserIds, setSignedUserIds] = useState(() => new Set())
+  // Modal "+ Aggiungi ingresso" (walk-in admin) e toast di feedback.
+  const [walkinOpen, setWalkinOpen] = useState(false)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => { fetchAccounts() }, [])
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3500)
+  }
 
   async function fetchAccounts() {
     // accounts + signatures in parallelo (no dipendenza tra le due).
@@ -29,7 +38,7 @@ export default function Ospiti() {
           id, name, surname, phone, type, attivo, owner_id,
           members (
             id, name, surname,
-            subscriptions ( entries_used, entries_total, paid_amount, active )
+            subscriptions ( id, entries_used, entries_total, paid_amount, active )
           )
         `),
       // user_id duplicati possibili in futuro (re-firma): il Set deduplica.
@@ -87,6 +96,8 @@ export default function Ospiti() {
 
   return (
     <div>
+      {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
           <h2 style={{ fontSize: 20, fontWeight: 500 }}>Ospiti ({accounts.length} account)</h2>
@@ -99,7 +110,10 @@ export default function Ospiti() {
             )}
           </div>
         </div>
-        <button className="btn-primary" onClick={() => navigate('/admin/nuovo-ospite')}>+ Nuovo ospite</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-primary" onClick={() => setWalkinOpen(true)}>+ Aggiungi ingresso</button>
+          <button className="btn-primary" onClick={() => navigate('/admin/nuovo-ospite')}>+ Nuovo ospite</button>
+        </div>
       </div>
 
       {/* barra cerca + ordina */}
@@ -231,6 +245,18 @@ export default function Ospiti() {
           </tbody>
         </table>
       </div>
+
+      {walkinOpen && (
+        <WalkinModal
+          accounts={accounts}
+          onClose={() => setWalkinOpen(false)}
+          onSuccess={(msg) => {
+            setWalkinOpen(false)
+            showToast(msg)
+            fetchAccounts()
+          }}
+        />
+      )}
     </div>
   )
 }
