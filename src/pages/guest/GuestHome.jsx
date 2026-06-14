@@ -229,8 +229,9 @@ export default function GuestHome({ session }) {
   function weatherEmoji(code) {
     if (code === undefined || code === null) return null
     if (code === 0 || code === 1) return '☀️'
-    if (code === 2) return '⛅'
-    if (code === 3) return '☁️'
+    // 'overcast' (3) ammorbidito a '⛅' invece di '☁️': per Arezzo l'overcast
+    // estivo e' spesso alto-luminoso, non drammatico. Scelta opinata.
+    if (code === 2 || code === 3) return '⛅'
     if (code === 45 || code === 48) return '🌫️'
     if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return '🌧️'
     if ((code >= 71 && code <= 77) || code === 85 || code === 86) return '🌨️'
