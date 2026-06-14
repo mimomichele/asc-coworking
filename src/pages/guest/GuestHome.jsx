@@ -26,6 +26,9 @@ export default function GuestHome({ session }) {
   // Walk-in registrati dall'admin con notifica_da_mostrare=true.
   // Mostrati in banner non-bloccante in cima alla home.
   const [walkinPending, setWalkinPending] = useState([])
+  // Map { 'YYYY-MM-DD': wmo_code } per i prossimi 7 giorni (Open-Meteo).
+  // Vuoto se l'API meteo non risponde — l'emoji semplicemente non appare.
+  const [weatherByDate, setWeatherByDate] = useState({})
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -44,6 +47,8 @@ export default function GuestHome({ session }) {
   useEffect(() => { if (selectedMember) fetchHistory() }, [selectedMember])
   // Banner walk-in: fetch separato che dipende da account.id (post-fetchData).
   useEffect(() => { if (account?.id) fetchWalkinPending() }, [account?.id])
+  // Meteo Arezzo: 1 sola chiamata al mount, no re-fetch al cambio data.
+  useEffect(() => { fetchWeatherForecast() }, [])
 
   async function fetchData() {
     await supabase.from('profiles').select('*').eq('id', session.user.id).single()
@@ -97,6 +102,27 @@ export default function GuestHome({ session }) {
       return
     }
     setWalkinPending([])
+  }
+
+  // Open-Meteo: API gratuita senza key. Coordinate Arezzo, daily weather_code,
+  // 7 giorni. Errori silenziosi — il meteo e' "nice to have", non blocca nulla.
+  async function fetchWeatherForecast() {
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast'
+        + '?latitude=43.46&longitude=11.88'
+        + '&daily=weather_code&forecast_days=7'
+        + '&timezone=Europe%2FRome'
+      const res = await fetch(url)
+      if (!res.ok) return
+      const data = await res.json()
+      const times = data?.daily?.time || []
+      const codes = data?.daily?.weather_code || []
+      const map = {}
+      for (let i = 0; i < times.length; i++) map[times[i]] = codes[i]
+      setWeatherByDate(map)
+    } catch (_) {
+      // silenzio voluto
+    }
   }
 
   const member = members.find(m => m.id === selectedMember)
@@ -195,6 +221,21 @@ export default function GuestHome({ session }) {
     if (items.length === 1) return items[0]
     if (items.length === 2) return `${items[0]} e ${items[1]}`
     return `${items.slice(0, -1).join(', ')} e ${items[items.length - 1]}`
+  }
+
+  // Mappa WMO weather code → emoji. Ritorna null per codici sconosciuti
+  // o quando il code e' undefined (es. data fuori dai 7 giorni di forecast,
+  // o map vuoto perche' l'API meteo non ha risposto).
+  function weatherEmoji(code) {
+    if (code === undefined || code === null) return null
+    if (code === 0 || code === 1) return '☀️'
+    if (code === 2) return '⛅'
+    if (code === 3) return '☁️'
+    if (code === 45 || code === 48) return '🌫️'
+    if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return '🌧️'
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return '🌨️'
+    if (code === 95 || code === 96 || code === 99) return '⛈️'
+    return null
   }
 
   function formatDate(dateStr) {
@@ -391,6 +432,9 @@ export default function GuestHome({ session }) {
           {selectedDate && (
             <div style={{ marginTop: 14, fontSize: 13, color: '#888', marginBottom: 10 }}>
               Stai prenotando per <strong style={{ color: '#1a1a1a' }}>{formatDate(selectedDate)}</strong>
+              {weatherEmoji(weatherByDate[selectedDate]) && (
+                <span style={{ marginLeft: 6 }}>{weatherEmoji(weatherByDate[selectedDate])}</span>
+              )}
             </div>
           )}
 
