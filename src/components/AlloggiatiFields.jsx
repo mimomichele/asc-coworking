@@ -5,6 +5,7 @@
 // Il comune deriva automaticamente la provincia.
 
 import Autocomplete from './Autocomplete.jsx'
+import BirthDatePicker from './BirthDatePicker.jsx'
 
 const fmtStato     = r => r?.descrizione || ''
 const fmtComune    = r => r ? `${r.descrizione}${r.provincia ? ` (${r.provincia})` : ''}` : ''
@@ -107,10 +108,12 @@ export default function AlloggiatiFields({ value, onChange, requiredMarker = tru
         </div>
         <div className="field">
           <label>Data di nascita{r}</label>
-          <input
-            type="date"
+          {/* 3 select (giorno/mese/anno) al posto di <input type="date">:
+              il selettore nativo Android forza scorrimento mese-per-mese
+              e rende impossibile inserire anni di nascita lontani. */}
+          <BirthDatePicker
             value={value.data_nascita}
-            onChange={e => set({ data_nascita: e.target.value })}
+            onChange={(iso) => set({ data_nascita: iso })}
           />
         </div>
 
