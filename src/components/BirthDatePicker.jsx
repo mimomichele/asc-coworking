@@ -20,7 +20,7 @@
 // si adatta al mese/anno selezionato (es. 29/02 solo nei bisestili).
 // ============================================================
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const MESI = [
   'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
@@ -38,11 +38,24 @@ function daysInMonth(year, month) {
 function pad2(n) { return String(n).padStart(2, '0') }
 
 export default function BirthDatePicker({ value, onChange, disabled = false, yearsBack = 100 }) {
-  // Decompone value ISO 'YYYY-MM-DD' in y/m/d (stringhe).
-  const { y, m, d } = useMemo(() => {
-    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { y: '', m: '', d: '' }
-    const [yy, mm, dd] = value.split('-')
-    return { y: yy, m: mm, d: dd }
+  // Stato locale per la bozza parziale (es. solo Giorno selezionato).
+  // Il prop value e' "fully controlled" ma onChange emette '' quando la
+  // data e' incompleta: senza stato locale, la selezione utente sarebbe
+  // sovrascritta al re-render successivo. Conservandola qui, i 3 select
+  // mantengono la scelta finche' l'utente non completa o non resetta.
+  const [y, setY] = useState('')
+  const [m, setM] = useState('')
+  const [d, setD] = useState('')
+
+  // Sync da value esterno: solo quando arriva una data ISO completa
+  // valida (es. pre-fill in edit). Quando value e' '' o null non
+  // tocchiamo il locale, altrimenti perderemmo la selezione utente in
+  // corso (visto che noi stessi emettiamo onChange('') per stato parziale).
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [yy, mm, dd] = value.split('-')
+      setY(yy); setM(mm); setD(dd)
+    }
   }, [value])
 
   const currentYear = new Date().getFullYear()
@@ -64,20 +77,24 @@ export default function BirthDatePicker({ value, onChange, disabled = false, yea
 
   function update(part, newVal) {
     let newY = y, newM = m, newD = d
-    if (part === 'y') newY = newVal
-    if (part === 'm') newM = newVal
-    if (part === 'd') newD = newVal
+    if (part === 'y') { newY = newVal; setY(newVal) }
+    if (part === 'm') { newM = newVal; setM(newVal) }
+    if (part === 'd') { newD = newVal; setD(newVal) }
 
     // Se cambiando mese/anno il giorno scelto supera i giorni del nuovo
     // mese (es. 31 → cambia a febbraio → 28/29), lo riporto al massimo
     // valido. Evita inconsistenze tipo "31/02".
     if ((part === 'm' || part === 'y') && newD) {
       const max = daysInMonth(newY, newM)
-      if (Number(newD) > max) newD = pad2(max)
+      if (Number(newD) > max) {
+        newD = pad2(max)
+        setD(newD)
+      }
     }
 
     // Onchange emette 'YYYY-MM-DD' solo se tutti i campi sono settati;
-    // altrimenti '' per segnalare "data incompleta" al chiamante.
+    // altrimenti '' per segnalare "data incompleta" al chiamante. Lo
+    // stato locale resta comunque popolato → la UI non perde la bozza.
     if (newY && newM && newD) {
       onChange(`${newY}-${pad2(newM)}-${pad2(newD)}`)
     } else {
