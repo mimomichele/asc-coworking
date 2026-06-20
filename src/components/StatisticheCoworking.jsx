@@ -14,6 +14,10 @@
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
+import {
+  BarChart, Bar, LineChart, Line,
+  XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
+} from 'recharts'
 import { supabase } from '../lib/supabase'
 
 // Helper: 'YYYY-MM-DD' del giorno corrente nel timezone locale.
@@ -30,6 +34,24 @@ function daysAgoIso(n) {
 }
 
 function pad2(n) { return String(n).padStart(2, '0') }
+
+// Settimana che inizia da lunedi' (richiesto). JS getDay() ritorna
+// 0=domenica..6=sabato → rimappiamo a 0=lunedi..6=domenica.
+const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom']
+const MONTH_LABELS_SHORT = [
+  'gen', 'feb', 'mar', 'apr', 'mag', 'giu',
+  'lug', 'ago', 'set', 'ott', 'nov', 'dic',
+]
+
+function jsDayToMondayIndex(jsDay) {
+  return (jsDay + 6) % 7
+}
+
+// 'YYYY-MM' → 'mag 26' (label compatta italiana per asse X line chart).
+function fmtMonthIt(yyyy_mm) {
+  const [y, m] = yyyy_mm.split('-')
+  return `${MONTH_LABELS_SHORT[Number(m) - 1]} ${y.slice(2)}`
+}
 
 // Numero di giorni inclusivo tra 2 date ISO (start ≤ end).
 // Es: start=end → 1 giorno. start=14/06, end=16/06 → 3 giorni.
@@ -105,6 +127,62 @@ export default function StatisticheCoworking() {
   const mediaGiorno = giorni > 0 ? totaleIngressi / giorni : 0
   const subVendute = subs.length
 
+  // Media ingressi per giorno della settimana nel periodo.
+  // Es: 4 lunedi' con [10,12,8,6] ingressi → media Lun = 9.0
+  const perWeekday = useMemo(() => {
+    // Quanti giorni di ciascun weekday cadono nel periodo
+    const daysCount = [0, 0, 0, 0, 0, 0, 0]
+    if (startDate && endDate && startDate <= endDate) {
+      const [sy, sm, sd] = startDate.split('-').map(Number)
+      const [ey, em, ed] = endDate.split('-').map(Number)
+      const cursor = new Date(sy, sm - 1, sd)
+      const end = new Date(ey, em - 1, ed)
+      while (cursor <= end) {
+        daysCount[jsDayToMondayIndex(cursor.getDay())]++
+        cursor.setDate(cursor.getDate() + 1)
+      }
+    }
+    // Ingressi raggruppati per weekday
+    const ingressiCount = [0, 0, 0, 0, 0, 0, 0]
+    for (const b of bookings) {
+      if (!b.date) continue
+      const [y, m, d] = b.date.split('-').map(Number)
+      ingressiCount[jsDayToMondayIndex(new Date(y, m - 1, d).getDay())]++
+    }
+    return WEEKDAY_LABELS.map((label, i) => ({
+      label,
+      media: daysCount[i] > 0
+        ? Number((ingressiCount[i] / daysCount[i]).toFixed(1))
+        : 0,
+    }))
+  }, [bookings, startDate, endDate])
+
+  // Totale ingressi per mese del periodo. Include i mesi vuoti perche'
+  // il line chart abbia continuita' visiva (no gap).
+  const perMese = useMemo(() => {
+    const map = new Map()
+    for (const b of bookings) {
+      if (!b.date) continue
+      const ym = b.date.slice(0, 7)
+      map.set(ym, (map.get(ym) || 0) + 1)
+    }
+    // Riempie i mesi del periodo che non hanno ingressi
+    if (startDate && endDate) {
+      const [sy, sm] = startDate.split('-').map(Number)
+      const [ey, em] = endDate.split('-').map(Number)
+      let y = sy, mo = sm
+      while (y < ey || (y === ey && mo <= em)) {
+        const key = `${y}-${pad2(mo)}`
+        if (!map.has(key)) map.set(key, 0)
+        mo++
+        if (mo > 12) { mo = 1; y++ }
+      }
+    }
+    return [...map.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([ym, count]) => ({ label: fmtMonthIt(ym), count }))
+  }, [bookings, startDate, endDate])
+
   function applyShortcut(days) {
     setEndDate(todayIso())
     setStartDate(daysAgoIso(days))
@@ -174,10 +252,47 @@ export default function StatisticheCoworking() {
             />
           </div>
 
-          {/* PLACEHOLDER GRAFICI — verranno aggiunti in Fase 2 */}
-          <div style={S.placeholder}>
-            Grafici (giorno settimana + per mese) in arrivo nella Fase 2.
+          {/* GRAFICO A — bar chart media ingressi per giorno settimana */}
+          <div style={S.chartBox}>
+            <div style={S.chartTitle}>Media ingressi per giorno della settimana</div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={perWeekday} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#888' }} />
+                <Tooltip formatter={(v) => [`${v} ingressi`, 'Media']} cursor={{ fill: '#fafafa' }} />
+                <Bar dataKey="media" fill="#F5C842" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
+
+          {/* GRAFICO B — line chart ingressi per mese (trend stagionale).
+              Se il periodo copre meno di 2 mesi mostra un avviso al posto del grafico. */}
+          {perMese.length < 2 ? (
+            <div style={S.warningBox}>
+              Seleziona un periodo di almeno 2 mesi per vedere il grafico dei trend mensili.
+            </div>
+          ) : (
+            <div style={S.chartBox}>
+              <div style={S.chartTitle}>Ingressi per mese</div>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={perMese} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#888' }} allowDecimals={false} />
+                  <Tooltip formatter={(v) => [`${v} ingressi`, 'Totale']} />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#854F0B"
+                    strokeWidth={2}
+                    dot={{ r: 4, fill: '#854F0B' }}
+                    activeDot={{ r: 6 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </>
       )}
     </div>
@@ -232,8 +347,16 @@ const S = {
   },
   boxValue: { fontSize: 26, fontWeight: 500 },
   boxSub: { fontSize: 11, color: '#888', marginTop: 3 },
-  placeholder: {
-    padding: 24, color: '#888', fontSize: 13, textAlign: 'center',
-    background: '#fafafa', border: '1px dashed #ddd', borderRadius: 12,
+  chartBox: {
+    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    padding: '14px 16px 8px', marginBottom: 16,
+  },
+  chartTitle: {
+    fontSize: 13, fontWeight: 500, color: '#1a1a1a', marginBottom: 10,
+  },
+  warningBox: {
+    padding: 14, background: '#FAEEDA', color: '#854F0B',
+    borderRadius: 12, fontSize: 13, textAlign: 'center', marginBottom: 16,
+    border: '0.5px solid #F0DCB0',
   },
 }
