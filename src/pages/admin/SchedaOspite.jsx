@@ -648,7 +648,11 @@ setSavingEdit(false)
                 setNuovoMembroForm(f => ({ ...f, subscription_type_id: e.target.value, paid_amount: tipo?.price || '' }))
               }}>
                 <option value="">Seleziona... (opzionale)</option>
-                {tipiAbb.map(t => <option key={t.id} value={t.id}>{t.name} — {t.entries_total} ingressi · € {t.price}</option>)}
+                {tipiAbb.map(t => (
+                  <option key={t.id} value={t.id} disabled={!t.disponibile_vendita}>
+                    {t.name} — {t.entries_total} ingressi · € {t.price}{!t.disponibile_vendita ? ' — BLOCCATO' : ''}
+                  </option>
+                ))}
               </select>
             </div>
             {nuovoMembroForm.subscription_type_id && (
@@ -737,7 +741,11 @@ setSavingEdit(false)
                 setForm(f => ({ ...f, subscription_type_id: e.target.value, paid_amount: tipo?.price || '' }))
               }}>
                 <option value="">Seleziona...</option>
-                {tipiAbb.map(t => <option key={t.id} value={t.id}>{t.name} — {t.entries_total} ingressi · € {t.price}</option>)}
+                {tipiAbb.map(t => (
+                  <option key={t.id} value={t.id} disabled={!t.disponibile_vendita}>
+                    {t.name} — {t.entries_total} ingressi · € {t.price}{!t.disponibile_vendita ? ' — BLOCCATO' : ''}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="field" style={{ gridColumn: '1/-1' }}>
