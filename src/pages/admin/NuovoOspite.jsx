@@ -250,7 +250,11 @@ export default function NuovoOspite() {
               setSubPrincipale(s => ({ ...s, subscription_type_id: e.target.value, paid_amount: tipo?.price || '' }))
             }}>
               <option value="">Seleziona...</option>
-              {tipi.map(t => <option key={t.id} value={t.id}>{t.name} — {t.entries_total} ingressi · € {t.price}</option>)}
+              {tipi.map(t => (
+                <option key={t.id} value={t.id} disabled={!t.disponibile_vendita}>
+                  {t.name} — {t.entries_total} ingressi · € {t.price}{!t.disponibile_vendita ? ' — BLOCCATO' : ''}
+                </option>
+              ))}
             </select>
           </div>
           <div className="field">
@@ -298,7 +302,11 @@ export default function NuovoOspite() {
                   setNuovoMembro(m => ({ ...m, subscription_type_id: e.target.value, paid_amount: tipo?.price || '' }))
                 }}>
                   <option value="">Seleziona...</option>
-                  {tipi.map(t => <option key={t.id} value={t.id}>{t.name} — {t.entries_total} ingressi · € {t.price}</option>)}
+                  {tipi.map(t => (
+                <option key={t.id} value={t.id} disabled={!t.disponibile_vendita}>
+                  {t.name} — {t.entries_total} ingressi · € {t.price}{!t.disponibile_vendita ? ' — BLOCCATO' : ''}
+                </option>
+              ))}
                 </select>
               </div>
               <div className="field">
