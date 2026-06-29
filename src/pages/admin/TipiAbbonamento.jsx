@@ -59,6 +59,20 @@ export default function TipiAbbonamento() {
     fetchTipi()
   }
 
+  // Toggle vendita: gli abbonamenti gia' venduti restano validi,
+  // il flag impatta SOLO le nuove vendite (picker disabilitato in
+  // NuovoOspite / SchedaOspite).
+  async function toggleDisponibilita(id, currentValue) {
+    const newValue = !currentValue
+    const { error } = await supabase
+      .from('subscription_types')
+      .update({ disponibile_vendita: newValue })
+      .eq('id', id)
+    if (error) { showToast('Errore: ' + error.message, 'error'); return }
+    showToast(newValue ? 'Tipo riattivato' : 'Tipo bloccato')
+    fetchTipi()
+  }
+
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
@@ -170,32 +184,55 @@ export default function TipiAbbonamento() {
         <table>
           <thead>
             <tr>
-              <th style={{ width: '32%' }}>Nome</th>
-              <th style={{ width: '14%' }}>Tipo</th>
+              <th style={{ width: '28%' }}>Nome</th>
+              <th style={{ width: '12%' }}>Tipo</th>
               <th>Dettaglio</th>
-              <th style={{ width: '14%' }}>Prezzo</th>
-              <th style={{ width: 110 }}></th>
+              <th style={{ width: '12%' }}>Prezzo</th>
+              <th style={{ width: 100 }}>Stato</th>
+              <th style={{ width: 180 }}></th>
             </tr>
           </thead>
           <tbody>
-            {tipi.map(t => (
-              <tr key={t.id}>
-                <td style={{ fontWeight: 500 }}>{t.name}</td>
-                <td>
-                  <span className={`pill ${t.kind === 'time' ? 'pill-info' : 'pill-gray'}`}>
-                    {t.kind === 'time' ? 'A tempo' : 'A ingressi'}
-                  </span>
-                </td>
-                <td style={{ fontSize: 13 }}>{dettaglio(t)}</td>
-                <td style={{ fontWeight: 500 }}>€ {Number(t.price).toLocaleString('it-IT')}</td>
-                <td style={{ textAlign: 'right' }}>
-                  <button className="btn-danger" onClick={() => elimina(t.id)}>Elimina</button>
-                </td>
-              </tr>
-            ))}
+            {tipi.map(t => {
+              const bloccato = !t.disponibile_vendita
+              return (
+                <tr key={t.id} style={{ opacity: bloccato ? 0.55 : 1 }}>
+                  <td style={{ fontWeight: 500 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span>{t.name}</span>
+                      {bloccato && <span className="pill pill-alert" style={{ fontSize: 10 }}>BLOCCATO</span>}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`pill ${t.kind === 'time' ? 'pill-info' : 'pill-gray'}`}>
+                      {t.kind === 'time' ? 'A tempo' : 'A ingressi'}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: 13 }}>{dettaglio(t)}</td>
+                  <td style={{ fontWeight: 500 }}>€ {Number(t.price).toLocaleString('it-IT')}</td>
+                  <td>
+                    <span style={{ fontSize: 12, color: bloccato ? '#A23B3A' : '#3B6D11', fontWeight: 500 }}>
+                      {bloccato ? 'Bloccato' : 'Disponibile'}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn-ghost"
+                        onClick={() => toggleDisponibilita(t.id, t.disponibile_vendita)}
+                        style={{ fontSize: 12 }}
+                      >
+                        {bloccato ? 'Sblocca' : 'Blocca'}
+                      </button>
+                      <button className="btn-danger" onClick={() => elimina(t.id)}>Elimina</button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
             {tipi.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ color: '#888', textAlign: 'center', padding: 20 }}>
+                <td colSpan={6} style={{ color: '#888', textAlign: 'center', padding: 20 }}>
                   Nessun tipo di abbonamento
                 </td>
               </tr>
