@@ -8,6 +8,7 @@ import NuovoOspite from './NuovoOspite.jsx'
 import SchedaOspite from './SchedaOspite.jsx'
 import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
+import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 import Compliance from './Compliance/Compliance.jsx'
@@ -24,7 +25,7 @@ import ReportOre from './Turni/ReportOre.jsx'
 const RISTORANTE_URL = 'https://ristorante.aschotel.com'
 
 // Path che appartengono alla sezione "Coworking" (URL invariati per non rompere i Link).
-const COWORKING_PATHS = ['/admin/coworking', '/admin/ospiti', '/admin/nuovo-ospite', '/admin/abbonamenti', '/admin/esaurimento']
+const COWORKING_PATHS = ['/admin/coworking', '/admin/ospiti', '/admin/nuovo-ospite', '/admin/abbonamenti', '/admin/esaurimento', '/admin/esauriti']
 
 export default function AdminLayout() {
   const navigate = useNavigate()
@@ -84,6 +85,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/nuovo-ospite" style={subStyle}>+ Nuovo ospite</NavLink>
           <NavLink to="/admin/abbonamenti" style={subStyle}>Tipi di abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={subStyle}>In esaurimento</NavLink>
+          <NavLink to="/admin/esauriti" style={subStyle}>Esauriti</NavLink>
         </div>
       )}
 
@@ -108,6 +110,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/nuovo-ospite" style={subStyle} onClick={closeMenu}>+ Nuovo ospite</NavLink>
           <NavLink to="/admin/abbonamenti" style={subStyle} onClick={closeMenu}>Tipi di abbonamento</NavLink>
           <NavLink to="/admin/esaurimento" style={subStyle} onClick={closeMenu}>In esaurimento</NavLink>
+          <NavLink to="/admin/esauriti" style={subStyle} onClick={closeMenu}>Esauriti</NavLink>
 
           <NavLink to="/admin/turni" style={topStyle(isTurni)} onClick={closeMenu}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={rostStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
@@ -137,6 +140,7 @@ export default function AdminLayout() {
           <Route path="nuovo-ospite" element={<NuovoOspite />} />
           <Route path="abbonamenti" element={<TipiAbbonamento />} />
           <Route path="esaurimento" element={<InEsaurimento />} />
+          <Route path="esauriti" element={<Esauriti />} />
           <Route path="le-mie-app" element={<LeMieApp />} />
           <Route path="turni" element={<PlannerTurni />} />
           <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
