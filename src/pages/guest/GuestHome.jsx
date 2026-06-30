@@ -13,6 +13,34 @@ function fromDateString(str) {
   return new Date(y, m - 1, d)
 }
 
+// Seleziona il sub da mostrare in UI per un membro con potenzialmente
+// piu' sub attivi (caso reale: vecchio esaurito + nuovo con ingressi).
+// Regola:
+//   - tra gli attivi con ingressi disponibili → il PIU' ANZIANO (FIFO)
+//   - se tutti gli attivi sono esauriti → il PIU' RECENTE (fallback,
+//     per mantenere il display "0 rimasti" coerente col passato)
+//   - se nessun attivo → null
+function pickActiveSub(subs) {
+  if (!subs?.length) return null
+  const actives = subs.filter(s => s.active)
+  if (!actives.length) return null
+  const withRemaining = actives
+    .filter(s => s.entries_used < s.entries_total)
+    .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
+  if (withRemaining.length > 0) return withRemaining[0]
+  // tutti esauriti → mostra il piu' recente
+  return [...actives].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0]
+}
+
+// Somma ingressi rimasti su TUTTI i sub attivi del membro. Usato per
+// l'alertBar di esaurimento: "esaurito" = totale 0, "in esaurimento"
+// = totale <= 3.
+function totalRemainingForMember(m) {
+  return (m.subscriptions || [])
+    .filter(s => s.active)
+    .reduce((sum, s) => sum + Math.max(0, s.entries_total - s.entries_used), 0)
+}
+
 export default function GuestHome({ session }) {
   const [account, setAccount] = useState(null)
   const [members, setMembers] = useState([])
@@ -126,7 +154,7 @@ export default function GuestHome({ session }) {
   }
 
   const member = members.find(m => m.id === selectedMember)
-  const activeSub = member?.subscriptions?.find(s => s.active)
+  const activeSub = pickActiveSub(member?.subscriptions)
   const rem = activeSub ? activeSub.entries_total - activeSub.entries_used : 0
 
   function isBooked(dateStr) {
@@ -292,23 +320,26 @@ export default function GuestHome({ session }) {
         </div>
       )}
 
-      {/* alert ingressi in esaurimento */}
-      {members.some(m => {
-        const s = m.subscriptions?.find(sub => sub.active)
-        return s && (s.entries_total - s.entries_used) <= 3
-      }) && (
+      {/* alert ingressi in esaurimento — somma totale sui sub attivi del membro,
+          non sul singolo sub mostrato (un membro con vecchio esaurito + nuovo pieno
+          NON e' in esaurimento). */}
+      {members.some(m =>
+        (m.subscriptions || []).some(s => s.active) &&
+        totalRemainingForMember(m) <= 3
+      ) && (
         <div style={styles.alertBar}>
           {members
-            .filter(m => {
-              const s = m.subscriptions?.find(sub => sub.active)
-              return s && (s.entries_total - s.entries_used) <= 3
-            })
+            .filter(m =>
+              (m.subscriptions || []).some(s => s.active) &&
+              totalRemainingForMember(m) <= 3
+            )
             .map(m => {
-              const s = m.subscriptions?.find(sub => sub.active)
-              const r = s.entries_total - s.entries_used
+              const totalRem = totalRemainingForMember(m)
               return (
                 <div key={m.id}>
-                  {m.name} ha {r === 0 ? 'esaurito gli ingressi' : `solo ${r} ingresso${r > 1 ? 'i' : ''} rimasto${r > 1 ? 'i' : ''}`}
+                  {m.name} ha {totalRem === 0
+                    ? 'esaurito gli ingressi'
+                    : `solo ${totalRem} ingress${totalRem === 1 ? 'o' : 'i'} rimast${totalRem === 1 ? 'o' : 'i'}`}
                 </div>
               )
             })}
