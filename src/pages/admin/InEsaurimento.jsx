@@ -21,7 +21,23 @@ export default function InEsaurimento() {
       `)
       .eq('active', true)
 
-    const filtered = (data || []).filter(s => (s.entries_total - s.entries_used) <= 3)
+    // Set dei member_id "coperti": hanno almeno 1 sub attivo NON in esaurimento
+    // (rimasti > 3). Semantica: quel membro ha effettivamente rinnovato con un
+    // pacchetto nuovo → non va sollecitato per gli altri sub esauriti/residui.
+    // Granularita' per membro (non per account): in un familiare, se Alice
+    // rinnova Marco resta comunque visibile con il suo esaurimento.
+    const membriCoperti = new Set()
+    for (const s of (data || [])) {
+      if ((s.entries_total - s.entries_used) > 3 && s.members?.id) {
+        membriCoperti.add(s.members.id)
+      }
+    }
+
+    const filtered = (data || []).filter(s => {
+      const rem = s.entries_total - s.entries_used
+      if (rem > 3) return false                        // non in esaurimento
+      return !membriCoperti.has(s.members?.id)         // il membro non ha rinnovato
+    })
     filtered.sort((a, b) => (a.entries_total - a.entries_used) - (b.entries_total - b.entries_used))
     setItems(filtered)
     setLoading(false)
