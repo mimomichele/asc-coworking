@@ -23,6 +23,7 @@ import Richieste from './Turni/Richieste.jsx'
 import ReportOre from './Turni/ReportOre.jsx'
 
 const RISTORANTE_URL = 'https://ristorante.aschotel.com'
+const MANUTENZIONE_URL = 'https://hotel-manutenzione.vercel.app'
 
 // Path che appartengono alla sezione "Coworking" (URL invariati per non rompere i Link).
 const COWORKING_PATHS = ['/admin/coworking', '/admin/ospiti', '/admin/nuovo-ospite', '/admin/abbonamenti', '/admin/esaurimento', '/admin/esauriti']
@@ -65,6 +66,9 @@ export default function AdminLayout() {
           <NavLink to="/admin/compliance" style={topStyle(isCompliance)}>Compliance</NavLink>
           <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle}>
             Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
+          </a>
+          <a href={MANUTENZIONE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle}>
+            Manutenzione <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
           </a>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)}>Le mie app</NavLink>
         </div>
@@ -123,6 +127,9 @@ export default function AdminLayout() {
 
           <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle} onClick={closeMenu}>
             Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
+          </a>
+          <a href={MANUTENZIONE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle} onClick={closeMenu}>
+            Manutenzione <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
           </a>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)} onClick={closeMenu}>Le mie app</NavLink>
 
