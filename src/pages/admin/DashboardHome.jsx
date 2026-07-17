@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import StatIngressiOspiti from '../../components/StatIngressiOspiti.jsx'
 
 // App esterne (progetti separati: aprono in nuova scheda, nessuna integrazione).
 const APP_ESTERNE = [
@@ -62,6 +63,9 @@ export default function DashboardHome() {
         />
         <Metric label="Dipendenti attivi" value={m.dipendenti} sub="in organico" />
       </div>
+
+      {/* GRAFICO INGRESSI + OSPITI ATTIVI */}
+      <StatIngressiOspiti />
 
       {/* SCORCIATOIE INTERNE */}
       <h3 style={styles.h3}>Sezioni</h3>
