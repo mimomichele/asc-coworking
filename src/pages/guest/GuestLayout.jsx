@@ -2,6 +2,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import GuestHome from './GuestHome.jsx'
 import RosticceriaMenu from './rosticceria/RosticceriaMenu.jsx'
+import StaffettaModal from '../../components/StaffettaModal.jsx'
 
 export default function GuestLayout({ session }) {
   const navigate = useNavigate()
@@ -56,6 +57,9 @@ export default function GuestLayout({ session }) {
           <Route path="rosticceria" element={<RosticceriaMenu session={session} />} />
         </Routes>
       </div>
+
+      {/* one-shot staffetta "Passa l'Acqua" — solo guest, si autogestisce */}
+      <StaffettaModal session={session} />
     </div>
   )
 }
