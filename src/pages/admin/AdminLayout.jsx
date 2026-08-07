@@ -10,6 +10,7 @@ import TipiAbbonamento from './TipiAbbonamento.jsx'
 import InEsaurimento from './InEsaurimento.jsx'
 import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
+import Staffetta from './Staffetta.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 import Compliance from './Compliance/Compliance.jsx'
 import SchedaAdempimento from './Compliance/SchedaAdempimento.jsx'
@@ -46,6 +47,7 @@ export default function AdminLayout() {
   const isRosticceria = path.startsWith('/admin/rosticceria')
   const isCompliance = path.startsWith('/admin/compliance')
   const isLeMieApp = path.startsWith('/admin/le-mie-app')
+  const isStaffetta = path.startsWith('/admin/staffetta')
   const isDash = path === '/admin'
 
   return (
@@ -64,6 +66,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={rostStyle(isRosticceria)}>Rosticceria</NavLink>
           <NavLink to="/admin/compliance" style={topStyle(isCompliance)}>Compliance</NavLink>
+          <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)}>Staffetta</NavLink>
           <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle}>
             Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
           </a>
@@ -125,6 +128,8 @@ export default function AdminLayout() {
           <NavLink to="/admin/compliance/fornitori" style={subStyle} onClick={closeMenu}>Fornitori</NavLink>
           <NavLink to="/admin/compliance/documenti" style={subStyle} onClick={closeMenu}>Documenti</NavLink>
 
+          <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)} onClick={closeMenu}>Staffetta</NavLink>
+
           <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle} onClick={closeMenu}>
             Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
           </a>
@@ -149,6 +154,7 @@ export default function AdminLayout() {
           <Route path="esaurimento" element={<InEsaurimento />} />
           <Route path="esauriti" element={<Esauriti />} />
           <Route path="le-mie-app" element={<LeMieApp />} />
+          <Route path="staffetta" element={<Staffetta />} />
           <Route path="turni" element={<PlannerTurni />} />
           <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
           <Route path="turni/dipendenti" element={<Dipendenti />} />

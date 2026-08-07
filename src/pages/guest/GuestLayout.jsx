@@ -2,6 +2,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import GuestHome from './GuestHome.jsx'
 import RosticceriaMenu from './rosticceria/RosticceriaMenu.jsx'
+import StaffettaPrenota from './StaffettaPrenota.jsx'
 import StaffettaModal from '../../components/StaffettaModal.jsx'
 
 export default function GuestLayout({ session }) {
@@ -14,6 +15,7 @@ export default function GuestLayout({ session }) {
   }
 
   const isRosticceria = location.pathname.includes('rosticceria')
+  const isStaffetta = location.pathname.includes('staffetta')
 
   return (
     <div style={{ minHeight: '100vh', background: '#1a1a1a' }}>
@@ -35,13 +37,18 @@ export default function GuestLayout({ session }) {
       }}>
         <TabButton
           label="Coworking"
-          active={!isRosticceria}
+          active={!isRosticceria && !isStaffetta}
           onClick={() => navigate('/guest')}
         />
         <TabButton
           label="Rosticceria"
           active={isRosticceria}
           onClick={() => navigate('/guest/rosticceria')}
+        />
+        <TabButton
+          label="Staffetta"
+          active={isStaffetta}
+          onClick={() => navigate('/guest/staffetta')}
         />
       </div>
 
@@ -55,6 +62,7 @@ export default function GuestLayout({ session }) {
         <Routes>
           <Route index element={<GuestHome session={session} />} />
           <Route path="rosticceria" element={<RosticceriaMenu session={session} />} />
+          <Route path="staffetta" element={<StaffettaPrenota session={session} />} />
         </Routes>
       </div>
 
