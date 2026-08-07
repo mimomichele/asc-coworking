@@ -30,6 +30,7 @@ export default function Staffetta() {
   const [notice, setNotice] = useState('')
   // form inserimento manuale
   const [formSlot, setFormSlot] = useState('')
+  const [formDurata, setFormDurata] = useState('10')
   const [formNome, setFormNome] = useState('')
 
   async function reload() {
@@ -47,17 +48,30 @@ export default function Staffetta() {
   async function assegna(e) {
     e.preventDefault()
     if (!formSlot || !formNome.trim()) return
+    const idx = slots.findIndex(s => s.id === formSlot)
+    if (idx === -1) return
+
+    // fasce consecutive richieste; se sforano la fine dell'evento
+    // (le 144 finiscono lì) si limita e lo si segnala
+    const nRichieste = Number(formDurata) / SLOT_MIN
+    const fasce = slots.slice(idx, idx + nRichieste)
+    const troncata = fasce.length < nRichieste
+
+    if (fasce.some(s => s.prenotazione)) {
+      setOpError('Alcune fasce in questo intervallo sono già occupate, scegli un altro orario o una durata più breve.')
+      return
+    }
+
     setBusy(true); setOpError(''); setNotice('')
     const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('staffetta_prenotazioni').insert({
-      slot_id: formSlot,
-      nome_ospite: formNome.trim(),
-      creato_da: user.id,
-    })
+    // un solo insert con l'array: o passano tutte o nessuna
+    const { error } = await supabase.from('staffetta_prenotazioni').insert(
+      fasce.map(s => ({ slot_id: s.id, nome_ospite: formNome.trim(), creato_da: user.id }))
+    )
     setBusy(false)
     if (error) {
       if (error.code === '23505') {
-        setNotice('Questa fascia è appena stata presa da qualcun altro.')
+        setNotice('Una o più fasce sono appena state prese da qualcun altro: non è stato inserito nulla.')
         setFormSlot('')
         await reload()
       } else {
@@ -66,7 +80,10 @@ export default function Staffetta() {
       }
       return
     }
-    setFormSlot(''); setFormNome('')
+    setFormSlot(''); setFormDurata('10'); setFormNome('')
+    if (troncata) {
+      setNotice(`L'evento finisce alle 10:00 di domenica: assegnate ${fasce.length === 1 ? 'solo 1 fascia' : `le ${fasce.length} fasce disponibili`} (${fmtDurata(fasce.length * SLOT_MIN)}).`)
+    }
     await reload()
   }
 
@@ -224,8 +241,11 @@ export default function Staffetta() {
               <span style={{ fontSize: 13 }}>
                 {dayLbl(b.da.inizio)} {fmtOra(b.da.inizio)} → {dayLbl(b.a.fine)} {fmtOra(b.a.fine)}
               </span>
-              <span style={{ fontSize: 12, color: '#888' }}>
-                {b.count} {b.count === 1 ? 'fascia' : 'fasce'} · {fmtDurata(b.count * SLOT_MIN)}
+              <span style={{ fontSize: 13, fontWeight: 500 }}>
+                {fmtDurata(b.count * SLOT_MIN)}{' '}
+                <span style={{ fontSize: 11.5, fontWeight: 400, color: '#888' }}>
+                  ({b.count === 1 ? '1 fascia' : `${b.count} fasce`} da 10 min)
+                </span>
               </span>
             </div>
           ))
@@ -272,28 +292,51 @@ export default function Staffetta() {
           Per chi si prenota di persona o al telefono: la fascia risulterà occupata dal nome indicato.
         </div>
         <form onSubmit={assegna} style={styles.formRow}>
-          <select
-            value={formSlot}
-            onChange={e => setFormSlot(e.target.value)}
-            style={styles.select}
-            required
-          >
-            <option value="">Fascia libera…</option>
-            {libere.map(s => (
-              <option key={s.id} value={s.id}>
-                {dayLbl(s.inizio)} {fmtOra(s.inizio)} – {fmtOra(s.fine)}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            value={formNome}
-            onChange={e => setFormNome(e.target.value)}
-            placeholder="Nome e cognome"
-            style={styles.input}
-            required
-          />
-          <button type="submit" disabled={busy || !formSlot || !formNome.trim()} style={{ ...styles.primaryBtn, ...(busy ? { opacity: 0.55 } : {}) }}>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Dalle</span>
+            <select
+              value={formSlot}
+              onChange={e => setFormSlot(e.target.value)}
+              style={styles.select}
+              required
+            >
+              <option value="">Fascia libera…</option>
+              {libere.map(s => (
+                <option key={s.id} value={s.id}>
+                  {dayLbl(s.inizio)} {fmtOra(s.inizio)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={styles.field}>
+            <span style={styles.fieldLabel}>Durata</span>
+            <select
+              value={formDurata}
+              onChange={e => setFormDurata(e.target.value)}
+              style={styles.select}
+            >
+              <option value="10">10 minuti</option>
+              <option value="20">20 minuti</option>
+              <option value="30">30 minuti</option>
+              <option value="40">40 minuti</option>
+              <option value="50">50 minuti</option>
+              <option value="60">1 ora</option>
+              <option value="90">1 ora 30</option>
+              <option value="120">2 ore</option>
+            </select>
+          </label>
+          <label style={{ ...styles.field, flex: '2 1 200px' }}>
+            <span style={styles.fieldLabel}>Nome e cognome</span>
+            <input
+              type="text"
+              value={formNome}
+              onChange={e => setFormNome(e.target.value)}
+              placeholder="Nome e cognome"
+              style={styles.input}
+              required
+            />
+          </label>
+          <button type="submit" disabled={busy || !formSlot || !formNome.trim()} style={{ ...styles.primaryBtn, alignSelf: 'flex-end', ...(busy ? { opacity: 0.55 } : {}) }}>
             {busy ? '…' : 'Assegna'}
           </button>
         </form>
@@ -355,14 +398,16 @@ const styles = {
     background: 'none', border: 'none', color: '#b42318', cursor: 'pointer',
     fontSize: 11, padding: 0, lineHeight: 1,
   },
-  formRow: { display: 'flex', gap: 8, flexWrap: 'wrap' },
+  formRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' },
+  field: { display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' },
+  fieldLabel: { fontSize: 11, color: '#888', fontWeight: 500 },
   select: {
-    flex: '1 1 180px', padding: '9px 10px', borderRadius: 8,
-    border: '0.5px solid #ccc', fontSize: 13, background: '#fff',
+    padding: '9px 10px', borderRadius: 8,
+    border: '0.5px solid #ccc', fontSize: 13, background: '#fff', width: '100%',
   },
   input: {
-    flex: '1 1 180px', padding: '9px 10px', borderRadius: 8,
-    border: '0.5px solid #ccc', fontSize: 13,
+    padding: '9px 10px', borderRadius: 8,
+    border: '0.5px solid #ccc', fontSize: 13, width: '100%', boxSizing: 'border-box',
   },
   primaryBtn: {
     background: '#1a1a1a', color: '#F5C200', border: 'none', borderRadius: 8,
