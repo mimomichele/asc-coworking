@@ -7,6 +7,7 @@ const APPS = [
   { label: 'Pulizie', url: 'https://gregarious-raindrop-4cea90.netlify.app', desc: 'Programmazione e check pulizie' },
   { label: 'Colazioni', url: 'https://hotel-colazioni.vercel.app', desc: 'Gestione colazioni e presenze' },
   { label: 'Turni Bagnini', url: 'https://turni-bagnini.vercel.app', desc: 'Preferenze e turni bagnini' },
+  { label: '🍹 Honesty Bar', url: 'https://asc-honesty-bar.vercel.app/admin', desc: 'Bar self-service: addebiti e incassi' },
 ]
 
 export default function LeMieApp() {
