@@ -4,7 +4,6 @@
 // Regola ASC-DESIGN: ogni card ha emoji, titolo, descrizione di una riga
 // e apre in nuova scheda con ↗. Le app esterne vivono SOLO qui.
 const APPS = [
-  { emoji: '📋', label: 'Compliance', url: 'https://asc-compliance.vercel.app', desc: 'Gestione adempimenti e conformità' },
   { emoji: '🔧', label: 'Manutenzione', url: 'https://hotel-manutenzione.vercel.app', desc: 'Segnalazione guasti e interventi' },
   { emoji: '🧹', label: 'Pulizie', url: 'https://gregarious-raindrop-4cea90.netlify.app', desc: 'Programmazione e check pulizie' },
   { emoji: '🥐', label: 'Colazioni', url: 'https://hotel-colazioni.vercel.app', desc: 'Gestione colazioni e presenze' },

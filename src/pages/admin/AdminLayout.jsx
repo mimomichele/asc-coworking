@@ -12,11 +12,6 @@ import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
 import Staffetta from './Staffetta.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
-import Compliance from './Compliance/Compliance.jsx'
-import SchedaAdempimento from './Compliance/SchedaAdempimento.jsx'
-import CategorieCompliance from './Compliance/CategorieCompliance.jsx'
-import FornitoriCompliance from './Compliance/FornitoriCompliance.jsx'
-import DocumentiCompliance from './Compliance/DocumentiCompliance.jsx'
 import PlannerTurni from './Turni/PlannerTurni.jsx'
 import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
 import Dipendenti from './Turni/Dipendenti.jsx'
@@ -46,7 +41,6 @@ export default function AdminLayout() {
   const isCoworking = COWORKING_PATHS.some(p => path === p || path.startsWith(p + '/'))
   const isTurni = path.startsWith('/admin/turni')
   const isRosticceria = path.startsWith('/admin/rosticceria')
-  const isCompliance = path.startsWith('/admin/compliance')
   const isLeMieApp = path.startsWith('/admin/le-mie-app')
   const isStaffetta = path.startsWith('/admin/staffetta')
   const isDash = path === '/admin'
@@ -66,7 +60,6 @@ export default function AdminLayout() {
           <NavLink to="/admin/coworking" style={topStyle(isCoworking)}>Coworking</NavLink>
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)}>Rosticceria</NavLink>
-          <NavLink to="/admin/compliance" style={topStyle(isCompliance)}>Compliance</NavLink>
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)}>Staffetta</NavLink>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)}>Le mie app</NavLink>
         </div>
@@ -91,16 +84,6 @@ export default function AdminLayout() {
         </div>
       )}
 
-      {/* SUB-NAV COMPLIANCE */}
-      {isCompliance && !menuOpen && (
-        <div style={styles.subnav} className="compliance-subnav">
-          <NavLink to="/admin/compliance" end style={subStyle}>Scadenziario</NavLink>
-          <NavLink to="/admin/compliance/categorie" style={subStyle}>Categorie</NavLink>
-          <NavLink to="/admin/compliance/fornitori" style={subStyle}>Fornitori</NavLink>
-          <NavLink to="/admin/compliance/documenti" style={subStyle}>Documenti</NavLink>
-        </div>
-      )}
-
       {/* MOBILE MENU */}
       {menuOpen && (
         <div style={styles.mobileMenu} className="mobile-menu">
@@ -116,13 +99,6 @@ export default function AdminLayout() {
 
           <NavLink to="/admin/turni" style={topStyle(isTurni)} onClick={closeMenu}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
-
-          <div style={styles.groupLabel}>Compliance</div>
-          <NavLink to="/admin/compliance" end style={subStyle} onClick={closeMenu}>Scadenziario</NavLink>
-          <NavLink to="/admin/compliance/categorie" style={subStyle} onClick={closeMenu}>Categorie</NavLink>
-          <NavLink to="/admin/compliance/fornitori" style={subStyle} onClick={closeMenu}>Fornitori</NavLink>
-          <NavLink to="/admin/compliance/documenti" style={subStyle} onClick={closeMenu}>Documenti</NavLink>
-
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)} onClick={closeMenu}>Staffetta</NavLink>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)} onClick={closeMenu}>Le mie app</NavLink>
 
@@ -149,11 +125,6 @@ export default function AdminLayout() {
           <Route path="turni/richieste" element={<Richieste />} />
           <Route path="turni/report" element={<ReportOre />} />
           <Route path="rosticceria/*" element={<RosticceriaPannello />} />
-          <Route path="compliance" element={<Compliance />} />
-          <Route path="compliance/a/:id" element={<SchedaAdempimento />} />
-          <Route path="compliance/categorie" element={<CategorieCompliance />} />
-          <Route path="compliance/fornitori" element={<FornitoriCompliance />} />
-          <Route path="compliance/documenti" element={<DocumentiCompliance />} />
         </Routes>
       </main>
     </div>
