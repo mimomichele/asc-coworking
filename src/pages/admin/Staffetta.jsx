@@ -109,7 +109,7 @@ export default function Staffetta() {
       <button onClick={reload} style={styles.primaryBtn}>Riprova</button>
     </div>
   )
-  if (slots === null) return <div style={{ padding: 40, textAlign: 'center', color: '#888', fontSize: 13 }}>Caricamento…</div>
+  if (slots === null) return <div style={{ padding: 40, textAlign: 'center', color: '#6B6B6B', fontSize: 13 }}>Caricamento…</div>
 
   // ---- derivati -----------------------------------------------------------
   const refDay = slots.length ? slots[0].inizio.getDate() : null
@@ -167,8 +167,8 @@ export default function Staffetta() {
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>Staffetta — Passa l&rsquo;Acqua</h2>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 20 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Staffetta — Passa l&rsquo;Acqua</h2>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 20 }}>
         Copertura delle fasce da 10 minuti · 12-13 settembre 2026
       </div>
 
@@ -190,7 +190,7 @@ export default function Staffetta() {
           <div style={styles.statL}>Nuotatori</div>
         </div>
         <div style={{ ...styles.stat, background: '#fdecec' }}>
-          <div style={{ ...styles.statN, color: '#b42318' }}>{bucoMax ? fmtDurata(bucoMax * SLOT_MIN) : '—'}</div>
+          <div style={{ ...styles.statN, color: '#C5221F' }}>{bucoMax ? fmtDurata(bucoMax * SLOT_MIN) : '—'}</div>
           <div style={styles.statL}>Buco più lungo</div>
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function Staffetta() {
       <div style={styles.card}>
         <div style={styles.cardTitle}>Copertura</div>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 10 }}>
-          <span style={styles.legend}><span style={{ ...styles.legendDot, background: '#1D9E75' }} /> coperta</span>
+          <span style={styles.legend}><span style={{ ...styles.legendDot, background: '#1E8E3E' }} /> coperta</span>
           <span style={styles.legend}><span style={{ ...styles.legendDot, background: '#f3d2ce' }} /> scoperta</span>
         </div>
         <div style={styles.covGrid}>
@@ -218,7 +218,7 @@ export default function Staffetta() {
                         title={`${fmtOra(s.inizio)} – ${fmtOra(s.fine)}${s.prenotazione ? ' · ' + s.prenotazione.displayName : ''}`}
                         style={{
                           flex: 1, height: 14, borderRadius: 3,
-                          background: s.prenotazione ? '#1D9E75' : '#f3d2ce',
+                          background: s.prenotazione ? '#1E8E3E' : '#f3d2ce',
                         }}
                       />
                     ))}
@@ -234,7 +234,7 @@ export default function Staffetta() {
       <div style={styles.card}>
         <div style={styles.cardTitle}>Buchi da coprire</div>
         {buchi.length === 0 ? (
-          <div style={{ fontSize: 13, color: '#1D9E75', fontWeight: 500 }}>Nessun buco: copertura completa 🎉</div>
+          <div style={{ fontSize: 13, color: '#1E8E3E', fontWeight: 500 }}>Nessun buco: copertura completa 🎉</div>
         ) : (
           buchi.map((b, i) => (
             <div key={i} style={styles.gapRow}>
@@ -243,7 +243,7 @@ export default function Staffetta() {
               </span>
               <span style={{ fontSize: 13, fontWeight: 500 }}>
                 {fmtDurata(b.count * SLOT_MIN)}{' '}
-                <span style={{ fontSize: 11.5, fontWeight: 400, color: '#888' }}>
+                <span style={{ fontSize: 11.5, fontWeight: 400, color: '#6B6B6B' }}>
                   ({b.count === 1 ? '1 fascia' : `${b.count} fasce`} da 10 min)
                 </span>
               </span>
@@ -256,13 +256,13 @@ export default function Staffetta() {
       <div style={styles.card}>
         <div style={styles.cardTitle}>Chi nuota quando</div>
         {persone.length === 0 ? (
-          <div style={{ fontSize: 13, color: '#888' }}>Ancora nessuna prenotazione.</div>
+          <div style={{ fontSize: 13, color: '#6B6B6B' }}>Ancora nessuna prenotazione.</div>
         ) : (
           persone.map((p, i) => (
             <div key={i} style={styles.personRow}>
               <div style={{ minWidth: 160 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 500 }}>{p.nome}</span>
-                <span style={{ fontSize: 12, color: '#888', marginLeft: 8 }}>
+                <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 8 }}>
                   {p.count} {p.count === 1 ? 'fascia' : 'fasce'}
                 </span>
               </div>
@@ -288,7 +288,7 @@ export default function Staffetta() {
       {/* 5 · inserimento manuale */}
       <div style={styles.card}>
         <div style={styles.cardTitle}>Assegna una fascia a mano</div>
-        <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
+        <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 10 }}>
           Per chi si prenota di persona o al telefono: la fascia risulterà occupata dal nome indicato.
         </div>
         <form onSubmit={assegna} style={styles.formRow}>
@@ -347,11 +347,11 @@ export default function Staffetta() {
 
 const styles = {
   noticeBand: {
-    background: '#F5C200', color: '#1a1a1a', borderRadius: 10,
+    background: '#F5B301', color: '#111111', borderRadius: 10,
     padding: '9px 12px', fontSize: 12.5, fontWeight: 500, marginBottom: 12,
   },
   errorBand: {
-    background: '#fdecec', color: '#b42318', borderRadius: 10,
+    background: '#fdecec', color: '#C5221F', borderRadius: 10,
     padding: '9px 12px', fontSize: 12.5, fontWeight: 500, marginBottom: 12,
   },
   statGrid: {
@@ -359,18 +359,18 @@ const styles = {
     gap: 12, marginBottom: 16,
   },
   stat: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '14px 16px',
   },
-  statN: { fontSize: 22, fontWeight: 600, color: '#1a1a1a' },
+  statN: { fontSize: 22, fontWeight: 600, color: '#111111' },
   statDen: { fontSize: 14, fontWeight: 400, color: '#aaa' },
-  statL: { fontSize: 11.5, color: '#888', marginTop: 2 },
+  statL: { fontSize: 11.5, color: '#6B6B6B', marginTop: 2 },
   card: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '16px 18px', marginBottom: 16,
   },
   cardTitle: { fontSize: 14, fontWeight: 600, marginBottom: 10 },
-  legend: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#888' },
+  legend: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, color: '#6B6B6B' },
   legendDot: { width: 10, height: 10, borderRadius: 3, display: 'inline-block' },
   covGrid: {
     // due colonne sequenziali; su schermi stretti collassano una sotto l'altra
@@ -391,26 +391,26 @@ const styles = {
   },
   intervalChip: {
     display: 'inline-flex', alignItems: 'center', gap: 6,
-    background: '#f5f5f3', border: '0.5px solid #e5e5e5', borderRadius: 8,
+    background: '#F6F5F1', border: '0.5px solid #E5E3DC', borderRadius: 8,
     padding: '4px 8px', fontSize: 12,
   },
   chipX: {
-    background: 'none', border: 'none', color: '#b42318', cursor: 'pointer',
+    background: 'none', border: 'none', color: '#C5221F', cursor: 'pointer',
     fontSize: 11, padding: 0, lineHeight: 1,
   },
   formRow: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' },
   field: { display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 140px' },
-  fieldLabel: { fontSize: 11, color: '#888', fontWeight: 500 },
+  fieldLabel: { fontSize: 11, color: '#6B6B6B', fontWeight: 500 },
   select: {
     padding: '9px 10px', borderRadius: 8,
-    border: '0.5px solid #ccc', fontSize: 13, background: '#fff', width: '100%',
+    border: '0.5px solid #E5E3DC', fontSize: 13, background: '#fff', width: '100%',
   },
   input: {
     padding: '9px 10px', borderRadius: 8,
-    border: '0.5px solid #ccc', fontSize: 13, width: '100%', boxSizing: 'border-box',
+    border: '0.5px solid #E5E3DC', fontSize: 13, width: '100%', boxSizing: 'border-box',
   },
   primaryBtn: {
-    background: '#1a1a1a', color: '#F5C200', border: 'none', borderRadius: 8,
+    background: '#111111', color: '#F5B301', border: 'none', borderRadius: 8,
     padding: '9px 20px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
   },
 }

@@ -142,7 +142,7 @@ export default function Dipendenti() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   const attivi = dipendenti.filter(d => d.attivo).length
   const disattivi = dipendenti.length - attivi
@@ -152,13 +152,13 @@ export default function Dipendenti() {
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/turni" style={{ color: '#888', textDecoration: 'none' }}>← Torna ai turni</Link>
+        <Link to="/admin/turni" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Torna ai turni</Link>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 500 }}>Dipendenti ({dipendenti.length})</h2>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700 }}>Dipendenti ({dipendenti.length})</h2>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>
             {attivi} attiv{attivi === 1 ? 'o' : 'i'} · {disattivi} disattivat{disattivi === 1 ? 'o' : 'i'}
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function Dipendenti() {
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>
             {editingId ? 'Modifica dipendente' : 'Nuovo dipendente'}
           </div>
@@ -192,9 +192,9 @@ export default function Dipendenti() {
                     onClick={() => setForm(f => ({ ...f, attivo: v }))}
                     style={{
                       padding: '8px 16px', borderRadius: 8,
-                      border: `0.5px solid ${form.attivo === v ? '#F5C842' : '#ccc'}`,
+                      border: `0.5px solid ${form.attivo === v ? '#F5B301' : '#E5E3DC'}`,
                       background: form.attivo === v ? '#FAEEDA' : '#fff',
-                      color: form.attivo === v ? '#854F0B' : '#888',
+                      color: form.attivo === v ? '#854F0B' : '#6B6B6B',
                       cursor: 'pointer', fontSize: 13, fontWeight: form.attivo === v ? 500 : 400,
                     }}
                   >
@@ -217,14 +217,14 @@ export default function Dipendenti() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Elimina dipendente</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>
               Stai per eliminare <strong>{confirmDelete.nome} {confirmDelete.cognome || ''}</strong>.
               Verranno eliminati anche tutti i suoi turni. In alternativa puoi disattivarlo.
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirmDelete(null)}>Annulla</button>
               <button
-                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 onClick={() => elimina(confirmDelete)}
               >
                 Sì, elimina
@@ -239,7 +239,7 @@ export default function Dipendenti() {
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
             {credPanel.mode === 'create' ? 'Crea accesso' : 'Reset codice'} — {credPanel.dip.nome} {credPanel.dip.cognome || ''}
           </div>
-          <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 14 }}>
             {credPanel.mode === 'create'
               ? 'Il dipendente accederà con questo username e codice dalla schermata di login.'
               : 'Imposta un nuovo codice. Lo username non cambia.'}
@@ -277,14 +277,14 @@ export default function Dipendenti() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Rimuovi accesso</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>
               L'account di accesso di <strong>{confirmRevoke.nome} {confirmRevoke.cognome || ''}</strong> verrà
               eliminato e non potrà più effettuare il login. Il dipendente e i suoi turni restano in archivio.
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirmRevoke(null)}>Annulla</button>
               <button
-                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 onClick={() => revoke(confirmRevoke)}
               >
                 Sì, rimuovi
@@ -311,7 +311,7 @@ export default function Dipendenti() {
               <tr key={d.id} style={{ opacity: d.attivo ? 1 : 0.5 }}>
                 <td style={{ fontWeight: 500 }}>{d.nome}</td>
                 <td>{d.cognome || '—'}</td>
-                <td style={{ fontSize: 12, color: '#888' }}>{d.ruolo || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6B6B6B' }}>{d.ruolo || '—'}</td>
                 <td>
                   <span className={`pill ${d.attivo ? 'pill-ok' : 'pill-gray'}`}>
                     {d.attivo ? 'Attivo' : 'Disattivato'}
@@ -342,7 +342,7 @@ export default function Dipendenti() {
             ))}
             {dipendenti.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ color: '#888', textAlign: 'center', padding: 24 }}>
+                <td colSpan={6} style={{ color: '#6B6B6B', textAlign: 'center', padding: 24 }}>
                   Nessun dipendente. Aggiungi il primo per iniziare a inserire i turni.
                 </td>
               </tr>

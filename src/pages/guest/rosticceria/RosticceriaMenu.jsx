@@ -109,7 +109,7 @@ export default function RosticceriaMenu({ session }) {
             style={{ width: 64, height: 64, borderRadius: 8, flexShrink: 0, display: 'block' }}
           />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#111111', marginBottom: 4 }}>
               Rosticceria 103
             </div>
             <a
@@ -117,7 +117,7 @@ export default function RosticceriaMenu({ session }) {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                fontSize: 12, color: '#888', textDecoration: 'none',
+                fontSize: 12, color: '#6B6B6B', textDecoration: 'none',
                 display: 'block', lineHeight: 1.45,
               }}
             >
@@ -132,7 +132,7 @@ export default function RosticceriaMenu({ session }) {
             href="tel:+390575356202"
             style={{
               flex: 1, padding: '12px 14px', borderRadius: 10,
-              background: '#D85A30', color: '#fff',
+              background: '#E8710A', color: '#fff',
               textAlign: 'center', textDecoration: 'none',
               fontSize: 14, fontWeight: 500,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -165,10 +165,10 @@ export default function RosticceriaMenu({ session }) {
 
       {/* Header (titolo del giorno) */}
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 500, color: '#1a1a1a', margin: 0 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, color: '#111111', margin: 0 }}>
           Rosticceria
         </h2>
-        <p style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
+        <p style={{ fontSize: 13, color: '#6B6B6B', marginTop: 4 }}>
           Menù di oggi —{' '}
           {new Date().toLocaleDateString('it-IT', {
             weekday: 'long', day: 'numeric', month: 'long',
@@ -195,17 +195,17 @@ export default function RosticceriaMenu({ session }) {
 
       {/* Stato loading / errore */}
       {loading && (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: '#888', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6B6B', fontSize: 14 }}>
           Caricamento menù...
         </div>
       )}
       {error && (
-        <div style={{ background: '#FCEBEB', borderRadius: 8, padding: 12, fontSize: 13, color: '#A32D2D', marginBottom: 12 }}>
+        <div style={{ background: '#FCEBEB', borderRadius: 8, padding: 12, fontSize: 13, color: '#C5221F', marginBottom: 12 }}>
           Errore nel caricamento: {error}
         </div>
       )}
       {!loading && items.length === 0 && !error && (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: '#888', fontSize: 14 }}>
+        <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6B6B', fontSize: 14 }}>
           Nessun piatto disponibile oggi.
         </div>
       )}
@@ -240,15 +240,15 @@ export default function RosticceriaMenu({ session }) {
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', margin: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: '#111111', margin: 0 }}>
                       {item.products?.name}
                     </p>
                     {item.products?.description && (
-                      <p style={{ fontSize: 12, color: '#888', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ fontSize: 12, color: '#6B6B6B', margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.products.description}
                       </p>
                     )}
-                    <p style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: 14, fontWeight: 500, color: '#111111', margin: '4px 0 0' }}>
                       {fmt(item.products?.price)}
                     </p>
                     {item.portions !== null && item.portions <= 3 && item.portions > 0 && (
@@ -257,7 +257,7 @@ export default function RosticceriaMenu({ session }) {
                       </p>
                     )}
                     {esaurito && (
-                      <p style={{ fontSize: 11, color: '#A32D2D', margin: '2px 0 0' }}>Esaurito</p>
+                      <p style={{ fontSize: 11, color: '#C5221F', margin: '2px 0 0' }}>Esaurito</p>
                     )}
                   </div>
 
@@ -266,7 +266,7 @@ export default function RosticceriaMenu({ session }) {
                       {qty > 0 && (
                         <>
                           <QtyBtn onClick={() => changeQty(item, -1)}>−</QtyBtn>
-                          <span style={{ fontSize: 14, fontWeight: 500, minWidth: 16, textAlign: 'center', color: '#1a1a1a' }}>
+                          <span style={{ fontSize: 14, fontWeight: 500, minWidth: 16, textAlign: 'center', color: '#111111' }}>
                             {qty}
                           </span>
                         </>
@@ -307,7 +307,7 @@ export default function RosticceriaMenu({ session }) {
                 }}>
                   {mode === 'camera' ? `Camera ${order.room_number}` : 'Reception'}
                 </span>
-                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#888' }}>
+                <span style={{ marginLeft: 'auto', fontSize: 12, color: '#6B6B6B' }}>
                   {mode === 'camera' ? 'Consegna' : 'Ritiro'} ore {time}
                 </span>
               </div>
@@ -319,14 +319,14 @@ export default function RosticceriaMenu({ session }) {
                   </div>
                 ))}
                 {order.notes && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#aaa', background: '#f5f5f3', borderRadius: 8, padding: '5px 8px' }}>
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#aaa', background: '#F6F5F1', borderRadius: 8, padding: '5px 8px' }}>
                     {order.notes}
                   </div>
                 )}
               </div>
               <div style={{ padding: '8px 14px', display: 'flex', justifyContent: 'space-between', borderTop: '0.5px solid #f0f0ee', background: '#fafaf8' }}>
-                <span style={{ fontSize: 12, color: '#888' }}>Totale</span>
-                <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{fmt(order.total)}</span>
+                <span style={{ fontSize: 12, color: '#6B6B6B' }}>Totale</span>
+                <span style={{ fontSize: 14, fontWeight: 500, color: '#111111' }}>{fmt(order.total)}</span>
               </div>
             </div>
           )
@@ -342,7 +342,7 @@ export default function RosticceriaMenu({ session }) {
         zIndex: 50,
       }}>
         <span style={{
-          background: cartCount > 0 ? '#D85A30' : '#e8e8e4',
+          background: cartCount > 0 ? '#E8710A' : '#e8e8e4',
           color: cartCount > 0 ? '#fff' : '#aaa',
           borderRadius: 20, padding: '4px 10px',
           fontSize: 12, fontWeight: 500, flexShrink: 0,
@@ -350,14 +350,14 @@ export default function RosticceriaMenu({ session }) {
         }}>
           {cartCount}
         </span>
-        <span style={{ flex: 1, fontSize: 14, fontWeight: cartCount > 0 ? 500 : 400, color: cartCount > 0 ? '#1a1a1a' : '#aaa' }}>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: cartCount > 0 ? 500 : 400, color: cartCount > 0 ? '#111111' : '#aaa' }}>
           {cartCount > 0 ? fmt(cartTotal) : 'Nessun articolo'}
         </span>
         <button
           disabled={cartCount === 0}
           onClick={() => setShowCheckout(true)}
           style={{
-            background: cartCount > 0 ? '#D85A30' : '#e8e8e4',
+            background: cartCount > 0 ? '#E8710A' : '#e8e8e4',
             color: cartCount > 0 ? '#fff' : '#aaa',
             border: 'none', borderRadius: 8,
             padding: '8px 16px', fontSize: 13, fontWeight: 500,
@@ -380,9 +380,9 @@ function CatPill({ label, active, onClick }) {
         flexShrink: 0,
         padding: '5px 14px',
         borderRadius: 20,
-        border: active ? 'none' : '0.5px solid #ddd',
-        background: active ? '#D85A30' : '#f5f5f3',
-        color: active ? '#fff' : '#888',
+        border: active ? 'none' : '0.5px solid #E5E3DC',
+        background: active ? '#E8710A' : '#F6F5F1',
+        color: active ? '#fff' : '#6B6B6B',
         fontSize: 12, fontWeight: active ? 500 : 400,
         cursor: 'pointer', transition: 'all .15s',
       }}
@@ -398,9 +398,9 @@ function QtyBtn({ children, onClick, add }) {
       onClick={onClick}
       style={{
         width: 26, height: 26, borderRadius: '50%',
-        border: add ? 'none' : '0.5px solid #ddd',
-        background: add ? '#D85A30' : '#f5f5f3',
-        color: add ? '#fff' : '#1a1a1a',
+        border: add ? 'none' : '0.5px solid #E5E3DC',
+        background: add ? '#E8710A' : '#F6F5F1',
+        color: add ? '#fff' : '#111111',
         fontSize: 16, cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontWeight: 400, lineHeight: 1, transition: 'all .1s',
@@ -424,10 +424,10 @@ function OrderConfirmation({ order, onBack }) {
           <path d="M1 7L8 13L21 1" stroke="#0F6E56" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </div>
-      <h3 style={{ fontSize: 18, fontWeight: 500, color: '#1a1a1a', margin: '0 0 8px' }}>
+      <h3 style={{ fontSize: 18, fontWeight: 500, color: '#111111', margin: '0 0 8px' }}>
         Ordine inviato!
       </h3>
-      <p style={{ fontSize: 14, color: '#888', lineHeight: 1.6, margin: '0 0 16px' }}>
+      <p style={{ fontSize: 14, color: '#6B6B6B', lineHeight: 1.6, margin: '0 0 16px' }}>
         La rosticceria ha ricevuto il tuo ordine.
         {order.deliveryMode === 'camera'
           ? ` Consegna in camera ${order.roomNumber} alle ${order.slotTime}.`
@@ -435,17 +435,17 @@ function OrderConfirmation({ order, onBack }) {
       </p>
       <div style={{
         display: 'inline-block',
-        background: '#f5f5f3', borderRadius: 8,
-        padding: '8px 16px', fontSize: 13, color: '#888',
+        background: '#F6F5F1', borderRadius: 8,
+        padding: '8px 16px', fontSize: 13, color: '#6B6B6B',
         marginBottom: 32,
       }}>
-        Ordine <strong style={{ color: '#1a1a1a' }}>#{order.orderId?.slice(-4).toUpperCase()}</strong>
+        Ordine <strong style={{ color: '#111111' }}>#{order.orderId?.slice(-4).toUpperCase()}</strong>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
         <button
           onClick={onBack}
           style={{
-            background: '#D85A30', color: '#fff', border: 'none',
+            background: '#E8710A', color: '#fff', border: 'none',
             borderRadius: 8, padding: '10px 24px',
             fontSize: 14, fontWeight: 500, cursor: 'pointer',
           }}
@@ -455,7 +455,7 @@ function OrderConfirmation({ order, onBack }) {
         <button
           onClick={() => window.location.replace('/guest')}
           style={{
-            background: 'none', color: '#888', border: '0.5px solid #ddd',
+            background: 'none', color: '#6B6B6B', border: '0.5px solid #E5E3DC',
             borderRadius: 8, padding: '10px 24px',
             fontSize: 14, cursor: 'pointer',
           }}

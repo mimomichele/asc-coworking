@@ -99,7 +99,7 @@ export default function AlloggiatiFields({ value, onChange, requiredMarker = tru
               <div
                 key={o.v}
                 onClick={() => set({ sesso: o.v })}
-                style={pillBtn(value.sesso === o.v, '#854F0B', '#FAEEDA', '#F5C842', true)}
+                style={pillBtn(value.sesso === o.v, '#854F0B', '#FAEEDA', '#F5B301', true)}
               >
                 {o.l}
               </div>
@@ -148,7 +148,7 @@ export default function AlloggiatiFields({ value, onChange, requiredMarker = tru
               <div
                 key={String(o.v)}
                 onClick={() => setBornInItaly(o.v)}
-                style={pillBtn(value._bornInItaly === o.v, '#854F0B', '#FAEEDA', '#F5C842', true)}
+                style={pillBtn(value._bornInItaly === o.v, '#854F0B', '#FAEEDA', '#F5B301', true)}
               >
                 {o.l}
               </div>
@@ -222,7 +222,7 @@ export default function AlloggiatiFields({ value, onChange, requiredMarker = tru
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <div
           onClick={() => set({ documento_acquisito: !value.documento_acquisito })}
-          style={pillBtn(!!value.documento_acquisito, '#3B6D11', '#EAF3DE', '#3B6D11', false)}
+          style={pillBtn(!!value.documento_acquisito, '#1E8E3E', '#EAF3DE', '#1E8E3E', false)}
         >
           {value.documento_acquisito ? '✓ ' : ''}Documento acquisito
         </div>
@@ -241,15 +241,15 @@ function pillBtn(active, fg, bg, borderActive, flex) {
   return {
     flex: flex ? 1 : undefined,
     padding: '8px 14px', borderRadius: 8, textAlign: flex ? 'center' : 'left',
-    border: `0.5px solid ${active ? borderActive : '#ccc'}`,
+    border: `0.5px solid ${active ? borderActive : '#E5E3DC'}`,
     background: active ? bg : '#fff',
-    color: active ? fg : '#888',
+    color: active ? fg : '#6B6B6B',
     cursor: 'pointer', fontSize: 13,
     fontWeight: active ? 500 : 400,
   }
 }
 
 const styles = {
-  sectionLabel: { fontSize: 11, fontWeight: 500, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8, marginTop: 14 },
+  sectionLabel: { fontSize: 11, fontWeight: 500, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8, marginTop: 14 },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
 }

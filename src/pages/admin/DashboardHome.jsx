@@ -2,20 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 
-// App esterne (progetti separati: aprono in nuova scheda, nessuna integrazione).
-const APP_ESTERNE = [
-  { label: 'Ristorante', url: 'https://ristorante.aschotel.com' },
-  { label: 'Manutenzione', url: 'https://hotel-manutenzione.vercel.app' },
-  { label: 'Compliance', url: 'https://asc-compliance.vercel.app' },
-  { label: 'Pulizie', url: 'https://gregarious-raindrop-4cea90.netlify.app' },
-  { label: 'Turni Bagnini', url: 'https://turni-bagnini.vercel.app' },
-]
-
 export default function DashboardHome() {
   const navigate = useNavigate()
   const [m, setM] = useState({ ospiti: 0, esaurimento: 0, prenotazioniOggi: 0, richieste: 0, dipendenti: 0 })
   const [loading, setLoading] = useState(true)
-  const today = new Date().toISOString().split('T')[0]
+  // giorno locale, mai toISOString (regola ASC-DESIGN: i confronti per
+  // giorno si fanno in orario locale, non UTC)
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
   useEffect(() => { fetchMetriche() }, [])
 
@@ -40,12 +34,12 @@ export default function DashboardHome() {
     setLoading(false)
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>Dashboard</h2>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 20 }}>Riepilogo a colpo d'occhio</div>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Dashboard</h2>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 20 }}>Riepilogo a colpo d'occhio</div>
 
       {/* METRICHE */}
       <div style={styles.grid}>
@@ -70,19 +64,7 @@ export default function DashboardHome() {
         <ShortcutInterna to="/admin/coworking" titolo="Coworking" desc="Ospiti, abbonamenti, prenotazioni" />
         <ShortcutInterna to="/admin/turni" titolo="Turni" desc="Planner, richieste, report ore" />
         <ShortcutInterna to="/admin/rosticceria" titolo="Rosticceria" desc="Ordini, produzione, menù" />
-      </div>
-
-      {/* APP ESTERNE */}
-      <h3 style={styles.h3}>App esterne</h3>
-      <div style={styles.grid}>
-        {APP_ESTERNE.map(a => (
-          <a key={a.label} href={a.url} target="_blank" rel="noopener noreferrer" style={styles.card}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {a.label} <span aria-hidden="true" style={{ fontSize: 12, opacity: 0.6 }}>↗</span>
-            </div>
-            <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>apre in una nuova scheda</div>
-          </a>
-        ))}
+        <ShortcutInterna to="/admin/le-mie-app" titolo="Le mie app" desc="Tutte le app esterne dell'hotel" />
       </div>
     </div>
   )
@@ -94,7 +76,7 @@ function Metric({ label, value, sub, tone, onClick }) {
     : tone === 'alert'
       ? { background: '#FCEBEB', borderColor: '#F2C9C9' }
       : {}
-  const valueColor = tone === 'warn' ? '#854F0B' : tone === 'alert' ? '#A32D2D' : '#1a1a1a'
+  const valueColor = tone === 'warn' ? '#854F0B' : tone === 'alert' ? '#C5221F' : '#111111'
   return (
     <div
       onClick={onClick}
@@ -110,21 +92,21 @@ function Metric({ label, value, sub, tone, onClick }) {
 function ShortcutInterna({ to, titolo, desc }) {
   return (
     <Link to={to} style={styles.card}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a' }}>{titolo}</div>
-      <div style={{ fontSize: 11, color: '#888', marginTop: 3 }}>{desc}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: '#111111' }}>{titolo}</div>
+      <div style={{ fontSize: 11, color: '#6B6B6B', marginTop: 3 }}>{desc}</div>
     </Link>
   )
 }
 
 const styles = {
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 },
-  metricCard: { background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12, padding: '14px 16px' },
-  metricLabel: { fontSize: 11, color: '#888', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
-  metricValue: { fontSize: 26, fontWeight: 500 },
-  metricSub: { fontSize: 11, color: '#888', marginTop: 3 },
+  metricCard: { background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12, padding: '14px 16px' },
+  metricLabel: { fontSize: 11, color: '#6B6B6B', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  metricValue: { fontSize: 26, fontWeight: 700 },
+  metricSub: { fontSize: 11, color: '#6B6B6B', marginTop: 3 },
   h3: { fontSize: 14, fontWeight: 500, color: '#444', marginBottom: 10 },
   card: {
-    display: 'block', background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    display: 'block', background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '14px 16px', textDecoration: 'none', cursor: 'pointer',
   },
 }

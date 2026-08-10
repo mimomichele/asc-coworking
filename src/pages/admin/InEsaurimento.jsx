@@ -43,15 +43,15 @@ export default function InEsaurimento() {
     setLoading(false)
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 8 }}>In esaurimento</h2>
-      <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Abbonamenti con 3 o meno ingressi rimasti</div>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>In esaurimento</h2>
+      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>Abbonamenti con 3 o meno ingressi rimasti</div>
 
       {items.length === 0
-        ? <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessun abbonamento in esaurimento. Ottimo!</div>
+        ? <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun abbonamento in esaurimento. Ottimo!</div>
         : (
           <>
             <div style={{ background: '#FAEEDA', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 16 }}>
@@ -87,11 +87,11 @@ export default function InEsaurimento() {
                         </td>
                         <td style={{ fontSize: 12 }}>{s.subscription_types?.name}</td>
                         <td>
-                          <span style={{ fontWeight: 500, color: '#E24B4A' }}>
+                          <span style={{ fontWeight: 500, color: '#C5221F' }}>
                             {rem} rimast{rem === 1 ? 'o' : 'i'}
                           </span>
                           <div className="progress" style={{ marginTop: 4, width: 80 }}>
-                            <div className="progress-fill" style={{ width: `${pct}%`, background: '#E24B4A' }} />
+                            <div className="progress-fill" style={{ width: `${pct}%`, background: '#C5221F' }} />
                           </div>
                         </td>
                         <td>

@@ -258,10 +258,10 @@ export default function StatisticheCoworking() {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={perWeekday} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#888' }} />
+                <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6B6B6B' }} />
+                <YAxis tick={{ fontSize: 12, fill: '#6B6B6B' }} />
                 <Tooltip formatter={(v) => [`${v} ingressi`, 'Media']} cursor={{ fill: '#fafafa' }} />
-                <Bar dataKey="media" fill="#F5C842" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="media" fill="#F5B301" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -278,8 +278,8 @@ export default function StatisticheCoworking() {
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={perMese} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#888' }} />
-                  <YAxis tick={{ fontSize: 12, fill: '#888' }} allowDecimals={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#6B6B6B' }} />
+                  <YAxis tick={{ fontSize: 12, fill: '#6B6B6B' }} allowDecimals={false} />
                   <Tooltip formatter={(v) => [`${v} ingressi`, 'Totale']} />
                   <Line
                     type="monotone"
@@ -320,39 +320,39 @@ const S = {
   shortcuts: { display: 'flex', gap: 4 },
   shortcutBtn: { padding: '5px 10px', fontSize: 12 },
   dateGroup: { display: 'flex', alignItems: 'center', gap: 6 },
-  dateLabel: { fontSize: 12, color: '#888' },
+  dateLabel: { fontSize: 12, color: '#6B6B6B' },
   dateInput: {
-    padding: '6px 10px', border: '0.5px solid #ccc', borderRadius: 8,
-    fontSize: 13, background: '#fff', color: '#1a1a1a', fontFamily: 'inherit',
+    padding: '6px 10px', border: '0.5px solid #E5E3DC', borderRadius: 8,
+    fontSize: 13, background: '#fff', color: '#111111', fontFamily: 'inherit',
   },
   errorBox: {
     padding: 10, background: '#FEEEEE', color: '#A23B3A',
     borderRadius: 8, fontSize: 13, marginBottom: 14,
   },
   loadingBox: {
-    padding: 30, color: '#888', fontSize: 13, textAlign: 'center',
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    padding: 30, color: '#6B6B6B', fontSize: 13, textAlign: 'center',
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
   },
   boxGrid: {
     display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))',
     gap: 12, marginBottom: 20,
   },
   box: {
-    background: '#fff', border: '0.5px solid #e5e5e5',
+    background: '#fff', border: '0.5px solid #E5E3DC',
     borderRadius: 12, padding: '14px 16px',
   },
   boxLabel: {
-    fontSize: 11, color: '#888', marginBottom: 4,
+    fontSize: 11, color: '#6B6B6B', marginBottom: 4,
     textTransform: 'uppercase', letterSpacing: 0.4,
   },
   boxValue: { fontSize: 26, fontWeight: 500 },
-  boxSub: { fontSize: 11, color: '#888', marginTop: 3 },
+  boxSub: { fontSize: 11, color: '#6B6B6B', marginTop: 3 },
   chartBox: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '14px 16px 8px', marginBottom: 16,
   },
   chartTitle: {
-    fontSize: 13, fontWeight: 500, color: '#1a1a1a', marginBottom: 10,
+    fontSize: 13, fontWeight: 500, color: '#111111', marginBottom: 10,
   },
   warningBox: {
     padding: 14, background: '#FAEEDA', color: '#854F0B',

@@ -47,14 +47,14 @@ export default function MieRichieste({ dipendente }) {
     setLoading(false)
   }
 
-  if (loading) return <div style={{ padding: 20, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 20, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
       <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Le mie richieste</h2>
 
       {items.length === 0 && (
-        <div className="card" style={{ textAlign: 'center', color: '#888' }}>
+        <div className="card" style={{ textAlign: 'center', color: '#6B6B6B' }}>
           Nessuna richiesta inviata.
         </div>
       )}
@@ -65,7 +65,7 @@ export default function MieRichieste({ dipendente }) {
             <div>
               <div style={{ fontSize: 13, fontWeight: 600 }}>{it.kind}</div>
               <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{it.detail}</div>
-              {it.motivo && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{it.motivo}</div>}
+              {it.motivo && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{it.motivo}</div>}
             </div>
             {statoPill(it.stato)}
           </div>

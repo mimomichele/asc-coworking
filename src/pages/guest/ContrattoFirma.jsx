@@ -171,7 +171,7 @@ export default function ContrattoFirma({ session, onSigned }) {
     <div style={S.page}>
       <Header onLogout={logout} />
       <main style={S.main}>
-        <div style={{ color: '#888', textAlign: 'center', padding: 40 }}>Caricamento contratto…</div>
+        <div style={{ color: '#6B6B6B', textAlign: 'center', padding: 40 }}>Caricamento contratto…</div>
       </main>
     </div>
   )
@@ -277,7 +277,7 @@ export default function ContrattoFirma({ session, onSigned }) {
                 placeholder="RSSMRA80A01H501U"
                 style={{
                   ...S.input(locked.codice_fiscale),
-                  ...(cfWarnsItalian ? { borderColor: '#E24B4A' } : null),
+                  ...(cfWarnsItalian ? { borderColor: '#C5221F' } : null),
                 }}
               />
               {cfWarnsItalian && !locked.codice_fiscale && (
@@ -360,7 +360,7 @@ function Header({ onLogout }) {
   return (
     <nav style={S.topnav}>
       <div style={S.logo}>
-        ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+        ASC <span style={{ color: '#F5B301' }}>HOTEL</span>
         <span style={S.topLabel}>Contratto di membership</span>
       </div>
       <button onClick={onLogout} style={S.logoutBtn}>Esci</button>
@@ -386,69 +386,69 @@ function fmtDateIT(iso) {
 }
 
 const S = {
-  page: { minHeight: '100vh', background: '#f5f5f3' },
+  page: { minHeight: '100vh', background: '#F6F5F1' },
   topnav: {
-    background: '#1a1a1a',
+    background: '#111111',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0 20px', height: 54,
     position: 'sticky', top: 0, zIndex: 100,
   },
   logo: { fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5, display: 'flex', alignItems: 'center', gap: 10 },
-  topLabel: { fontSize: 11, color: '#888', fontWeight: 400, letterSpacing: 0 },
+  topLabel: { fontSize: 11, color: '#6B6B6B', fontWeight: 400, letterSpacing: 0 },
   logoutBtn: {
-    background: 'none', border: '0.5px solid #444', color: '#888',
+    background: 'none', border: '0.5px solid #444', color: '#6B6B6B',
     padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
   },
 
   main: { maxWidth: 760, margin: '0 auto', padding: '20px 16px 60px' },
-  h1: { fontSize: 22, fontWeight: 600, color: '#1a1a1a', margin: '4px 0 10px' },
+  h1: { fontSize: 22, fontWeight: 600, color: '#111111', margin: '4px 0 10px' },
   intro: { fontSize: 14, color: '#555', lineHeight: 1.55, marginBottom: 18 },
 
   cardContract: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '18px 18px 22px', marginBottom: 18,
   },
-  contractLine: { fontSize: 13, color: '#1a1a1a', margin: 0, lineHeight: 1.6 },
-  contractHeader: { fontSize: 14, color: '#1a1a1a', margin: '14px 0 6px', fontWeight: 600 },
+  contractLine: { fontSize: 13, color: '#111111', margin: 0, lineHeight: 1.6 },
+  contractHeader: { fontSize: 14, color: '#111111', margin: '14px 0 6px', fontWeight: 600 },
 
   cardForm: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: 18, marginBottom: 14,
   },
-  h3: { fontSize: 15, fontWeight: 500, color: '#1a1a1a', margin: '0 0 6px' },
-  formHint: { fontSize: 12, color: '#888', margin: '0 0 14px' },
+  h3: { fontSize: 15, fontWeight: 500, color: '#111111', margin: '0 0 6px' },
+  formHint: { fontSize: 12, color: '#6B6B6B', margin: '0 0 14px' },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
-  label: { display: 'block', fontSize: 11, fontWeight: 500, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5 },
+  label: { display: 'block', fontSize: 11, fontWeight: 500, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 5 },
   input: (locked) => ({
     width: '100%', padding: '9px 12px',
-    border: '0.5px solid #ccc', borderRadius: 8,
+    border: '0.5px solid #E5E3DC', borderRadius: 8,
     fontSize: 14, fontFamily: 'inherit',
-    background: locked ? '#f5f5f3' : '#fff',
-    color: locked ? '#888' : '#1a1a1a',
+    background: locked ? '#F6F5F1' : '#fff',
+    color: locked ? '#6B6B6B' : '#111111',
     outline: 'none',
     boxSizing: 'border-box',
   }),
-  warn: { fontSize: 11, color: '#A32D2D', marginTop: 4 },
+  warn: { fontSize: 11, color: '#C5221F', marginTop: 4 },
 
   cardAck: {
-    background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: 18, marginBottom: 18,
   },
   ackRow: {
     display: 'flex', alignItems: 'flex-start', gap: 10,
-    padding: '8px 0', cursor: 'pointer', fontSize: 13, color: '#1a1a1a', lineHeight: 1.5,
+    padding: '8px 0', cursor: 'pointer', fontSize: 13, color: '#111111', lineHeight: 1.5,
   },
-  checkbox: { marginTop: 3, accentColor: '#F5C842', width: 16, height: 16, flexShrink: 0 },
+  checkbox: { marginTop: 3, accentColor: '#F5B301', width: 16, height: 16, flexShrink: 0 },
 
   btnAccept: {
-    width: '100%', background: '#F5C842', color: '#1a1a1a',
+    width: '100%', background: '#F5B301', color: '#111111',
     border: 'none', borderRadius: 10, padding: '14px 18px',
     fontSize: 15, fontWeight: 600, transition: 'opacity .15s',
   },
-  footnote: { fontSize: 11, color: '#888', textAlign: 'center', marginTop: 12, lineHeight: 1.5 },
+  footnote: { fontSize: 11, color: '#6B6B6B', textAlign: 'center', marginTop: 12, lineHeight: 1.5 },
 
   errorBlock: {
-    background: '#FCEBEB', color: '#A32D2D', border: '0.5px solid #F09595',
+    background: '#FCEBEB', color: '#C5221F', border: '0.5px solid #F09595',
     borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 14,
   },
 }

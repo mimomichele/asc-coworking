@@ -148,20 +148,20 @@ export default function PlannerTurni() {
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 500 }}>Turni</h2>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Pianificatore settimanale</div>
+          <h2 style={{ fontSize: 24, fontWeight: 700 }}>Turni</h2>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>Pianificatore settimanale</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           {/* TOGGLE VISTA */}
-          <div style={{ display: 'inline-flex', border: '0.5px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+          <div style={{ display: 'inline-flex', border: '0.5px solid #E5E3DC', borderRadius: 8, overflow: 'hidden' }}>
             {[['settimana', 'Settimana'], ['mese', 'Mese']].map(([k, label]) => (
               <button
                 key={k}
                 onClick={() => setVista(k)}
                 style={{
                   border: 'none', padding: '7px 14px', fontSize: 13, cursor: 'pointer',
-                  background: vista === k ? '#F5C842' : '#fff',
-                  color: vista === k ? '#1a1a1a' : '#888', fontWeight: vista === k ? 500 : 400,
+                  background: vista === k ? '#F5B301' : '#fff',
+                  color: vista === k ? '#111111' : '#6B6B6B', fontWeight: vista === k ? 500 : 400,
                 }}
               >{label}</button>
             ))}
@@ -170,7 +170,7 @@ export default function PlannerTurni() {
             Richieste
             {pendingCount > 0 && (
               <span style={{
-                marginLeft: 6, background: '#E24B4A', color: '#fff', borderRadius: 10,
+                marginLeft: 6, background: '#C5221F', color: '#fff', borderRadius: 10,
                 fontSize: 11, fontWeight: 600, padding: '1px 7px',
               }}>{pendingCount}</span>
             )}
@@ -198,9 +198,9 @@ export default function PlannerTurni() {
       </div>
 
       {loading ? (
-        <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+        <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
       ) : dipendenti.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: 32, color: '#888' }}>
+        <div className="card" style={{ textAlign: 'center', padding: 32, color: '#6B6B6B' }}>
           Nessun dipendente attivo. <Link to="/admin/turni/dipendenti">Aggiungine uno</Link> per iniziare a inserire i turni.
         </div>
       ) : (
@@ -258,13 +258,13 @@ export default function PlannerTurni() {
                             fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 4px', marginBottom: 4,
                             textAlign: 'center',
                             background: leave === 'malattia' ? '#FCEBEB' : '#E6F1FB',
-                            color: leave === 'malattia' ? '#A32D2D' : '#185FA5',
+                            color: leave === 'malattia' ? '#C5221F' : '#185FA5',
                           }}>
                             {leave === 'malattia' ? 'Malattia' : 'Ferie'}
                           </div>
                         )}
                         {cellShifts.length === 0 ? (
-                          <div style={{ minHeight: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: 16 }}>+</div>
+                          <div style={{ minHeight: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E5E3DC', fontSize: 16 }}>+</div>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {cellShifts.map(s => (
@@ -273,13 +273,13 @@ export default function PlannerTurni() {
                                 onClick={(e) => openCell(e, dip, d, s)}
                                 title={s.note || ''}
                                 style={{
-                                  background: '#1a1a1a', color: '#fff', borderRadius: 6,
+                                  background: '#111111', color: '#fff', borderRadius: 6,
                                   padding: '4px 6px', fontSize: 11, fontWeight: 500,
                                   whiteSpace: 'nowrap', textAlign: 'center',
                                 }}
                               >
                                 {fmtRangeOrario(s.start_time, s.end_time)}
-                                {s.note ? <span style={{ color: '#F5C842' }}> •</span> : null}
+                                {s.note ? <span style={{ color: '#F5B301' }}> •</span> : null}
                               </div>
                             ))}
                           </div>
@@ -313,7 +313,7 @@ export default function PlannerTurni() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ maxWidth: 420, width: '90%', padding: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Copia settimana precedente</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 16 }}>
               Verranno copiati <strong>{copyCount}</strong> turni dalla settimana precedente su quella corrente
               ({fmtRangeSettimana(monday)}).
             </div>
@@ -340,9 +340,9 @@ export default function PlannerTurni() {
 
 const thStyle = {
   padding: '8px 6px', textAlign: 'center', fontSize: 12,
-  borderBottom: '0.5px solid #e5e5e5', position: 'sticky', top: 0,
+  borderBottom: '0.5px solid #E5E3DC', position: 'sticky', top: 0,
 }
 const tdStyle = {
   padding: '6px', textAlign: 'center',
-  borderBottom: '0.5px solid #eee', borderLeft: '0.5px solid #f0f0f0',
+  borderBottom: '0.5px solid #E5E3DC', borderLeft: '0.5px solid #f0f0f0',
 }

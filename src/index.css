@@ -1,20 +1,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --yellow: #F5C842;
+  --yellow: #F5B301;
   --yellow-dark: #D4A800;
-  --black: #1a1a1a;
+  --black: #111111;
   --font: 'Inter', sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --border: 0.5px solid #e5e5e5;
-  --bg: #f5f5f3;
+  --border: 0.5px solid #E5E3DC;
+  --bg: #F6F5F1;
   --bg-card: #ffffff;
-  --text: #1a1a1a;
-  --text-muted: #888;
-  --red: #E24B4A;
-  --green: #3B6D11;
+  --text: #111111;
+  --text-muted: #6B6B6B;
+  --red: #C5221F;
+  --green: #1E8E3E;
   --green-bg: #EAF3DE;
   --amber-bg: #FAEEDA;
   --amber: #854F0B;
@@ -28,9 +28,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 /* buttons */
 .btn-primary { background: var(--yellow); color: var(--black); border: none; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
 .btn-primary:hover { background: var(--yellow-dark); }
-.btn-primary:disabled { background: #e5e5e5; color: #aaa; cursor: not-allowed; }
+.btn-primary:disabled { background: #E5E3DC; color: #aaa; cursor: not-allowed; }
 .btn-ghost { background: none; border: 0.5px solid #ccc; color: var(--text-muted); padding: 7px 12px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; }
-.btn-ghost:hover { background: #f5f5f3; }
+.btn-ghost:hover { background: #F6F5F1; }
 .btn-danger { background: none; border: 0.5px solid #F09595; color: var(--red); padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; }
 .btn-danger:hover { background: var(--red-bg); }
 

@@ -204,7 +204,7 @@ export default function WalkinModal({ accounts, onClose, onSuccess }) {
                 {filtered.map(a => (
                   <div key={a.id} onClick={() => setAccountId(a.id)} style={S.resRow}>
                     <div style={{ fontWeight: 500 }}>{a.name} {a.surname}</div>
-                    <div style={{ fontSize: 11, color: '#888' }}>
+                    <div style={{ fontSize: 11, color: '#6B6B6B' }}>
                       {a.phone || '—'} · {a.type === 'family' ? 'Familiare' : 'Singolo'}
                     </div>
                   </div>
@@ -212,7 +212,7 @@ export default function WalkinModal({ accounts, onClose, onSuccess }) {
               </div>
             )}
             {search && filtered.length === 0 && (
-              <div style={{ fontSize: 12, color: '#888', padding: '8px 0' }}>
+              <div style={{ fontSize: 12, color: '#6B6B6B', padding: '8px 0' }}>
                 Nessun ospite attivo corrisponde alla ricerca
               </div>
             )}
@@ -224,7 +224,7 @@ export default function WalkinModal({ accounts, onClose, onSuccess }) {
             <div style={S.selBox}>
               <div>
                 <div style={{ fontWeight: 500 }}>{selectedAccount.name} {selectedAccount.surname}</div>
-                <div style={{ fontSize: 11, color: '#888' }}>
+                <div style={{ fontSize: 11, color: '#6B6B6B' }}>
                   {selectedAccount.phone || '—'} · {selectedAccount.type === 'family' ? 'Familiare' : 'Singolo'}
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function WalkinModal({ accounts, onClose, onSuccess }) {
 
             {selectedMember && activeSubs.length === 1 && (
               <div style={S.subBox}>
-                <div style={{ fontSize: 12, color: '#888' }}>Abbonamento</div>
+                <div style={{ fontSize: 12, color: '#6B6B6B' }}>Abbonamento</div>
                 <div style={{ fontWeight: 500 }}>
                   {activeSubs[0].entries_total - activeSubs[0].entries_used}/{activeSubs[0].entries_total} ingressi rimasti
                 </div>
@@ -284,7 +284,7 @@ export default function WalkinModal({ accounts, onClose, onSuccess }) {
                   onChange={e => setDate(e.target.value)}
                   style={S.inp}
                 />
-                <div style={{ fontSize: 11, color: '#888', marginTop: 4 }}>
+                <div style={{ fontSize: 11, color: '#6B6B6B', marginTop: 4 }}>
                   Default: oggi. Puoi scegliere qualsiasi data passata.
                 </div>
               </div>
@@ -332,21 +332,21 @@ const S = {
   },
   title: { fontSize: 18, fontWeight: 500, margin: 0 },
   closeBtn: {
-    background: 'transparent', border: 'none', fontSize: 20, color: '#888',
+    background: 'transparent', border: 'none', fontSize: 20, color: '#6B6B6B',
     cursor: 'pointer', padding: 4, lineHeight: 1,
   },
-  lbl: { display: 'block', fontSize: 12, color: '#888', marginBottom: 4 },
+  lbl: { display: 'block', fontSize: 12, color: '#6B6B6B', marginBottom: 4 },
   inp: {
-    width: '100%', padding: '9px 12px', border: '0.5px solid #ccc',
+    width: '100%', padding: '9px 12px', border: '0.5px solid #E5E3DC',
     borderRadius: 8, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box',
-    background: '#fff', color: '#1a1a1a', outline: 'none',
+    background: '#fff', color: '#111111', outline: 'none',
   },
   resList: {
     maxHeight: 280, overflowY: 'auto',
-    border: '0.5px solid #eee', borderRadius: 8,
+    border: '0.5px solid #E5E3DC', borderRadius: 8,
   },
   resRow: {
-    padding: '10px 12px', borderBottom: '0.5px solid #eee', cursor: 'pointer',
+    padding: '10px 12px', borderBottom: '0.5px solid #E5E3DC', cursor: 'pointer',
   },
   selBox: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',

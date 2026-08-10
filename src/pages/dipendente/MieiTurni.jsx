@@ -113,11 +113,11 @@ export default function MieiTurni({ dipendente }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
         <h2 style={{ fontSize: 18, fontWeight: 600 }}>I miei turni</h2>
         {/* TOGGLE VISTA */}
-        <div style={{ display: 'inline-flex', border: '0.5px solid #ddd', borderRadius: 8, overflow: 'hidden' }}>
+        <div style={{ display: 'inline-flex', border: '0.5px solid #E5E3DC', borderRadius: 8, overflow: 'hidden' }}>
           {[['settimana', 'Settimana'], ['mese', 'Mese']].map(([k, lab]) => (
             <button key={k} onClick={() => setVista(k)} style={{
               border: 'none', padding: '7px 12px', fontSize: 13, cursor: 'pointer',
-              background: vista === k ? '#F5C842' : '#fff', color: vista === k ? '#1a1a1a' : '#888',
+              background: vista === k ? '#F5B301' : '#fff', color: vista === k ? '#111111' : '#6B6B6B',
               fontWeight: vista === k ? 500 : 400,
             }}>{lab}</button>
           ))}
@@ -133,7 +133,7 @@ export default function MieiTurni({ dipendente }) {
       </div>
 
       {loading ? (
-        <div style={{ padding: 20, color: '#888' }}>Caricamento...</div>
+        <div style={{ padding: 20, color: '#6B6B6B' }}>Caricamento...</div>
       ) : vista === 'settimana' ? (
         <SettimanaView days={days} shiftsByDay={shiftsByDay} leaveByDay={leaveByDay} today={TODAY} onModifica={openModifica} />
       ) : (
@@ -144,7 +144,7 @@ export default function MieiTurni({ dipendente }) {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ width: '100%', maxWidth: 520, borderRadius: '16px 16px 0 0', padding: 20 }}>
             <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Richiedi modifica orario</div>
-            <div style={{ fontSize: 12, color: '#888', marginBottom: 16, textTransform: 'capitalize' }}>
+            <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 16, textTransform: 'capitalize' }}>
               {fmtGiorno(modal.shift.data)} · attuale {fmtRangeOrario(modal.shift.start_time, modal.shift.end_time)}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -197,7 +197,7 @@ function SettimanaView({ days, shiftsByDay, leaveByDay, today, onModifica }) {
               <div key={s.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, padding: '12px 14px' }}>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600 }}>{fmtRangeOrario(s.start_time, s.end_time)}</div>
-                  {s.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{s.note}</div>}
+                  {s.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{s.note}</div>}
                 </div>
                 <button className="btn-ghost" onClick={() => onModifica(s)}>Richiedi modifica</button>
               </div>
@@ -214,7 +214,7 @@ function MeseView({ settimane, mese, shiftsByDay, leaveByDay, today, onModifica 
   return (
     <div style={{
       display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1,
-      background: '#e5e5e5', border: '0.5px solid #e5e5e5', borderRadius: 8, overflow: 'hidden',
+      background: '#E5E3DC', border: '0.5px solid #E5E3DC', borderRadius: 8, overflow: 'hidden',
     }}>
       {GIORNI.map((g, i) => (
         <div key={g} style={{ background: '#faf9f6', textAlign: 'center', padding: '6px 0', fontSize: 11, fontWeight: 600, color: i >= 5 ? '#999' : '#444' }}>{g}</div>
@@ -243,7 +243,7 @@ function MeseView({ settimane, mese, shiftsByDay, leaveByDay, today, onModifica 
                 onClick={() => onModifica(s)}
                 title="Tocca per richiedere una modifica"
                 style={{
-                  background: '#1a1a1a', color: '#fff', borderRadius: 5, padding: '2px 4px',
+                  background: '#111111', color: '#fff', borderRadius: 5, padding: '2px 4px',
                   fontSize: 10, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
                   overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center',
                 }}
@@ -264,7 +264,7 @@ function LeaveBadge({ type, compact }) {
     <span style={{
       fontSize: compact ? 9 : 11, fontWeight: 600, borderRadius: 4,
       padding: compact ? '1px 3px' : '2px 8px', textAlign: 'center',
-      background: mal ? '#FCEBEB' : '#E6F1FB', color: mal ? '#A32D2D' : '#185FA5',
+      background: mal ? '#FCEBEB' : '#E6F1FB', color: mal ? '#C5221F' : '#185FA5',
       display: 'inline-block',
     }}>
       {mal ? 'Malattia' : 'Ferie'}

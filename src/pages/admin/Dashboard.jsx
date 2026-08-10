@@ -66,14 +66,14 @@ export default function Dashboard() {
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   const attivi = ingressi.filter(b => b.status !== 'cancelled')
   const cancellati = ingressi.filter(b => b.status === 'cancelled')
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 20 }}>Dashboard</h2>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 20 }}>Dashboard</h2>
 
       {/* METRICHE */}
       <div style={styles.metricsGrid}>
@@ -96,8 +96,8 @@ export default function Dashboard() {
       {/* SELETTORE DATA */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <h3 style={{ fontSize: 15, fontWeight: 500 }}>
-          Ingressi — <span style={{ color: '#888', fontWeight: 400 }}>{labelData(selectedDate)}</span>
-          {attivi.length > 0 && <span style={{ marginLeft: 8, fontSize: 13, color: '#F5C842', fontWeight: 500 }}>{attivi.length} prenotati</span>}
+          Ingressi — <span style={{ color: '#6B6B6B', fontWeight: 400 }}>{labelData(selectedDate)}</span>
+          {attivi.length > 0 && <span style={{ marginLeft: 8, fontSize: 13, color: '#F5B301', fontWeight: 500 }}>{attivi.length} prenotati</span>}
         </h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button className="btn-ghost" style={{ padding: '5px 10px' }} onClick={() => spostaGiorno(-1)}>←</button>
@@ -105,7 +105,7 @@ export default function Dashboard() {
             type="date"
             value={selectedDate}
             onChange={e => setSelectedDate(e.target.value)}
-            style={{ padding: '6px 10px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff' }}
+            style={{ padding: '6px 10px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff' }}
           />
           <button className="btn-ghost" style={{ padding: '5px 10px' }} onClick={() => spostaGiorno(1)}>→</button>
           {selectedDate !== today && (
@@ -115,9 +115,9 @@ export default function Dashboard() {
       </div>
 
       {loadingIngressi
-        ? <div style={{ padding: 20, color: '#888', fontSize: 13 }}>Caricamento...</div>
+        ? <div style={{ padding: 20, color: '#6B6B6B', fontSize: 13 }}>Caricamento...</div>
         : ingressi.length === 0
-          ? <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessuna prenotazione per questa data.</div>
+          ? <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessuna prenotazione per questa data.</div>
           : (
             <div className="table-wrap">
               <table>
@@ -133,8 +133,8 @@ export default function Dashboard() {
                   {ingressi.map(b => (
                     <tr key={b.id} style={{ opacity: b.status === 'cancelled' ? 0.45 : 1 }}>
                       <td style={{ fontWeight: 500 }}>{b.members?.name} {b.members?.surname}</td>
-                      <td style={{ color: '#888', fontSize: 12 }}>{b.accounts?.name} {b.accounts?.surname}</td>
-                      <td style={{ fontSize: 12, color: '#888' }}>
+                      <td style={{ color: '#6B6B6B', fontSize: 12 }}>{b.accounts?.name} {b.accounts?.surname}</td>
+                      <td style={{ fontSize: 12, color: '#6B6B6B' }}>
                         {b.created_at ? new Date(b.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '—'}
                       </td>
                       <td>
@@ -152,7 +152,7 @@ export default function Dashboard() {
                 </tbody>
               </table>
               {cancellati.length > 0 && (
-                <div style={{ padding: '8px 14px', fontSize: 12, color: '#888', borderTop: '0.5px solid #eee' }}>
+                <div style={{ padding: '8px 14px', fontSize: 12, color: '#6B6B6B', borderTop: '0.5px solid #E5E3DC' }}>
                   {cancellati.length} prenotazion{cancellati.length > 1 ? 'i' : 'e'} cancellat{cancellati.length > 1 ? 'e' : 'a'}
                 </div>
               )}
@@ -178,9 +178,9 @@ function MetricCard({ label, value, sub }) {
 
 const styles = {
   metricsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0,1fr))', gap: 12, marginBottom: 20 },
-  metricCard: { background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 12, padding: '14px 16px' },
-  metricLabel: { fontSize: 11, color: '#888', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
+  metricCard: { background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12, padding: '14px 16px' },
+  metricLabel: { fontSize: 11, color: '#6B6B6B', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.4 },
   metricValue: { fontSize: 26, fontWeight: 500 },
-  metricSub: { fontSize: 11, color: '#888', marginTop: 3 },
+  metricSub: { fontSize: 11, color: '#6B6B6B', marginTop: 3 },
   alertBanner: { background: '#FAEEDA', color: '#854F0B', borderRadius: 8, padding: '10px 14px', fontSize: 13, marginBottom: 20 },
 }

@@ -250,11 +250,11 @@ export default function ReportOre() {
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/turni" style={{ color: '#888', textDecoration: 'none' }}>← Torna ai turni</Link>
+        <Link to="/admin/turni" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Torna ai turni</Link>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 500 }}>Report ore</h2>
+        <h2 style={{ fontSize: 24, fontWeight: 700 }}>Report ore</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#666', cursor: 'pointer' }}>
             <input type="checkbox" checked={includeDetailPdf} onChange={e => setIncludeDetailPdf(e.target.checked)} />
@@ -270,12 +270,12 @@ export default function ReportOre() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
-            <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Periodo</div>
-            <div style={{ display: 'inline-flex', border: '0.5px solid #ddd', borderRadius: 8, overflow: 'hidden', marginRight: 8 }}>
+            <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Periodo</div>
+            <div style={{ display: 'inline-flex', border: '0.5px solid #E5E3DC', borderRadius: 8, overflow: 'hidden', marginRight: 8 }}>
               {[['mese', 'Mese'], ['range', 'Range date']].map(([k, label]) => (
                 <button key={k} onClick={() => setMode(k)} style={{
                   border: 'none', padding: '7px 14px', fontSize: 13, cursor: 'pointer',
-                  background: mode === k ? '#F5C842' : '#fff', color: mode === k ? '#1a1a1a' : '#888',
+                  background: mode === k ? '#F5B301' : '#fff', color: mode === k ? '#111111' : '#6B6B6B',
                   fontWeight: mode === k ? 500 : 400,
                 }}>{label}</button>
               ))}
@@ -300,20 +300,20 @@ export default function ReportOre() {
           )}
 
           <div>
-            <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Dipendente</div>
+            <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Dipendente</div>
             <select value={dipFiltro} onChange={e => setDipFiltro(e.target.value)} style={selStyle}>
               <option value="all">Tutti</option>
               {dipendenti.map(d => <option key={d.id} value={d.id}>{nomeDipendente(d)}</option>)}
             </select>
           </div>
         </div>
-        <div style={{ fontSize: 12, color: '#888', marginTop: 12, textTransform: 'capitalize' }}>
+        <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 12, textTransform: 'capitalize' }}>
           Periodo selezionato: <strong>{periodoLabel}</strong>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+        <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
       ) : (
         <div className="table-wrap" style={{ overflowX: 'auto' }}>
           <table style={{ minWidth: 620, width: '100%' }}>
@@ -351,10 +351,10 @@ export default function ReportOre() {
                 )
               })}
               {visibleRows.length === 0 && (
-                <tr><td colSpan={6} style={{ color: '#888', textAlign: 'center', padding: 24 }}>Nessun dato nel periodo selezionato.</td></tr>
+                <tr><td colSpan={6} style={{ color: '#6B6B6B', textAlign: 'center', padding: 24 }}>Nessun dato nel periodo selezionato.</td></tr>
               )}
               {dipFiltro === 'all' && visibleRows.length > 0 && (
-                <tr style={{ borderTop: '1.5px solid #ddd', fontWeight: 600 }}>
+                <tr style={{ borderTop: '1.5px solid #E5E3DC', fontWeight: 600 }}>
                   <td></td>
                   <td>Totale</td>
                   <td style={{ textAlign: 'right' }}>{fmtOreMinuti(totali.oreMin)}</td>
@@ -377,13 +377,13 @@ function FragmentRow({ children }) {
 }
 
 function DettaglioRiga({ giorni }) {
-  if (giorni.length === 0) return <div style={{ fontSize: 12, color: '#888' }}>Nessun turno nel periodo.</div>
+  if (giorni.length === 0) return <div style={{ fontSize: 12, color: '#6B6B6B' }}>Nessun turno nel periodo.</div>
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {giorni.map(g => (
         <div key={g.data} style={{ fontSize: 12 }}>
           {g.shifts.length === 0 ? (
-            <span style={{ color: '#888' }}>
+            <span style={{ color: '#6B6B6B' }}>
               {giornoSettimana(g.data)} {fmtDataIT(g.data)} — {' '}
               <span className={`pill ${g.malattia ? 'pill-alert' : 'pill-info'}`}>{g.malattia ? 'malattia' : 'ferie'}</span>
             </span>
@@ -408,5 +408,5 @@ function DettaglioRiga({ giorni }) {
 }
 
 const selStyle = {
-  padding: '8px 10px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff',
+  padding: '8px 10px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff',
 }

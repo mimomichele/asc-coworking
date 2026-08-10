@@ -26,7 +26,7 @@ export default function DipendenteLayout({ session }) {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F5C842' }}>
+    <div style={{ minHeight: '100vh', background: '#111111', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F5B301' }}>
       Caricamento...
     </div>
   )
@@ -35,7 +35,7 @@ export default function DipendenteLayout({ session }) {
     <div style={styles.shell}>
       <Header nome="" onLogout={logout} />
       <div style={{ padding: 24 }}>
-        <div className="card" style={{ textAlign: 'center', color: '#888' }}>
+        <div className="card" style={{ textAlign: 'center', color: '#6B6B6B' }}>
           Il tuo profilo dipendente non è collegato. Contatta l'amministrazione.
         </div>
       </div>
@@ -73,7 +73,7 @@ function Header({ nome, onLogout }) {
   return (
     <header style={styles.header}>
       <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5 }}>
-        ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+        ASC <span style={{ color: '#F5B301' }}>HOTEL</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {nome && <span style={{ fontSize: 12, color: '#aaa' }}>{nome}</span>}
@@ -87,25 +87,25 @@ function tabStyle({ isActive }) {
   return {
     flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
     padding: '8px 0', fontSize: 11, textDecoration: 'none',
-    color: isActive ? '#1a1a1a' : '#999',
+    color: isActive ? '#111111' : '#999',
     fontWeight: isActive ? 600 : 400,
   }
 }
 
 const styles = {
-  shell: { minHeight: '100vh', background: '#f5f5f3', paddingBottom: 64 },
+  shell: { minHeight: '100vh', background: '#F6F5F1', paddingBottom: 64 },
   header: {
-    background: '#1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    background: '#111111', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '0 16px', height: 52, position: 'sticky', top: 0, zIndex: 100,
   },
   logoutBtn: {
-    background: 'none', border: '0.5px solid #444', color: '#888',
+    background: 'none', border: '0.5px solid #444', color: '#6B6B6B',
     padding: '5px 10px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
   },
   main: { padding: '16px', maxWidth: 600, margin: '0 auto' },
   bottomNav: {
     position: 'fixed', bottom: 0, left: 0, right: 0, height: 60,
-    background: '#fff', borderTop: '0.5px solid #e5e5e5',
+    background: '#fff', borderTop: '0.5px solid #E5E3DC',
     display: 'flex', alignItems: 'stretch', zIndex: 100,
   },
 }
