@@ -185,7 +185,7 @@ export default function NuovoOspite() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button className="btn-ghost" onClick={() => navigate('/admin/ospiti')}>← Indietro</button>
-        <h2 style={{ fontSize: 20, fontWeight: 500 }}>Nuovo ospite</h2>
+        <h2 style={{ fontSize: 24, fontWeight: 700 }}>Nuovo ospite</h2>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -218,9 +218,9 @@ export default function NuovoOspite() {
               {['single', 'family'].map(t => (
                 <div key={t} onClick={() => setForm(f => ({ ...f, type: t }))} style={{
                   padding: '8px 16px', borderRadius: 8,
-                  border: `0.5px solid ${form.type === t ? '#F5C842' : '#ccc'}`,
+                  border: `0.5px solid ${form.type === t ? '#F5B301' : '#E5E3DC'}`,
                   background: form.type === t ? '#FAEEDA' : '#fff',
-                  color: form.type === t ? '#854F0B' : '#888',
+                  color: form.type === t ? '#854F0B' : '#6B6B6B',
                   cursor: 'pointer', fontSize: 13,
                   fontWeight: form.type === t ? 500 : 400,
                 }}>
@@ -234,7 +234,7 @@ export default function NuovoOspite() {
 
       <div className="card" style={{ marginBottom: 14 }}>
         <div style={styles.sectionTitle}>Dati Alloggiati Web — intestatario</div>
-        <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+        <div style={{ fontSize: 11, color: '#6B6B6B', marginBottom: 4 }}>
           Facoltativi: si possono completare in seguito dalla scheda ospite. Per i nati all'estero comune e provincia restano vuoti.
         </div>
         <AlloggiatiFields value={alloggiatiPrinc} onChange={setAlloggiatiPrinc} requiredMarker={false} />
@@ -275,16 +275,16 @@ export default function NuovoOspite() {
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fafafa', borderRadius: 8, padding: '10px 14px', marginBottom: 8 }}>
               <div>
                 <div style={{ fontWeight: 500, fontSize: 13 }}>{m.name} {m.surname}</div>
-                <div style={{ fontSize: 11, color: '#888' }}>{tipoLabel(m.subscription_type_id)}</div>
+                <div style={{ fontSize: 11, color: '#6B6B6B' }}>{tipoLabel(m.subscription_type_id)}</div>
               </div>
               <button className="btn-danger" onClick={() => rimuoviMembro(m.id)}>Rimuovi</button>
             </div>
           ))}
 
           {/* Form nuovo membro */}
-          <div style={{ borderTop: membri.length ? '0.5px solid #eee' : 'none', paddingTop: membri.length ? 14 : 0 }}>
+          <div style={{ borderTop: membri.length ? '0.5px solid #E5E3DC' : 'none', paddingTop: membri.length ? 14 : 0 }}>
             {membri.length > 0 && (
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 10 }}>Aggiungi altro membro</div>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#6B6B6B', marginBottom: 10 }}>Aggiungi altro membro</div>
             )}
             <div style={styles.grid2}>
               <div className="field">
@@ -316,8 +316,8 @@ export default function NuovoOspite() {
             </div>
 
             {/* Dati Alloggiati del membro: facoltativi, completabili dalla scheda ospite. */}
-            <div style={{ marginTop: 8, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
-              <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 6 }}>Dati Alloggiati Web — {nuovoMembro.name || 'nuovo membro'}</div>
+            <div style={{ marginTop: 8, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: '#6B6B6B', marginBottom: 6 }}>Dati Alloggiati Web — {nuovoMembro.name || 'nuovo membro'}</div>
               <AlloggiatiFields value={alloggiatiNuovo} onChange={setAlloggiatiNuovo} requiredMarker={false} />
             </div>
 
@@ -343,5 +343,5 @@ export default function NuovoOspite() {
 
 const styles = {
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 },
-  sectionTitle: { fontSize: 13, fontWeight: 500, marginBottom: 14, paddingBottom: 10, borderBottom: '0.5px solid #eee' },
+  sectionTitle: { fontSize: 13, fontWeight: 500, marginBottom: 14, paddingBottom: 10, borderBottom: '0.5px solid #E5E3DC' },
 }

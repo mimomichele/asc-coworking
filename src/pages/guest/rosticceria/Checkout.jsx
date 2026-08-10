@@ -43,7 +43,7 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
           onClick={onBack}
           style={{
             width: 28, height: 28, borderRadius: '50%',
-            border: '0.5px solid #ddd', background: '#f5f5f3',
+            border: '0.5px solid #E5E3DC', background: '#F6F5F1',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
           }}
@@ -52,7 +52,7 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
             <path d="M7 1L3 5L7 9" stroke="#888" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <h2 style={{ fontSize: 18, fontWeight: 500, color: '#1a1a1a', margin: 0 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 500, color: '#111111', margin: 0 }}>
           Riepilogo ordine
         </h2>
       </div>
@@ -61,16 +61,16 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
       <Section title="Articoli">
         {cartItems.map((item) => (
           <div key={item.productId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '0.5px solid #f0f0ee' }}>
-            <span style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>{item.name}</span>
-            <span style={{ fontSize: 13, color: '#888', flexShrink: 0 }}>×{item.qty}</span>
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', minWidth: 56, textAlign: 'right' }}>
+            <span style={{ flex: 1, fontSize: 14, color: '#111111' }}>{item.name}</span>
+            <span style={{ fontSize: 13, color: '#6B6B6B', flexShrink: 0 }}>×{item.qty}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#111111', minWidth: 56, textAlign: 'right' }}>
               {fmt(item.price * item.qty)}
             </span>
           </div>
         ))}
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 10, marginTop: 4, borderTop: '0.5px solid #e8e8e4' }}>
-          <span style={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>Totale</span>
-          <span style={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a' }}>{fmt(cartTotal)}</span>
+          <span style={{ fontSize: 15, fontWeight: 500, color: '#111111' }}>Totale</span>
+          <span style={{ fontSize: 15, fontWeight: 500, color: '#111111' }}>{fmt(cartTotal)}</span>
         </div>
       </Section>
 
@@ -99,8 +99,8 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
                 placeholder="Numero camera (es. 204)"
                 style={{
                   width: '100%', padding: '9px 12px', fontSize: 14,
-                  borderRadius: 8, border: '0.5px solid #ddd',
-                  background: '#fff', color: '#1a1a1a',
+                  borderRadius: 8, border: '0.5px solid #E5E3DC',
+                  background: '#fff', color: '#111111',
                   outline: 'none',
                 }}
               />
@@ -125,9 +125,9 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
                   style={{
                     padding: '7px 0', textAlign: 'center',
                     borderRadius: 8,
-                    border: active ? 'none' : '0.5px solid #ddd',
-                    background: active ? '#D85A30' : '#f5f5f3',
-                    color: active ? '#fff' : '#888',
+                    border: active ? 'none' : '0.5px solid #E5E3DC',
+                    background: active ? '#E8710A' : '#F6F5F1',
+                    color: active ? '#fff' : '#6B6B6B',
                     fontSize: 13, fontWeight: active ? 500 : 400,
                     cursor: 'pointer', transition: 'all .15s',
                   }}
@@ -149,15 +149,15 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
           placeholder="Es. senza cipolla, allergie..."
           style={{
             width: '100%', padding: '9px 12px', fontSize: 13,
-            borderRadius: 8, border: '0.5px solid #ddd',
-            background: '#fff', color: '#1a1a1a', outline: 'none',
+            borderRadius: 8, border: '0.5px solid #E5E3DC',
+            background: '#fff', color: '#111111', outline: 'none',
           }}
         />
       </Section>
 
       {/* Errore */}
       {error && (
-        <div style={{ background: '#FCEBEB', borderRadius: 8, padding: 10, fontSize: 13, color: '#A32D2D', marginBottom: 12 }}>
+        <div style={{ background: '#FCEBEB', borderRadius: 8, padding: 10, fontSize: 13, color: '#C5221F', marginBottom: 12 }}>
           {error}
         </div>
       )}
@@ -173,7 +173,7 @@ export default function Checkout({ session, cartItems, cartTotal, slots, onBack,
           onClick={handleConfirm}
           style={{
             width: '100%',
-            background: canSubmit ? '#D85A30' : '#e8e8e4',
+            background: canSubmit ? '#E8710A' : '#e8e8e4',
             color: canSubmit ? '#fff' : '#aaa',
             border: 'none', borderRadius: 8,
             padding: 13, fontSize: 15, fontWeight: 500,
@@ -210,19 +210,19 @@ function ModeOption({ selected, onClick, label, sub }) {
       style={{
         display: 'flex', alignItems: 'flex-start', gap: 10,
         padding: '11px 12px', borderRadius: 8,
-        border: selected ? '0.5px solid #D85A30' : '0.5px solid #ddd',
+        border: selected ? '0.5px solid #E8710A' : '0.5px solid #E5E3DC',
         background: selected ? '#FFF5F1' : '#fff',
         cursor: 'pointer', transition: 'all .15s',
       }}
     >
       <div style={{
         width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-        border: selected ? '5px solid #D85A30' : '1.5px solid #ccc',
+        border: selected ? '5px solid #E8710A' : '1.5px solid #E5E3DC',
         transition: 'all .15s',
       }} />
       <div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', margin: 0 }}>{label}</p>
-        <p style={{ fontSize: 12, color: '#888', margin: '2px 0 0' }}>{sub}</p>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#111111', margin: 0 }}>{label}</p>
+        <p style={{ fontSize: 12, color: '#6B6B6B', margin: '2px 0 0' }}>{sub}</p>
       </div>
     </div>
   )

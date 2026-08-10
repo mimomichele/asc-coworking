@@ -117,12 +117,12 @@ export default function Esauriti() {
     fetchData()  // refetch: la riga sparisce dalla sezione corrente e appare nell'altra
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>Esauriti</h2>
-      <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Esauriti</h2>
+      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>
         Ospiti con abbonamento a 0 ingressi: chiama per chiedere se rinnovano e segna l'esito.
       </div>
 
@@ -134,7 +134,7 @@ export default function Esauriti() {
         </div>
       )}
       {pendingSorted.length === 0
-        ? <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessun ospite da contattare. Tutti contattati o nessun abbonamento esaurito.</div>
+        ? <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun ospite da contattare. Tutti contattati o nessun abbonamento esaurito.</div>
         : (
           <div className="table-wrap">
             <table>
@@ -153,7 +153,7 @@ export default function Esauriti() {
                     <td style={{ fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(`/admin/ospiti/${s.members?.account_id}`)}>
                       {s.members?.name} {s.members?.surname}
                     </td>
-                    <td style={{ fontSize: 12, color: '#888' }}>
+                    <td style={{ fontSize: 12, color: '#6B6B6B' }}>
                       {s.members?.accounts?.name} {s.members?.accounts?.surname}
                     </td>
                     <td style={{ fontSize: 13 }}>{s.subscription_types?.name || '—'}</td>
@@ -185,12 +185,12 @@ export default function Esauriti() {
           <span style={{ fontSize: 15, fontWeight: 500 }}>
             Già contattati ({contacted.length})
           </span>
-          <span style={{ color: '#888', fontSize: 14 }}>{expanded ? '▼' : '▶'}</span>
+          <span style={{ color: '#6B6B6B', fontSize: 14 }}>{expanded ? '▼' : '▶'}</span>
         </div>
 
         {expanded && (
           contacted.length === 0
-            ? <div className="card" style={{ color: '#888', fontSize: 13, marginTop: 10 }}>Nessun ospite ancora contattato.</div>
+            ? <div className="card" style={{ color: '#6B6B6B', fontSize: 13, marginTop: 10 }}>Nessun ospite ancora contattato.</div>
             : (
               <div className="table-wrap" style={{ marginTop: 10 }}>
                 <table>
@@ -211,7 +211,7 @@ export default function Esauriti() {
                         <td style={{ fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(`/admin/ospiti/${s.members?.account_id}`)}>
                           {s.members?.name} {s.members?.surname}
                         </td>
-                        <td style={{ fontSize: 12, color: '#888' }}>
+                        <td style={{ fontSize: 12, color: '#6B6B6B' }}>
                           {s.members?.accounts?.name} {s.members?.accounts?.surname}
                         </td>
                         <td style={{ fontSize: 13 }}>{s.subscription_types?.name || '—'}</td>
@@ -221,7 +221,7 @@ export default function Esauriti() {
                             {s.follow_up_status === 'renewed' ? 'Rinnovato' : 'Non rinnova'}
                           </span>
                         </td>
-                        <td style={{ fontSize: 12, color: '#888' }}>{fmtDateTimeIt(s.follow_up_date)}</td>
+                        <td style={{ fontSize: 12, color: '#6B6B6B' }}>{fmtDateTimeIt(s.follow_up_date)}</td>
                         <td style={{ textAlign: 'right' }}>
                           <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => updateFollowUp(s.id, 'pending')}>
                             Riapri
@@ -245,13 +245,13 @@ const S = {
     fontSize: 13, color: '#854F0B', marginBottom: 16,
   },
   btnRenew: {
-    background: '#3B6D11', color: '#fff', border: 'none',
+    background: '#1E8E3E', color: '#fff', border: 'none',
     padding: '7px 14px', borderRadius: 8, fontSize: 12,
     fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
   },
   collapseHeader: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '12px 14px', background: '#fafafa', borderRadius: 10,
-    cursor: 'pointer', border: '0.5px solid #eee',
+    cursor: 'pointer', border: '0.5px solid #E5E3DC',
   },
 }

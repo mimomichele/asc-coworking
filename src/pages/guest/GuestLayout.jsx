@@ -18,13 +18,13 @@ export default function GuestLayout({ session }) {
   const isStaffetta = location.pathname.includes('staffetta')
 
   return (
-    <div style={{ minHeight: '100vh', background: '#1a1a1a' }}>
+    <div style={{ minHeight: '100vh', background: '#111111' }}>
       {/* top bar */}
-      <div style={{ background: '#1a1a1a', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ background: '#111111', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontSize: 15, fontWeight: 600, color: '#fff', letterSpacing: 1.5 }}>
-          ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+          ASC <span style={{ color: '#F5B301' }}>HOTEL</span>
         </div>
-        <button onClick={logout} style={{ background: 'none', border: '0.5px solid #444', color: '#888', padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>
+        <button onClick={logout} style={{ background: 'none', border: '0.5px solid #444', color: '#6B6B6B', padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer' }}>
           Esci
         </button>
       </div>
@@ -54,7 +54,7 @@ export default function GuestLayout({ session }) {
 
       {/* contenuto */}
       <div style={{
-        background: '#f5f5f3',
+        background: '#F6F5F1',
         borderRadius: '20px 20px 0 0',
         minHeight: 'calc(100vh - 96px)',
         padding: '20px 16px',
@@ -81,8 +81,8 @@ function TabButton({ label, active, onClick }) {
         padding: '10px 0',
         background: 'none',
         border: 'none',
-        borderBottom: active ? '2px solid #F5C842' : '2px solid transparent',
-        color: active ? '#F5C842' : '#aaa',
+        borderBottom: active ? '2px solid #F5B301' : '2px solid transparent',
+        color: active ? '#F5B301' : '#aaa',
         fontSize: 13,
         fontWeight: 500,
         cursor: 'pointer',

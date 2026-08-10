@@ -123,17 +123,17 @@ export default function Richieste() {
     fetchAll()
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/turni" style={{ color: '#888', textDecoration: 'none' }}>← Torna ai turni</Link>
+        <Link to="/admin/turni" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Torna ai turni</Link>
       </div>
 
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 16 }}>Richieste</h2>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16 }}>Richieste</h2>
 
       {/* MODIFICHE ORARIO */}
       <Sezione titolo={`Modifiche orario in attesa (${changeReqs.length})`}>
@@ -148,7 +148,7 @@ export default function Richieste() {
                     {fmtBreve(r.requested_data)}: {r.shifts ? fmtRangeOrario(r.shifts.start_time, r.shifts.end_time) : '—'}
                     {' '}→ <strong>{fmtRangeOrario(r.requested_start, r.requested_end)}</strong>
                   </div>
-                  {r.motivo && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.motivo}</div>}
+                  {r.motivo && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{r.motivo}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button className="btn-ghost" disabled={busy === r.id} onClick={() => rifiutaModifica(r)}>Rifiuta</button>
@@ -169,7 +169,7 @@ export default function Richieste() {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{nomeDipendente(r.dipendenti || {})}</div>
                   <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{fmtBreve(r.start_date)} – {fmtBreve(r.end_date)}</div>
-                  {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
+                  {r.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{r.note}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button className="btn-ghost" disabled={busy === r.id} onClick={() => risolviFerie(r, 'rejected')}>Rifiuta</button>
@@ -191,7 +191,7 @@ export default function Richieste() {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{nomeDipendente(r.dipendenti || {})}</div>
                   <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{fmtBreve(r.start_date)} – {fmtBreve(r.end_date)}</div>
-                  {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
+                  {r.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{r.note}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <span className="pill pill-ok">Approvata</span>
@@ -212,7 +212,7 @@ export default function Richieste() {
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{nomeDipendente(r.dipendenti || {})}</div>
                   <div style={{ fontSize: 13, color: '#444', marginTop: 2 }}>{fmtBreve(r.start_date)} – {fmtBreve(r.end_date)}</div>
-                  {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
+                  {r.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{r.note}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button className="btn-ghost" onClick={() => scaricaCertificato(r.certificate_url)}>Certificato</button>
@@ -229,7 +229,7 @@ export default function Richieste() {
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>
               Elimina {confirmDelete.type === 'malattia' ? 'malattia' : 'ferie'}
             </div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>
               Stai per eliminare la richiesta di <strong>{nomeDipendente(confirmDelete.leave.dipendenti || {})}</strong>
               {' '}({fmtBreve(confirmDelete.leave.start_date)} – {fmtBreve(confirmDelete.leave.end_date)}).
               L'operazione è definitiva.
@@ -237,7 +237,7 @@ export default function Richieste() {
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirmDelete(null)}>Annulla</button>
               <button
-                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 disabled={busy === confirmDelete.leave.id}
                 onClick={eliminaLeave}
               >
@@ -261,5 +261,5 @@ function Sezione({ titolo, children }) {
 }
 
 function Vuoto({ testo }) {
-  return <div className="card" style={{ color: '#888', fontSize: 13 }}>{testo}</div>
+  return <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>{testo}</div>
 }

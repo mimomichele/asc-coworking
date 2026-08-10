@@ -29,34 +29,34 @@ const S = {
   card: { background: '#fff', borderRadius: 12, border: '0.5px solid #e8e8e4', marginBottom: 8, overflow: 'hidden' },
   sectionTitle: { fontSize: 11, fontWeight: 500, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 },
   tabBar: { display: 'flex', background: '#fff', borderBottom: '0.5px solid #e8e8e4', overflowX: 'auto', scrollbarWidth: 'none' },
-  tab: (active) => ({ flexShrink: 0, padding: '11px 16px', fontSize: 13, fontWeight: active ? 500 : 400, color: active ? '#D85A30' : '#888', background: 'none', border: 'none', borderBottom: active ? '2px solid #D85A30' : '2px solid transparent', cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap' }),
-  badge: (n) => ({ display: n > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', background: '#D85A30', color: '#fff', borderRadius: 10, fontSize: 11, minWidth: 17, height: 17, padding: '0 4px', marginLeft: 4 }),
-  orderCard: (isNew) => ({ background: '#fff', borderRadius: 12, border: isNew ? '0.5px solid #D85A30' : '0.5px solid #e8e8e4', marginBottom: 8, overflow: 'hidden' }),
+  tab: (active) => ({ flexShrink: 0, padding: '11px 16px', fontSize: 13, fontWeight: active ? 500 : 400, color: active ? '#E8710A' : '#6B6B6B', background: 'none', border: 'none', borderBottom: active ? '2px solid #E8710A' : '2px solid transparent', cursor: 'pointer', transition: 'all .15s', whiteSpace: 'nowrap' }),
+  badge: (n) => ({ display: n > 0 ? 'inline-flex' : 'none', alignItems: 'center', justifyContent: 'center', background: '#E8710A', color: '#fff', borderRadius: 10, fontSize: 11, minWidth: 17, height: 17, padding: '0 4px', marginLeft: 4 }),
+  orderCard: (isNew) => ({ background: '#fff', borderRadius: 12, border: isNew ? '0.5px solid #E8710A' : '0.5px solid #e8e8e4', marginBottom: 8, overflow: 'hidden' }),
   orderHeader: { padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '0.5px solid #f0f0ee', flexWrap: 'wrap' },
-  customerName: { fontSize: 15, fontWeight: 500, color: '#1a1a1a', flex: 1 },
+  customerName: { fontSize: 15, fontWeight: 500, color: '#111111', flex: 1 },
   modeBadge: (mode) => ({ fontSize: 11, padding: '3px 8px', borderRadius: 20, fontWeight: 500, background: mode === 'reception' ? '#E6F1FB' : '#FAEEDA', color: mode === 'reception' ? '#185FA5' : '#854F0B' }),
-  newBadge: { fontSize: 11, padding: '3px 8px', borderRadius: 20, background: '#FCEBEB', color: '#A32D2D', fontWeight: 500 },
+  newBadge: { fontSize: 11, padding: '3px 8px', borderRadius: 20, background: '#FCEBEB', color: '#C5221F', fontWeight: 500 },
   orderBody: { padding: '10px 14px' },
   orderItemRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#555', lineHeight: 1.9 },
-  orderNote: { marginTop: 6, fontSize: 12, color: '#aaa', background: '#f5f5f3', borderRadius: 8, padding: '5px 8px' },
+  orderNote: { marginTop: 6, fontSize: 12, color: '#aaa', background: '#F6F5F1', borderRadius: 8, padding: '5px 8px' },
   orderFooter: { padding: '8px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '0.5px solid #f0f0ee', background: '#fafaf8' },
-  btnPrimary: { background: '#D85A30', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 14, fontWeight: 500, cursor: 'pointer', width: '100%', marginTop: 12 },
-  btnSecondary: { background: '#f5f5f3', color: '#1a1a1a', border: '0.5px solid #e8e8e4', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', marginTop: 8 },
-  input: { width: '100%', padding: '8px 10px', fontSize: 13, borderRadius: 8, border: '0.5px solid #ddd', background: '#fff', color: '#1a1a1a', outline: 'none' },
-  pill: (active) => ({ flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 12, border: active ? 'none' : '0.5px solid #ddd', background: active ? '#D85A30' : '#f5f5f3', color: active ? '#fff' : '#888', cursor: 'pointer', fontWeight: active ? 500 : 400 }),
+  btnPrimary: { background: '#E8710A', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 14, fontWeight: 500, cursor: 'pointer', width: '100%', marginTop: 12 },
+  btnSecondary: { background: '#F6F5F1', color: '#111111', border: '0.5px solid #e8e8e4', borderRadius: 8, padding: '9px', fontSize: 13, fontWeight: 500, cursor: 'pointer', width: '100%', marginTop: 8 },
+  input: { width: '100%', padding: '8px 10px', fontSize: 13, borderRadius: 8, border: '0.5px solid #E5E3DC', background: '#fff', color: '#111111', outline: 'none' },
+  pill: (active) => ({ flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 12, border: active ? 'none' : '0.5px solid #E5E3DC', background: active ? '#E8710A' : '#F6F5F1', color: active ? '#fff' : '#6B6B6B', cursor: 'pointer', fontWeight: active ? 500 : 400 }),
   divider: { fontSize: 11, fontWeight: 500, color: '#aaa', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '14px 0 6px' },
   prodLine: { display: 'flex', alignItems: 'center', padding: '10px 14px', borderBottom: '0.5px solid #f0f0ee', gap: 10 },
-  qtyBig: { fontSize: 22, fontWeight: 500, color: '#1a1a1a', minWidth: 36, textAlign: 'right' },
+  qtyBig: { fontSize: 22, fontWeight: 500, color: '#111111', minWidth: 36, textAlign: 'right' },
 }
 
 function ConfirmDialog({ msg, onConfirm, onCancel }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e8e4', padding: 24, maxWidth: 300, width: '90%', textAlign: 'center' }}>
-        <p style={{ fontSize: 14, color: '#1a1a1a', marginBottom: 16, lineHeight: 1.5 }}>{msg}</p>
+        <p style={{ fontSize: 14, color: '#111111', marginBottom: 16, lineHeight: 1.5 }}>{msg}</p>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: 8, borderRadius: 8, border: '0.5px solid #ddd', background: '#f5f5f3', fontSize: 13, cursor: 'pointer' }}>Annulla</button>
-          <button onClick={onConfirm} style={{ flex: 1, padding: 8, borderRadius: 8, border: 'none', background: '#E24B4A', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Elimina</button>
+          <button onClick={onCancel} style={{ flex: 1, padding: 8, borderRadius: 8, border: '0.5px solid #E5E3DC', background: '#F6F5F1', fontSize: 13, cursor: 'pointer' }}>Annulla</button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: 8, borderRadius: 8, border: 'none', background: '#C5221F', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Elimina</button>
         </div>
       </div>
     </div>
@@ -66,7 +66,7 @@ function ConfirmDialog({ msg, onConfirm, onCancel }) {
 function Toggle({ checked, onChange }) {
   return (
     <div onClick={() => onChange(!checked)} style={{ position: 'relative', width: 34, height: 19, flexShrink: 0, cursor: 'pointer' }}>
-      <div style={{ position: 'absolute', inset: 0, borderRadius: 10, background: checked ? '#1D9E75' : '#ddd', transition: 'background .2s' }} />
+      <div style={{ position: 'absolute', inset: 0, borderRadius: 10, background: checked ? '#1E8E3E' : '#E5E3DC', transition: 'background .2s' }} />
       <div style={{ position: 'absolute', top: 2, left: checked ? 17 : 2, width: 15, height: 15, borderRadius: '50%', background: '#fff', transition: 'left .2s' }} />
     </div>
   )
@@ -164,8 +164,8 @@ function OrderCard({ order, isNew }) {
         {order.notes && <div style={S.orderNote}>{order.notes}</div>}
       </div>
       <div style={S.orderFooter}>
-        <span style={{ fontSize: 12, color: '#888' }}>{mode === 'camera' ? 'Consegna' : 'Ritiro'} ore {time}</span>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{fmt(order.total)}</span>
+        <span style={{ fontSize: 12, color: '#6B6B6B' }}>{mode === 'camera' ? 'Consegna' : 'Ritiro'} ore {time}</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: '#111111' }}>{fmt(order.total)}</span>
       </div>
     </div>
   )
@@ -198,21 +198,21 @@ function TabProduzione({ orders }) {
       {Object.entries(groupedArr).map(([cat, items]) => (
         <div key={cat} style={{ ...S.card, marginBottom: 8 }}>
           <div style={{ padding: '10px 14px', background: '#fafaf8', borderBottom: '0.5px solid #f0f0ee', display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{cat}</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: '#111111' }}>{cat}</span>
             <span style={{ fontSize: 12, color: '#aaa' }}>{items.reduce((s, i) => s + i.qty, 0)} pz totali</span>
           </div>
           {items.map((item, i) => (
             <div key={i} style={{ ...S.prodLine, borderBottom: i < items.length - 1 ? '0.5px solid #f0f0ee' : 'none' }}>
-              <span style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}>{item.name}</span>
+              <span style={{ flex: 1, fontSize: 14, color: '#111111' }}>{item.name}</span>
               <span style={S.qtyBig}>{item.qty}</span>
               <span style={{ fontSize: 12, color: '#aaa', minWidth: 24 }}>pz</span>
             </div>
           ))}
         </div>
       ))}
-      <div style={{ background: '#f5f5f3', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, color: '#888' }}>Ordini inclusi</span>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>{filtered.length}</span>
+      <div style={{ background: '#F6F5F1', borderRadius: 8, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontSize: 13, color: '#6B6B6B' }}>Ordini inclusi</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: '#111111' }}>{filtered.length}</span>
       </div>
       <button style={S.btnSecondary} onClick={() => generateProduzionePDF(groupedArr, slotFilter)}>
         ↓ Scarica PDF produzione
@@ -275,13 +275,13 @@ function TabMenu({ categories }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <button onClick={() => setMenuDate(d => addDays(d, -1))} style={{ width: 28, height: 28, borderRadius: '50%', border: '0.5px solid #ddd', background: '#f5f5f3', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
-        <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#1a1a1a', textAlign: 'center' }}>
+        <button onClick={() => setMenuDate(d => addDays(d, -1))} style={{ width: 28, height: 28, borderRadius: '50%', border: '0.5px solid #E5E3DC', background: '#F6F5F1', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>‹</button>
+        <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: '#111111', textAlign: 'center' }}>
           {fmtDate(menuDate)}
           {isToday && <span style={{ fontSize: 11, background: '#E1F5EE', color: '#0F6E56', borderRadius: 20, padding: '2px 8px', marginLeft: 6, fontWeight: 500 }}>Oggi</span>}
           {isTomorrow && <span style={{ fontSize: 11, background: '#FAEEDA', color: '#854F0B', borderRadius: 20, padding: '2px 8px', marginLeft: 6, fontWeight: 500 }}>Domani</span>}
         </span>
-        <button onClick={() => setMenuDate(d => addDays(d, 1))} style={{ width: 28, height: 28, borderRadius: '50%', border: '0.5px solid #ddd', background: '#f5f5f3', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
+        <button onClick={() => setMenuDate(d => addDays(d, 1))} style={{ width: 28, height: 28, borderRadius: '50%', border: '0.5px solid #E5E3DC', background: '#F6F5F1', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>›</button>
       </div>
       {categories.map(cat => {
         const catProducts = products.filter(p => p.category_id === cat.id)
@@ -289,14 +289,14 @@ function TabMenu({ categories }) {
         return (
           <div key={cat.id} style={{ ...S.card, marginBottom: 8 }}>
             <div style={{ padding: '10px 12px', background: '#fafaf8', borderBottom: '0.5px solid #f0f0ee' }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{cat.name}</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#111111' }}>{cat.name}</span>
             </div>
             {catProducts.map((p, i) => {
               const item = getItem(p.id)
               const active = item ? item.is_active : false
               return (
                 <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: i < catProducts.length - 1 ? '0.5px solid #f0f0ee' : 'none' }}>
-                  <span style={{ flex: 1, fontSize: 13, color: '#1a1a1a' }}>{p.name}</span>
+                  <span style={{ flex: 1, fontSize: 13, color: '#111111' }}>{p.name}</span>
                   <span style={{ fontSize: 12, color: '#aaa', minWidth: 44, textAlign: 'right' }}>€ {Number(p.price).toFixed(2).replace('.', ',')}</span>
                   {active && (
                     <>
@@ -304,7 +304,7 @@ function TabMenu({ categories }) {
                         type="number" min="1" placeholder="∞"
                         value={item?.portions ?? ''}
                         onChange={e => updatePortions(p, e.target.value)}
-                        style={{ width: 52, padding: '4px 6px', fontSize: 12, borderRadius: 8, border: '0.5px solid #ddd', background: '#f5f5f3', color: '#1a1a1a', textAlign: 'center', outline: 'none' }}
+                        style={{ width: 52, padding: '4px 6px', fontSize: 12, borderRadius: 8, border: '0.5px solid #E5E3DC', background: '#F6F5F1', color: '#111111', textAlign: 'center', outline: 'none' }}
                       />
                       <span style={{ fontSize: 10, color: '#aaa', minWidth: 44 }}>porzioni</span>
                     </>
@@ -350,18 +350,18 @@ function TabOrari() {
   return (
     <div>
       {confirm && <ConfirmDialog msg={`Eliminare lo slot delle ${confirm.time.slice(0, 5)}?`} onConfirm={() => deleteSlot(confirm.id)} onCancel={() => setConfirm(null)} />}
-      <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Slot orari per oggi — {fmtDate(TODAY)}</p>
+      <p style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 12 }}>Slot orari per oggi — {fmtDate(TODAY)}</p>
       {slots.map(s => (
         <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff', borderRadius: 8, border: '0.5px solid #e8e8e4', marginBottom: 6 }}>
-          <span style={{ fontSize: 15, fontWeight: 500, color: '#1a1a1a', minWidth: 44 }}>{s.time.slice(0, 5)}</span>
+          <span style={{ fontSize: 15, fontWeight: 500, color: '#111111', minWidth: 44 }}>{s.time.slice(0, 5)}</span>
           <span style={{ flex: 1, fontSize: 12, color: '#aaa' }}>Slot attivo</span>
-          <button onClick={() => setConfirm(s)} style={{ width: 26, height: 26, borderRadius: '50%', border: '0.5px solid #ddd', background: 'none', color: '#ccc', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+          <button onClick={() => setConfirm(s)} style={{ width: 26, height: 26, borderRadius: '50%', border: '0.5px solid #E5E3DC', background: 'none', color: '#E5E3DC', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
         </div>
       ))}
       {slots.length === 0 && <div style={{ textAlign: 'center', padding: 24, color: '#aaa', fontSize: 13 }}>Nessuno slot per oggi</div>}
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-        <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ flex: 1, padding: '8px 10px', fontSize: 14, borderRadius: 8, border: '0.5px solid #ddd', background: '#fff', color: '#1a1a1a', outline: 'none' }} />
-        <button onClick={addSlot} disabled={saving} style={{ background: '#D85A30', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
+        <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} style={{ flex: 1, padding: '8px 10px', fontSize: 14, borderRadius: 8, border: '0.5px solid #E5E3DC', background: '#fff', color: '#111111', outline: 'none' }} />
+        <button onClick={addSlot} disabled={saving} style={{ background: '#E8710A', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>
           Aggiungi
         </button>
       </div>
@@ -424,7 +424,7 @@ function TabProdotti({ categories, onCategoriesChange }) {
       {confirm && <ConfirmDialog msg={`Eliminare "${confirm.name}" dal catalogo? L'operazione non è reversibile.`} onConfirm={() => deleteProduct(confirm.id)} onCancel={() => setConfirm(null)} />}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <input value={newCat} onChange={e => setNewCat(e.target.value)} placeholder="Nuova categoria (es. Secondi caldi)" style={{ ...S.input, flex: 1 }} onKeyDown={e => e.key === 'Enter' && addCategory()} />
-        <button onClick={addCategory} style={{ background: '#D85A30', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>+ Categoria</button>
+        <button onClick={addCategory} style={{ background: '#E8710A', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', flexShrink: 0 }}>+ Categoria</button>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
         <button style={S.pill(selectedCat === 'tutti')} onClick={() => setSelectedCat('tutti')}>Tutti</button>
@@ -436,11 +436,11 @@ function TabProdotti({ categories, onCategoriesChange }) {
         return (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: '#fff', borderRadius: 8, border: '0.5px solid #e8e8e4', marginBottom: 6 }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a' }}>{p.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#111111' }}>{p.name}</div>
               <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>{cat?.name}{p.description ? ' · ' + p.description : ''}</div>
             </div>
-            <div style={{ fontSize: 13, color: '#888', flexShrink: 0 }}>€ {Number(p.price).toFixed(2).replace('.', ',')}</div>
-            <button onClick={() => setConfirm(p)} style={{ width: 28, height: 28, borderRadius: 8, border: '0.5px solid #ddd', background: 'none', color: '#ccc', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <div style={{ fontSize: 13, color: '#6B6B6B', flexShrink: 0 }}>€ {Number(p.price).toFixed(2).replace('.', ',')}</div>
+            <button onClick={() => setConfirm(p)} style={{ width: 28, height: 28, borderRadius: 8, border: '0.5px solid #E5E3DC', background: 'none', color: '#E5E3DC', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
           </div>
         )
       })}
@@ -455,8 +455,8 @@ function TabProdotti({ categories, onCategoriesChange }) {
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: 9, borderRadius: 8, border: '0.5px solid #ddd', background: '#f5f5f3', fontSize: 13, cursor: 'pointer' }}>Annulla</button>
-            <button onClick={saveProduct} disabled={saving} style={{ flex: 1, padding: 9, borderRadius: 8, border: 'none', background: '#D85A30', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+            <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: 9, borderRadius: 8, border: '0.5px solid #E5E3DC', background: '#F6F5F1', fontSize: 13, cursor: 'pointer' }}>Annulla</button>
+            <button onClick={saveProduct} disabled={saving} style={{ flex: 1, padding: 9, borderRadius: 8, border: 'none', background: '#E8710A', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
               {saving ? 'Salvataggio...' : 'Salva prodotto'}
             </button>
           </div>
@@ -522,9 +522,9 @@ export default function RosticceriaPannello() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1D9E75', animation: 'pulse 2s ease-in-out infinite' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#1E8E3E', animation: 'pulse 2s ease-in-out infinite' }} />
         <span style={{ fontSize: 12, color: '#0F6E56' }}>Live</span>
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a' }}>Pannello rosticceria</span>
+        <span style={{ fontSize: 14, fontWeight: 500, color: '#111111' }}>Pannello rosticceria</span>
         <span style={{ fontSize: 13, color: '#aaa', marginLeft: 'auto' }}>{fmtDate(TODAY)}</span>
       </div>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }`}</style>

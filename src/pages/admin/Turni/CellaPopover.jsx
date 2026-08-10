@@ -138,7 +138,7 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600 }}>{nomeDipendente(dipendente)}</div>
-            <div style={{ fontSize: 12, color: '#888', textTransform: 'capitalize' }}>
+            <div style={{ fontSize: 12, color: '#6B6B6B', textTransform: 'capitalize' }}>
               {GIORNI[giornoOrdine === -1 ? 0 : giornoOrdine]} · {fmtData(dateStr)}
             </div>
           </div>
@@ -148,14 +148,14 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
         {/* template a tap rapido */}
         {templates.length > 0 && (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Predefiniti</div>
+            <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Predefiniti</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {templates.map(t => (
                 <button
                   key={t.id}
                   onClick={() => applyTemplate(t)}
                   style={{
-                    border: '0.5px solid #ddd', background: '#faf9f6', borderRadius: 16,
+                    border: '0.5px solid #E5E3DC', background: '#faf9f6', borderRadius: 16,
                     padding: '5px 10px', fontSize: 12, cursor: 'pointer', color: '#444',
                   }}
                   title={t.label}
@@ -186,10 +186,10 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
         {!isEdit && (hasSecond ? (
           <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-              <span style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4 }}>Seconda fascia</span>
+              <span style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4 }}>Seconda fascia</span>
               <button
                 onClick={() => setHasSecond(false)}
-                style={{ background: 'none', border: 'none', color: '#E24B4A', fontSize: 12, cursor: 'pointer', padding: 0 }}
+                style={{ background: 'none', border: 'none', color: '#C5221F', fontSize: 12, cursor: 'pointer', padding: 0 }}
               >
                 Rimuovi
               </button>
@@ -222,7 +222,7 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
         {/* applica anche a… (solo in creazione) */}
         {!isEdit && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Applica anche a…</div>
+            <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Applica anche a…</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {weekDays.map((d, i) => {
                 const isCurrent = d === dateStr
@@ -233,9 +233,9 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
                     onClick={() => !isCurrent && toggleExtra(d)}
                     disabled={isCurrent}
                     style={{
-                      border: `0.5px solid ${on ? '#F5C842' : '#ddd'}`,
+                      border: `0.5px solid ${on ? '#F5B301' : '#E5E3DC'}`,
                       background: on ? '#FAEEDA' : '#fff',
-                      color: on ? '#854F0B' : '#888',
+                      color: on ? '#854F0B' : '#6B6B6B',
                       borderRadius: 8, padding: '5px 9px', fontSize: 12,
                       cursor: isCurrent ? 'default' : 'pointer', fontWeight: on ? 500 : 400,
                       opacity: isCurrent ? 0.85 : 1,
@@ -263,11 +263,11 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
 
         {confirmDelete && (
           <div style={{ marginTop: 12, padding: 12, background: '#FCEBEB', borderRadius: 8 }}>
-            <div style={{ fontSize: 13, color: '#A32D2D', marginBottom: 10 }}>Eliminare questo turno?</div>
+            <div style={{ fontSize: 13, color: '#C5221F', marginBottom: 10 }}>Eliminare questo turno?</div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>No</button>
               <button
-                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+                style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
                 onClick={elimina}
               >
                 Sì, elimina

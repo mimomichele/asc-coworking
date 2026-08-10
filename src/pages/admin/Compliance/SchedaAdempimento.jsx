@@ -201,8 +201,8 @@ export default function SchedaAdempimento() {
     })
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
-  if (!adempimento) return <div style={{ padding: 40, color: '#888' }}>Adempimento non trovato.</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
+  if (!adempimento) return <div style={{ padding: 40, color: '#6B6B6B' }}>Adempimento non trovato.</div>
 
   const ultima = rinnovi[0]
   const m = statoMeta(computeStato(ultima?.data_scadenza_calcolata))
@@ -212,30 +212,30 @@ export default function SchedaAdempimento() {
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/compliance" style={{ color: '#888', textDecoration: 'none' }}>← Scadenziario</Link>
+        <Link to="/admin/compliance" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Scadenziario</Link>
       </div>
 
       {/* HEADER + STATO */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 500 }}>{adempimento.titolo}</h2>
+            <h2 style={{ fontSize: 24, fontWeight: 700 }}>{adempimento.titolo}</h2>
             <span className={`pill ${m.cls}`}>{m.label}</span>
           </div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 3, background: adempimento.compliance_categories?.colore || '#ccc' }} />
+              <span style={{ width: 10, height: 10, borderRadius: 3, background: adempimento.compliance_categories?.colore || '#E5E3DC' }} />
               {adempimento.compliance_categories?.nome || '—'}
             </span>
             {' · '}{fmtFrequenza(adempimento.frequenza_mesi)}
             {adempimento.riferimento_normativo ? ` · ${adempimento.riferimento_normativo}` : ''}
           </div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
             Prossima scadenza: <strong>{fmtData(ultima?.data_scadenza_calcolata)}</strong>
             {adempimento.fornitore_default_id && adempimento.compliance_fornitori ? ` · Fornitore: ${adempimento.compliance_fornitori.nome}` : ''}
           </div>
-          {adempimento.responsabile_interno && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Responsabile: {adempimento.responsabile_interno}</div>}
-          {adempimento.note && <div style={{ fontSize: 12, color: '#888', marginTop: 6, maxWidth: 600 }}>{adempimento.note}</div>}
+          {adempimento.responsabile_interno && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>Responsabile: {adempimento.responsabile_interno}</div>}
+          {adempimento.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 6, maxWidth: 600 }}>{adempimento.note}</div>}
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           {!editing && <button className="btn-ghost" onClick={openEdit}>Modifica</button>}
@@ -245,7 +245,7 @@ export default function SchedaAdempimento() {
 
       {/* FORM MODIFICA ADEMPIMENTO */}
       {editing && form && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Modifica adempimento</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field" style={{ gridColumn: '1/-1' }}><label>Titolo *</label><input value={form.titolo} onChange={e => setForm(f => ({ ...f, titolo: e.target.value }))} /></div>
@@ -278,7 +278,7 @@ export default function SchedaAdempimento() {
       {/* DOCUMENTI GENERALI */}
       <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Documenti generali</div>
-        <div style={{ fontSize: 12, color: '#888', marginBottom: 12 }}>Documenti dell'adempimento non legati a un rinnovo (manuale, planimetria, ecc.).</div>
+        <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 12 }}>Documenti dell'adempimento non legati a un rinnovo (manuale, planimetria, ecc.).</div>
         <AllegatiList allegati={allegatiGenerali} onOpen={openAllegato} onDelete={chiediEliminaAllegato} />
         <div style={{ marginTop: 10 }}>
           <UploadMulti onUpload={caricaGenerali} />
@@ -312,22 +312,22 @@ export default function SchedaAdempimento() {
 
       {/* STORICO RINNOVI */}
       <h3 style={{ fontSize: 14, fontWeight: 500, color: '#444', marginBottom: 10 }}>Storico rinnovi ({rinnovi.length})</h3>
-      {rinnovi.length === 0 && <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessun rinnovo registrato.</div>}
+      {rinnovi.length === 0 && <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun rinnovo registrato.</div>}
       {rinnovi.map(r => (
         <div key={r.id} className="card" style={{ marginBottom: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{fmtData(r.data_rinnovo)}</div>
-              <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>
                 Scadenza calcolata: {fmtData(r.data_scadenza_calcolata)} · {fmtEuro(r.costo)}
                 {r.compliance_fornitori?.nome ? ` · ${r.compliance_fornitori.nome}` : ''}
               </div>
-              {r.note && <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{r.note}</div>}
+              {r.note && <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{r.note}</div>}
             </div>
             <button className="btn-danger" onClick={() => chiediEliminaRinnovo(r)}>Elimina rinnovo</button>
           </div>
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '0.5px solid #eee' }}>
-            <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Allegati</div>
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '0.5px solid #E5E3DC' }}>
+            <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>Allegati</div>
             <AllegatiList allegati={allegatiByRinnovo[r.id]} onOpen={openAllegato} onDelete={chiediEliminaAllegato} />
             <div style={{ marginTop: 8 }}>
               <UploadMulti label="Aggiungi file" onUpload={files => caricaPerRinnovo(r.id, files)} />
@@ -340,10 +340,10 @@ export default function SchedaAdempimento() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>{confirm.titolo}</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>{confirm.testo}</div>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>{confirm.testo}</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirm(null)}>Annulla</button>
-              <button style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }} onClick={confirm.onConferma}>Sì, elimina</button>
+              <button style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }} onClick={confirm.onConferma}>Sì, elimina</button>
             </div>
           </div>
         </div>

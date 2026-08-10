@@ -60,21 +60,21 @@ export default function FornitoriCompliance() {
 
   function showToast(msg, type = 'success') { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/compliance" style={{ color: '#888', textDecoration: 'none' }}>← Scadenziario</Link>
+        <Link to="/admin/compliance" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Scadenziario</Link>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 500 }}>Fornitori ({rows.length})</h2>
+        <h2 style={{ fontSize: 24, fontWeight: 700 }}>Fornitori ({rows.length})</h2>
         {!showForm && <button className="btn-primary" onClick={openCreate}>+ Nuovo fornitore</button>}
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>{editingId ? 'Modifica fornitore' : 'Nuovo fornitore'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field"><label>Nome *</label><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} /></div>
@@ -87,8 +87,8 @@ export default function FornitoriCompliance() {
               <div style={{ display: 'flex', gap: 10 }}>
                 {[true, false].map(v => (
                   <div key={String(v)} onClick={() => setForm(f => ({ ...f, attivo: v }))} style={{
-                    padding: '8px 16px', borderRadius: 8, border: `0.5px solid ${form.attivo === v ? '#F5C842' : '#ccc'}`,
-                    background: form.attivo === v ? '#FAEEDA' : '#fff', color: form.attivo === v ? '#854F0B' : '#888',
+                    padding: '8px 16px', borderRadius: 8, border: `0.5px solid ${form.attivo === v ? '#F5B301' : '#E5E3DC'}`,
+                    background: form.attivo === v ? '#FAEEDA' : '#fff', color: form.attivo === v ? '#854F0B' : '#6B6B6B',
                     cursor: 'pointer', fontSize: 13,
                   }}>{v ? 'Attivo' : 'Disattivato'}</div>
                 ))}
@@ -106,10 +106,10 @@ export default function FornitoriCompliance() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div className="card" style={{ maxWidth: 400, width: '90%', padding: 24 }}>
             <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 8 }}>Elimina fornitore</div>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Elimina <strong>{confirmDelete.nome}</strong>?</div>
+            <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>Elimina <strong>{confirmDelete.nome}</strong>?</div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setConfirmDelete(null)}>Annulla</button>
-              <button style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }} onClick={() => elimina(confirmDelete)}>Sì, elimina</button>
+              <button style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }} onClick={() => elimina(confirmDelete)}>Sì, elimina</button>
             </div>
           </div>
         </div>
@@ -122,8 +122,8 @@ export default function FornitoriCompliance() {
             {rows.map(r => (
               <tr key={r.id} style={{ opacity: r.attivo ? 1 : 0.5 }}>
                 <td style={{ fontWeight: 500 }}>{r.nome}</td>
-                <td style={{ fontSize: 12, color: '#888' }}>{r.contatto_referente || '—'}</td>
-                <td style={{ fontSize: 12, color: '#888' }}>{[r.email, r.telefono].filter(Boolean).join(' · ') || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6B6B6B' }}>{r.contatto_referente || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6B6B6B' }}>{[r.email, r.telefono].filter(Boolean).join(' · ') || '—'}</td>
                 <td><span className={`pill ${r.attivo ? 'pill-ok' : 'pill-gray'}`}>{r.attivo ? 'Attivo' : 'Disattivato'}</span></td>
                 <td>
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
@@ -133,7 +133,7 @@ export default function FornitoriCompliance() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5} style={{ color: '#888', textAlign: 'center', padding: 24 }}>Nessun fornitore.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={5} style={{ color: '#6B6B6B', textAlign: 'center', padding: 24 }}>Nessun fornitore.</td></tr>}
           </tbody>
         </table>
       </div>

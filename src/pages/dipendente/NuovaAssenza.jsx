@@ -24,9 +24,9 @@ export default function NuovaAssenza({ dipendente }) {
             onClick={() => setTab(k)}
             style={{
               flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 14, cursor: 'pointer',
-              border: `0.5px solid ${tab === k ? '#F5C842' : '#ddd'}`,
+              border: `0.5px solid ${tab === k ? '#F5B301' : '#E5E3DC'}`,
               background: tab === k ? '#FAEEDA' : '#fff',
-              color: tab === k ? '#854F0B' : '#888', fontWeight: tab === k ? 600 : 400,
+              color: tab === k ? '#854F0B' : '#6B6B6B', fontWeight: tab === k ? 600 : 400,
             }}
           >
             {label}
@@ -67,7 +67,7 @@ function FerieForm({ dipendente, onToast }) {
 
   return (
     <div className="card">
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 14 }}>
         La richiesta di ferie va approvata dall'amministrazione.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -129,7 +129,7 @@ function MalattiaForm({ dipendente, onToast }) {
 
   return (
     <div className="card">
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 14 }}>
         Inserimento diretto. Il certificato (PDF o immagine) è obbligatorio ed è visibile solo all'amministrazione.
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

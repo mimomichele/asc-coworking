@@ -36,7 +36,7 @@ function isPastDeadline() {
 
 // Icone Lucide incorporate inline (path ufficiali) per non aggiungere
 // la dipendenza lucide-react solo per tre icone.
-function Icon({ name, size = 19, color = '#F5C200' }) {
+function Icon({ name, size = 19, color = '#F5B301' }) {
   const paths = {
     calendar: (
       <>
@@ -219,7 +219,7 @@ const styles = {
     boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
   },
   header: {
-    position: 'relative', background: '#1a1a1a',
+    position: 'relative', background: '#111111',
     padding: '26px 24px 20px', textAlign: 'left',
   },
   closeBtn: {
@@ -228,7 +228,7 @@ const styles = {
     fontSize: 18, cursor: 'pointer', padding: 6, lineHeight: 1,
   },
   title: {
-    color: '#F5C200', fontSize: 27, fontWeight: 500,
+    color: '#F5B301', fontSize: 27, fontWeight: 500,
     letterSpacing: 1, marginBottom: 6,
   },
   subtitle: { color: '#fff', fontSize: 12.5, fontWeight: 500 },
@@ -238,28 +238,28 @@ const styles = {
   },
   body: { padding: '18px 20px 20px' },
   row: { display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 13 },
-  rowTitle: { color: '#1a1a1a', fontSize: 14, fontWeight: 500 },
-  rowSub: { color: '#888', fontSize: 12.5, marginTop: 1 },
+  rowTitle: { color: '#111111', fontSize: 14, fontWeight: 500 },
+  rowSub: { color: '#6B6B6B', fontSize: 12.5, marginTop: 1 },
   band: {
-    background: '#F5C200', color: '#1a1a1a', borderRadius: 10,
+    background: '#F5B301', color: '#111111', borderRadius: 10,
     padding: '10px 14px', textAlign: 'center',
     fontSize: 13, fontWeight: 500, marginTop: 16,
   },
-  sep: { borderTop: '0.5px solid #e5e5e5', margin: '16px 0' },
-  question: { textAlign: 'center', fontSize: 16, fontWeight: 500, color: '#1a1a1a' },
-  questionSub: { textAlign: 'center', fontSize: 12.5, color: '#888', marginTop: 3 },
+  sep: { borderTop: '0.5px solid #E5E3DC', margin: '16px 0' },
+  question: { textAlign: 'center', fontSize: 16, fontWeight: 500, color: '#111111' },
+  questionSub: { textAlign: 'center', fontSize: 12.5, color: '#6B6B6B', marginTop: 3 },
   error: {
-    textAlign: 'center', color: '#b42318', fontSize: 12.5, marginTop: 10,
+    textAlign: 'center', color: '#C5221F', fontSize: 12.5, marginTop: 10,
   },
   btnRow: { display: 'flex', gap: 10, marginTop: 16 },
   btnYes: {
-    flex: 1, background: '#1a1a1a', color: '#F5C200', border: 'none',
+    flex: 1, background: '#111111', color: '#F5B301', border: 'none',
     borderRadius: 10, padding: '13px 0', fontSize: 14, fontWeight: 500,
     cursor: 'pointer',
   },
   btnNo: {
-    flex: 1, background: '#fff', color: '#1a1a1a',
-    border: '0.5px solid #ccc',
+    flex: 1, background: '#fff', color: '#111111',
+    border: '0.5px solid #E5E3DC',
     borderRadius: 10, padding: '13px 0', fontSize: 14, fontWeight: 500,
     cursor: 'pointer',
   },

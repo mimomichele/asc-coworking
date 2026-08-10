@@ -23,8 +23,9 @@ import Dipendenti from './Turni/Dipendenti.jsx'
 import Richieste from './Turni/Richieste.jsx'
 import ReportOre from './Turni/ReportOre.jsx'
 
-const RISTORANTE_URL = 'https://ristorante.aschotel.com'
-const MANUTENZIONE_URL = 'https://hotel-manutenzione.vercel.app'
+// Regola ASC-DESIGN: la barra in alto tiene SOLO le sezioni native della
+// dashboard; le app esterne (Ristorante, Manutenzione, ecc.) vivono solo
+// nel launcher "Le mie app".
 
 // Path che appartengono alla sezione "Coworking" (URL invariati per non rompere i Link).
 const COWORKING_PATHS = ['/admin/coworking', '/admin/ospiti', '/admin/nuovo-ospite', '/admin/abbonamenti', '/admin/esaurimento', '/admin/esauriti']
@@ -55,7 +56,7 @@ export default function AdminLayout() {
       {/* TOP NAV */}
       <nav style={styles.topnav}>
         <div style={styles.logo}>
-          ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+          ASC <span style={{ color: '#F5B301' }}>HOTEL</span>
           <span style={styles.adminBadge}>Admin</span>
         </div>
 
@@ -64,15 +65,9 @@ export default function AdminLayout() {
           <NavLink to="/admin" end style={topStyle(isDash)}>Dashboard</NavLink>
           <NavLink to="/admin/coworking" style={topStyle(isCoworking)}>Coworking</NavLink>
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
-          <NavLink to="/admin/rosticceria" style={rostStyle(isRosticceria)}>Rosticceria</NavLink>
+          <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)}>Rosticceria</NavLink>
           <NavLink to="/admin/compliance" style={topStyle(isCompliance)}>Compliance</NavLink>
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)}>Staffetta</NavLink>
-          <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle}>
-            Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
-          </a>
-          <a href={MANUTENZIONE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle}>
-            Manutenzione <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
-          </a>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)}>Le mie app</NavLink>
         </div>
 
@@ -120,7 +115,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/esauriti" style={subStyle} onClick={closeMenu}>Esauriti</NavLink>
 
           <NavLink to="/admin/turni" style={topStyle(isTurni)} onClick={closeMenu}>Turni</NavLink>
-          <NavLink to="/admin/rosticceria" style={rostStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
+          <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
 
           <div style={styles.groupLabel}>Compliance</div>
           <NavLink to="/admin/compliance" end style={subStyle} onClick={closeMenu}>Scadenziario</NavLink>
@@ -129,13 +124,6 @@ export default function AdminLayout() {
           <NavLink to="/admin/compliance/documenti" style={subStyle} onClick={closeMenu}>Documenti</NavLink>
 
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)} onClick={closeMenu}>Staffetta</NavLink>
-
-          <a href={RISTORANTE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle} onClick={closeMenu}>
-            Ristorante <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
-          </a>
-          <a href={MANUTENZIONE_URL} target="_blank" rel="noopener noreferrer" style={externalLinkStyle} onClick={closeMenu}>
-            Manutenzione <span aria-hidden="true" style={{ fontSize: 11, opacity: 0.7 }}>↗</span>
-          </a>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)} onClick={closeMenu}>Le mie app</NavLink>
 
           <button onClick={logout} style={styles.logoutBtn}>Esci</button>
@@ -177,29 +165,10 @@ function topStyle(active) {
   return {
     padding: '6px 14px', borderRadius: 8, fontSize: 13,
     fontWeight: active ? 500 : 400,
-    color: active ? '#1a1a1a' : '#aaa',
-    background: active ? '#F5C842' : 'transparent',
+    color: active ? '#111111' : '#aaa',
+    background: active ? '#F5B301' : 'transparent',
     textDecoration: 'none', transition: 'all 0.15s', whiteSpace: 'nowrap',
   }
-}
-
-// Rosticceria mantiene l'accento arancione.
-function rostStyle(active) {
-  return {
-    padding: '6px 14px', borderRadius: 8, fontSize: 13,
-    fontWeight: active ? 500 : 400,
-    color: active ? '#1a1a1a' : '#D85A30',
-    background: active ? '#D85A30' : 'rgba(216,90,48,0.1)',
-    textDecoration: 'none', transition: 'all 0.15s',
-    border: '0.5px solid rgba(216,90,48,0.3)', whiteSpace: 'nowrap',
-  }
-}
-
-// Link esterno (Ristorante): aspetto a riposo, mai "active".
-const externalLinkStyle = {
-  padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 400,
-  color: '#aaa', background: 'transparent', textDecoration: 'none',
-  transition: 'all 0.15s', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap',
 }
 
 // Voce della sub-nav coworking.
@@ -207,33 +176,33 @@ function subStyle({ isActive }) {
   return {
     padding: '5px 12px', borderRadius: 7, fontSize: 13,
     fontWeight: isActive ? 500 : 400,
-    color: isActive ? '#1a1a1a' : '#777',
+    color: isActive ? '#111111' : '#777',
     background: isActive ? '#fff' : 'transparent',
-    border: isActive ? '0.5px solid #e5e5e5' : '0.5px solid transparent',
+    border: isActive ? '0.5px solid #E5E3DC' : '0.5px solid transparent',
     textDecoration: 'none', whiteSpace: 'nowrap',
   }
 }
 
 const styles = {
-  shell: { minHeight: '100vh', background: '#f5f5f3' },
+  shell: { minHeight: '100vh', background: '#F6F5F1' },
   topnav: {
-    background: '#1a1a1a', display: 'flex', alignItems: 'center',
+    background: '#111111', display: 'flex', alignItems: 'center',
     gap: 8, padding: '0 24px', height: 54, position: 'sticky', top: 0, zIndex: 100,
   },
   logo: { fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5, marginRight: 16, whiteSpace: 'nowrap' },
-  adminBadge: { fontSize: 11, color: '#555', fontWeight: 400, marginLeft: 8, letterSpacing: 0 },
+  adminBadge: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginLeft: 8, letterSpacing: 0 },
   navLinks: { display: 'flex', gap: 4, flex: 1, flexWrap: 'nowrap' },
   subnav: {
     background: '#efeee9', display: 'flex', gap: 6, alignItems: 'center',
     padding: '8px 24px', position: 'sticky', top: 54, zIndex: 99,
-    overflowX: 'auto', borderBottom: '0.5px solid #e5e5e5',
+    overflowX: 'auto', borderBottom: '0.5px solid #E5E3DC',
   },
   hamburger: {
     background: 'none', border: 'none', color: '#fff',
     fontSize: 22, cursor: 'pointer', marginLeft: 'auto',
   },
   mobileMenu: {
-    background: '#1a1a1a', display: 'flex', flexDirection: 'column',
+    background: '#111111', display: 'flex', flexDirection: 'column',
     gap: 6, padding: '16px 24px', position: 'sticky', top: 54, zIndex: 99,
   },
   groupLabel: {
@@ -241,7 +210,7 @@ const styles = {
     marginTop: 8, marginBottom: 2, paddingLeft: 4,
   },
   logoutBtn: {
-    background: 'none', border: '0.5px solid #444', color: '#888',
+    background: 'none', border: '0.5px solid #444', color: '#6B6B6B',
     padding: '5px 12px', borderRadius: 8, fontSize: 12, cursor: 'pointer',
     width: 'fit-content', marginTop: 10,
   },

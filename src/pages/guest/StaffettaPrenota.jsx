@@ -112,7 +112,7 @@ export default function StaffettaPrenota({ session }) {
   // ---- stati non pronti -------------------------------------------------
   if (loadError) return (
     <div style={styles.centerBox}>
-      <div style={{ fontSize: 14, color: '#1a1a1a', marginBottom: 12 }}>
+      <div style={{ fontSize: 14, color: '#111111', marginBottom: 12 }}>
         Non riesco a caricare la staffetta.
       </div>
       <button onClick={reload} style={styles.retryBtn}>Riprova</button>
@@ -120,7 +120,7 @@ export default function StaffettaPrenota({ session }) {
   )
   if (slots === null) return (
     <div style={styles.centerBox}>
-      <div style={{ fontSize: 13, color: '#888' }}>Caricamento…</div>
+      <div style={{ fontSize: 13, color: '#6B6B6B' }}>Caricamento…</div>
     </div>
   )
 
@@ -203,7 +203,7 @@ export default function StaffettaPrenota({ session }) {
             >
               <span style={{ flex: 1, minWidth: 0 }}>
                 <span style={styles.hourLabel}>{intervallo}</span>
-                <span style={{ ...styles.hourState, color: libereOra > 0 ? '#1D9E75' : '#888' }}>
+                <span style={{ ...styles.hourState, color: libereOra > 0 ? '#1E8E3E' : '#6B6B6B' }}>
                   {stato}
                 </span>
               </span>
@@ -214,8 +214,8 @@ export default function StaffettaPrenota({ session }) {
                       key={s.id}
                       style={{
                         width: 11, height: 11, borderRadius: 3,
-                        background: s.prenotazione ? '#1a1a1a' : '#fff',
-                        border: s.prenotazione ? '1px solid #1a1a1a' : '1px solid #ccc',
+                        background: s.prenotazione ? '#111111' : '#fff',
+                        border: s.prenotazione ? '1px solid #111111' : '1px solid #E5E3DC',
                         boxSizing: 'border-box',
                       }}
                     />
@@ -297,9 +297,9 @@ function DayTab({ label, active, onClick }) {
       onClick={onClick}
       style={{
         flex: 1, padding: '9px 0', borderRadius: 10, cursor: 'pointer',
-        border: active ? 'none' : '0.5px solid #ddd',
-        background: active ? '#1a1a1a' : '#fff',
-        color: active ? '#F5C200' : '#1a1a1a',
+        border: active ? 'none' : '0.5px solid #E5E3DC',
+        background: active ? '#111111' : '#fff',
+        color: active ? '#F5B301' : '#111111',
         fontSize: 13, fontWeight: 500, transition: 'all .15s',
       }}
     >
@@ -313,77 +313,77 @@ const styles = {
     maxWidth: 430, margin: '40px auto', textAlign: 'center', padding: 20,
   },
   retryBtn: {
-    background: '#1a1a1a', color: '#F5C200', border: 'none', borderRadius: 10,
+    background: '#111111', color: '#F5B301', border: 'none', borderRadius: 10,
     padding: '10px 22px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
   },
   header: {
-    background: '#1a1a1a', borderRadius: 16, padding: '18px 18px 16px', marginBottom: 10,
+    background: '#111111', borderRadius: 16, padding: '18px 18px 16px', marginBottom: 10,
   },
-  title: { color: '#F5C200', fontSize: 22, fontWeight: 500, letterSpacing: 0.5 },
+  title: { color: '#F5B301', fontSize: 22, fontWeight: 500, letterSpacing: 0.5 },
   subtitle: { color: 'rgba(255,255,255,0.7)', fontSize: 12.5, marginTop: 4, lineHeight: 1.45 },
   howto: {
-    background: '#F5C200', borderRadius: 12, padding: '12px 14px', marginBottom: 10,
+    background: '#F5B301', borderRadius: 12, padding: '12px 14px', marginBottom: 10,
   },
-  howtoTitle: { color: '#1a1a1a', fontSize: 13, fontWeight: 600, marginBottom: 3 },
-  howtoText: { color: '#1a1a1a', fontSize: 12.5, lineHeight: 1.45 },
+  howtoTitle: { color: '#111111', fontSize: 13, fontWeight: 600, marginBottom: 3 },
+  howtoText: { color: '#111111', fontSize: 12.5, lineHeight: 1.45 },
   statusCard: {
-    background: '#fff', border: '0.5px solid #eee', borderRadius: 12,
+    background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '11px 14px', marginBottom: 12,
     display: 'flex', alignItems: 'center', gap: 10,
   },
-  statusTitle: { fontSize: 13.5, fontWeight: 500, color: '#1a1a1a' },
-  statusSub: { fontSize: 11.5, color: '#888', marginTop: 2 },
-  statusRight: { fontSize: 11, color: '#888', flex: 'none' },
+  statusTitle: { fontSize: 13.5, fontWeight: 500, color: '#111111' },
+  statusSub: { fontSize: 11.5, color: '#6B6B6B', marginTop: 2 },
+  statusRight: { fontSize: 11, color: '#6B6B6B', flex: 'none' },
   dayTabs: { display: 'flex', gap: 8, marginBottom: 12 },
   noticeBand: {
-    background: '#F5C200', color: '#1a1a1a', borderRadius: 10,
+    background: '#F5B301', color: '#111111', borderRadius: 10,
     padding: '9px 12px', fontSize: 12.5, fontWeight: 500,
     textAlign: 'center', marginBottom: 10,
   },
   errorBand: {
-    background: '#fdecec', color: '#b42318', borderRadius: 10,
+    background: '#fdecec', color: '#C5221F', borderRadius: 10,
     padding: '9px 12px', fontSize: 12.5, fontWeight: 500,
     textAlign: 'center', marginBottom: 10,
   },
   hourCard: {
     background: '#fff', borderRadius: 12, marginBottom: 8,
-    border: '0.5px solid #eee', overflow: 'hidden',
+    border: '0.5px solid #E5E3DC', overflow: 'hidden',
   },
-  hourCardOpen: { border: '1px solid #1a1a1a' },
+  hourCardOpen: { border: '1px solid #111111' },
   hourRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '12px 14px', cursor: 'pointer', userSelect: 'none', gap: 8,
   },
-  hourLabel: { display: 'block', fontSize: 15, fontWeight: 500, color: '#1a1a1a' },
+  hourLabel: { display: 'block', fontSize: 15, fontWeight: 500, color: '#111111' },
   hourState: { display: 'block', fontSize: 11.5, marginTop: 2 },
-  slotList: { borderTop: '0.5px solid #eee', padding: '8px 12px 10px' },
-  slotGuide: { fontSize: 11.5, color: '#888', margin: '2px 2px 8px' },
+  slotList: { borderTop: '0.5px solid #E5E3DC', padding: '8px 12px 10px' },
+  slotGuide: { fontSize: 11.5, color: '#6B6B6B', margin: '2px 2px 8px' },
   slotRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     padding: '7px 10px', borderRadius: 8, marginBottom: 4, minHeight: 38,
     gap: 8,
   },
-  slotRowOther: { background: '#f5f5f3' },
-  slotRowMine: { background: '#1a1a1a' },
-  slotTime: { fontSize: 13, color: '#1a1a1a' },
-  slotTimeOther: { fontSize: 13, color: '#888' },
+  slotRowOther: { background: '#F6F5F1' },
+  slotRowMine: { background: '#111111' },
+  slotTime: { fontSize: 13, color: '#111111' },
+  slotTimeOther: { fontSize: 13, color: '#6B6B6B' },
   slotTimeMine: { fontSize: 13, color: 'rgba(255,255,255,0.75)' },
   slotFree: { fontSize: 12.5, color: '#bbb' },
   bookBtn: {
-    background: '#1a1a1a', color: '#fff', border: 'none',
+    background: '#111111', color: '#fff', border: 'none',
     borderRadius: 8, padding: '7px 16px', fontSize: 12.5, fontWeight: 500,
     cursor: 'pointer',
   },
   mineBtn: {
-    background: 'none', color: '#F5C200', border: 'none',
+    background: 'none', color: '#F5B301', border: 'none',
     padding: '7px 0', fontSize: 12.5, fontWeight: 500, cursor: 'pointer',
   },
   mineStatic: {
-    color: '#F5C200', fontSize: 12.5, fontWeight: 500, padding: '7px 0',
+    color: '#F5B301', fontSize: 12.5, fontWeight: 500, padding: '7px 0',
   },
-  otherName: { fontSize: 12.5, color: '#888' },
+  otherName: { fontSize: 12.5, color: '#6B6B6B' },
   closedNote: {
-    fontSize: 12, color: '#888', fontStyle: 'italic',
+    fontSize: 12, color: '#6B6B6B', fontStyle: 'italic',
     padding: '8px 0 2px', textAlign: 'center',
   },
   disabled: { opacity: 0.55, cursor: 'default' },

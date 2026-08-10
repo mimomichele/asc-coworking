@@ -137,10 +137,10 @@ export default function DocumentiCompliance() {
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       <div style={{ fontSize: 12, marginBottom: 12 }}>
-        <Link to="/admin/compliance" style={{ color: '#888', textDecoration: 'none' }}>← Scadenziario</Link>
+        <Link to="/admin/compliance" style={{ color: '#6B6B6B', textDecoration: 'none' }}>← Scadenziario</Link>
       </div>
-      <h2 style={{ fontSize: 20, fontWeight: 500, marginBottom: 4 }}>Documenti</h2>
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 16 }}>Archivio file per adempimento — pensato per la consultazione da tablet.</div>
+      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Documenti</h2>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 16 }}>Archivio file per adempimento — pensato per la consultazione da tablet.</div>
 
       {/* SELETTORE ADEMPIMENTO */}
       <div className="card" style={{ marginBottom: 16 }}>
@@ -152,7 +152,7 @@ export default function DocumentiCompliance() {
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca adempimento…" style={{ ...selStyle, flex: 1, minWidth: 160 }} />
         </div>
         {loadingList ? (
-          <div style={{ color: '#888', fontSize: 13 }}>Caricamento...</div>
+          <div style={{ color: '#6B6B6B', fontSize: 13 }}>Caricamento...</div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
             {adempimentiFiltrati.map(a => {
@@ -160,28 +160,28 @@ export default function DocumentiCompliance() {
               return (
                 <button key={a.id} onClick={() => seleziona(a)} style={{
                   display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 11px', borderRadius: 8,
-                  border: `0.5px solid ${on ? '#F5C842' : '#ddd'}`, background: on ? '#FAEEDA' : '#fff',
+                  border: `0.5px solid ${on ? '#F5B301' : '#E5E3DC'}`, background: on ? '#FAEEDA' : '#fff',
                   color: on ? '#854F0B' : '#444', cursor: 'pointer', fontSize: 13, fontWeight: on ? 500 : 400,
                 }}>
-                  <span style={{ width: 9, height: 9, borderRadius: 3, background: a.compliance_categories?.colore || '#ccc' }} />
+                  <span style={{ width: 9, height: 9, borderRadius: 3, background: a.compliance_categories?.colore || '#E5E3DC' }} />
                   {a.titolo}
                 </button>
               )
             })}
-            {adempimentiFiltrati.length === 0 && <div style={{ color: '#888', fontSize: 13 }}>Nessun adempimento.</div>}
+            {adempimentiFiltrati.length === 0 && <div style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun adempimento.</div>}
           </div>
         )}
       </div>
 
       {!sel ? (
-        <div className="card" style={{ textAlign: 'center', color: '#888', padding: 28 }}>Scegli un adempimento per vederne i documenti.</div>
+        <div className="card" style={{ textAlign: 'center', color: '#6B6B6B', padding: 28 }}>Scegli un adempimento per vederne i documenti.</div>
       ) : loadingFiles ? (
-        <div style={{ padding: 20, color: '#888' }}>Caricamento file...</div>
+        <div style={{ padding: 20, color: '#6B6B6B' }}>Caricamento file...</div>
       ) : (
         <div>
           {/* HEADER ADEMPIMENTO + SCARICA TUTTI */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{sel.titolo} <span style={{ fontSize: 12, color: '#888', fontWeight: 400 }}>· {allegati.length} file</span></div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>{sel.titolo} <span style={{ fontSize: 12, color: '#6B6B6B', fontWeight: 400 }}>· {allegati.length} file</span></div>
             {allegati.length > 0 && (
               <button className="btn-primary" onClick={scaricaTutti} disabled={!!zipStatus}>
                 {zipStatus || 'Scarica tutti (ZIP)'}
@@ -189,7 +189,7 @@ export default function DocumentiCompliance() {
             )}
           </div>
 
-          {allegati.length === 0 && <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessun documento per questo adempimento.</div>}
+          {allegati.length === 0 && <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun documento per questo adempimento.</div>}
 
           {gruppi.map(g => (
             <div key={g.key} style={{ marginBottom: 18 }}>
@@ -220,4 +220,4 @@ export default function DocumentiCompliance() {
   )
 }
 
-const selStyle = { padding: '8px 10px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff' }
+const selStyle = { padding: '8px 10px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff' }

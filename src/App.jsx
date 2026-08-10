@@ -65,8 +65,8 @@ export default function App() {
   }
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#1a1a1a' }}>
-      <div style={{ color: '#F5C842', fontSize: 18, fontWeight: 500, letterSpacing: 1 }}>ASC HOTEL</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#111111' }}>
+      <div style={{ color: '#F5B301', fontSize: 18, fontWeight: 500, letterSpacing: 1 }}>ASC HOTEL</div>
     </div>
   )
 
@@ -130,7 +130,7 @@ function AccountDisattivato() {
   async function logout() { await supabase.auth.signOut() }
   return (
     <div style={{
-      minHeight: '100vh', background: '#1a1a1a',
+      minHeight: '100vh', background: '#111111',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 20,
     }}>
@@ -138,13 +138,13 @@ function AccountDisattivato() {
         background: '#fff', borderRadius: 16, padding: '36px 32px',
         width: '100%', maxWidth: 420, textAlign: 'center',
       }}>
-        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: 2, color: '#1a1a1a', marginBottom: 4 }}>
-          ASC <span style={{ color: '#F5C842' }}>HOTEL</span>
+        <div style={{ fontSize: 22, fontWeight: 600, letterSpacing: 2, color: '#111111', marginBottom: 4 }}>
+          ASC <span style={{ color: '#F5B301' }}>HOTEL</span>
         </div>
-        <p style={{ fontSize: 13, color: '#888', marginBottom: 24 }}>Coworking &amp; Piscina</p>
+        <p style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 24 }}>Coworking &amp; Piscina</p>
         <div style={{
           background: '#FCEBEB', borderRadius: 10, padding: '14px 16px',
-          fontSize: 14, color: '#A32D2D', marginBottom: 20, lineHeight: 1.5,
+          fontSize: 14, color: '#C5221F', marginBottom: 20, lineHeight: 1.5,
         }}>
           <div style={{ fontWeight: 500, marginBottom: 4 }}>Account disattivato</div>
           <div style={{ fontSize: 13 }}>
@@ -155,7 +155,7 @@ function AccountDisattivato() {
         <button
           onClick={logout}
           style={{
-            background: 'none', border: '0.5px solid #ddd', color: '#888',
+            background: 'none', border: '0.5px solid #E5E3DC', color: '#6B6B6B',
             padding: '9px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
           }}
         >

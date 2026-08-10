@@ -81,7 +81,7 @@ export default function Compliance() {
     return c
   }, [rows])
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
@@ -89,8 +89,8 @@ export default function Compliance() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 14 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 500 }}>Scadenziario</h2>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{rows.length} adempimenti</div>
+          <h2 style={{ fontSize: 24, fontWeight: 700 }}>Scadenziario</h2>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{rows.length} adempimenti</div>
         </div>
         {!showForm && <button className="btn-primary" onClick={() => setShowForm(true)}>+ Nuovo adempimento</button>}
       </div>
@@ -103,7 +103,7 @@ export default function Compliance() {
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Nuovo adempimento</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field" style={{ gridColumn: '1/-1' }}><label>Titolo *</label><input value={form.titolo} onChange={e => setForm(f => ({ ...f, titolo: e.target.value }))} /></div>
@@ -164,7 +164,7 @@ export default function Compliance() {
                   </td>
                   <td>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 3, background: r.categoria_colore || '#ccc' }} />
+                      <span style={{ width: 10, height: 10, borderRadius: 3, background: r.categoria_colore || '#E5E3DC' }} />
                       {r.categoria || '—'}
                     </span>
                   </td>
@@ -181,7 +181,7 @@ export default function Compliance() {
                 </tr>
               )
             })}
-            {visibili.length === 0 && <tr><td colSpan={5} style={{ color: '#888', textAlign: 'center', padding: 24 }}>Nessun adempimento per i filtri scelti.</td></tr>}
+            {visibili.length === 0 && <tr><td colSpan={5} style={{ color: '#6B6B6B', textAlign: 'center', padding: 24 }}>Nessun adempimento per i filtri scelti.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -189,4 +189,4 @@ export default function Compliance() {
   )
 }
 
-const selStyle = { padding: '8px 10px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff' }
+const selStyle = { padding: '8px 10px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff' }

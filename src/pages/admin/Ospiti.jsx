@@ -112,7 +112,7 @@ export default function Ospiti() {
   // ospiti senza firma sul contratto (qualsiasi stato attivo/disattivato).
   const numToSign = accounts.filter(a => !signedUserIds.has(a.owner_id)).length
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
 
   return (
     <div>
@@ -120,8 +120,8 @@ export default function Ospiti() {
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 500 }}>Ospiti ({accounts.length} account)</h2>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700 }}>Ospiti ({accounts.length} account)</h2>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>
             {numAttivi} attiv{numAttivi === 1 ? 'o' : 'i'}
             {numDisattivi > 0 && <> · {numDisattivi} disattivat{numDisattivi === 1 ? 'o' : 'i'}</>}
             {' · '}{totalMembri} membri totali inclusi i familiari
@@ -142,12 +142,12 @@ export default function Ospiti() {
           placeholder="Cerca per nome (anche familiari) o telefono..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff' }}
+          style={{ flex: 1, padding: '9px 12px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff' }}
         />
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
-          style={{ padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8, fontSize: 13, background: '#fff', color: '#1a1a1a' }}
+          style={{ padding: '9px 12px', border: '0.5px solid #E5E3DC', borderRadius: 8, fontSize: 13, background: '#fff', color: '#111111' }}
         >
           <option value="surname">Ordina: Cognome A→Z</option>
           <option value="rem_asc">Ordina: Ingressi rimasti ↑</option>
@@ -156,22 +156,22 @@ export default function Ospiti() {
         </select>
         <label style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8,
-          background: '#fff', fontSize: 13, color: '#888',
+          padding: '9px 12px', border: '0.5px solid #E5E3DC', borderRadius: 8,
+          background: '#fff', fontSize: 13, color: '#6B6B6B',
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}>
           <input
             type="checkbox"
             checked={showDisattivati}
             onChange={e => setShowDisattivati(e.target.checked)}
-            style={{ accentColor: '#F5C842' }}
+            style={{ accentColor: '#F5B301' }}
           />
           Mostra disattivati
         </label>
         <label style={{
           display: 'flex', alignItems: 'center', gap: 6,
-          padding: '9px 12px', border: '0.5px solid #ccc', borderRadius: 8,
-          background: '#fff', fontSize: 13, color: '#888',
+          padding: '9px 12px', border: '0.5px solid #E5E3DC', borderRadius: 8,
+          background: '#fff', fontSize: 13, color: '#6B6B6B',
           cursor: 'pointer', whiteSpace: 'nowrap',
         }}>
           <input
@@ -218,7 +218,7 @@ export default function Ospiti() {
                           }
                         </div>
                         {members.length > 1 && (
-                          <div style={{ fontSize: 11, color: '#888' }}>
+                          <div style={{ fontSize: 11, color: '#6B6B6B' }}>
                             + {members
                               .filter(m => !(m.name === account.name && m.surname === account.surname))
                               .map(m => m.name).join(', ')}
@@ -240,14 +240,14 @@ export default function Ospiti() {
                       const pct = Math.round((sub.entries_used / sub.entries_total) * 100)
                       return (
                         <div key={m.id} style={{ marginBottom: 4 }}>
-                          <div style={{ fontSize: 11, color: '#888' }}>
+                          <div style={{ fontSize: 11, color: '#6B6B6B' }}>
                             {m.name}:{' '}
-                            <span style={{ color: rem <= 3 ? '#E24B4A' : '#1a1a1a', fontWeight: rem <= 3 ? 500 : 400 }}>
+                            <span style={{ color: rem <= 3 ? '#C5221F' : '#111111', fontWeight: rem <= 3 ? 500 : 400 }}>
                               {rem}/{sub.entries_total}
                             </span>
                           </div>
                           <div className="progress">
-                            <div className="progress-fill" style={{ width: `${pct}%`, background: rem <= 3 ? '#E24B4A' : '#F5C842' }} />
+                            <div className="progress-fill" style={{ width: `${pct}%`, background: rem <= 3 ? '#C5221F' : '#F5B301' }} />
                           </div>
                         </div>
                       )
@@ -261,7 +261,7 @@ export default function Ospiti() {
               )
             })}
             {sorted.length === 0 && (
-              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#888', padding: 24 }}>Nessun ospite trovato</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', color: '#6B6B6B', padding: 24 }}>Nessun ospite trovato</td></tr>
             )}
           </tbody>
         </table>

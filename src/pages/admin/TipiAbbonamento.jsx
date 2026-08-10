@@ -90,14 +90,14 @@ export default function TipiAbbonamento() {
     <div>
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 500 }}>Tipi di abbonamento</h2>
+        <h2 style={{ fontSize: 24, fontWeight: 700 }}>Tipi di abbonamento</h2>
         <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
           {showForm ? 'Chiudi' : '+ Nuovo tipo'}
         </button>
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Nuovo tipo di abbonamento</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field" style={{ gridColumn: '1/-1' }}>
@@ -121,9 +121,9 @@ export default function TipiAbbonamento() {
                     onClick={() => setForm(f => ({ ...f, kind: opt.value }))}
                     style={{
                       flex: 1, padding: '10px 14px', borderRadius: 8,
-                      border: `0.5px solid ${form.kind === opt.value ? '#F5C842' : '#ccc'}`,
+                      border: `0.5px solid ${form.kind === opt.value ? '#F5B301' : '#E5E3DC'}`,
                       background: form.kind === opt.value ? '#FAEEDA' : '#fff',
-                      color: form.kind === opt.value ? '#854F0B' : '#888',
+                      color: form.kind === opt.value ? '#854F0B' : '#6B6B6B',
                       cursor: 'pointer', fontSize: 13,
                       fontWeight: form.kind === opt.value ? 500 : 400,
                     }}
@@ -211,7 +211,7 @@ export default function TipiAbbonamento() {
                   <td style={{ fontSize: 13 }}>{dettaglio(t)}</td>
                   <td style={{ fontWeight: 500 }}>€ {Number(t.price).toLocaleString('it-IT')}</td>
                   <td>
-                    <span style={{ fontSize: 12, color: bloccato ? '#A23B3A' : '#3B6D11', fontWeight: 500 }}>
+                    <span style={{ fontSize: 12, color: bloccato ? '#A23B3A' : '#1E8E3E', fontWeight: 500 }}>
                       {bloccato ? 'Bloccato' : 'Disponibile'}
                     </span>
                   </td>
@@ -232,7 +232,7 @@ export default function TipiAbbonamento() {
             })}
             {tipi.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ color: '#888', textAlign: 'center', padding: 20 }}>
+                <td colSpan={6} style={{ color: '#6B6B6B', textAlign: 'center', padding: 20 }}>
                   Nessun tipo di abbonamento
                 </td>
               </tr>

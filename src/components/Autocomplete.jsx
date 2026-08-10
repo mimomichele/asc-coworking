@@ -134,7 +134,7 @@ export default function Autocomplete({
             title="Pulisci"
             style={{
               position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-              background: 'none', border: 'none', color: '#888', fontSize: 16,
+              background: 'none', border: 'none', color: '#6B6B6B', fontSize: 16,
               cursor: 'pointer', padding: '2px 6px', lineHeight: 1,
             }}
           >×</button>
@@ -161,7 +161,7 @@ export default function Autocomplete({
             </div>
           ))}
           {!loading && results.length === limit && (
-            <div style={{ ...emptyStyle, fontSize: 11, fontStyle: 'italic', borderTop: '0.5px solid #eee' }}>
+            <div style={{ ...emptyStyle, fontSize: 11, fontStyle: 'italic', borderTop: '0.5px solid #E5E3DC' }}>
               Primi {limit} risultati. Affina la ricerca per restringerli.
             </div>
           )}
@@ -179,7 +179,7 @@ export default function Autocomplete({
 
 const dropdownStyle = {
   position: 'absolute', top: '100%', left: 0, right: 0,
-  background: '#fff', border: '0.5px solid #ccc', borderRadius: 8,
+  background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 8,
   marginTop: 4, maxHeight: 260, overflowY: 'auto', zIndex: 100,
   boxShadow: '0 8px 24px rgba(0,0,0,0.08)',
 }
@@ -188,5 +188,5 @@ const optionStyle = {
   borderBottom: '0.5px solid #f0f0f0',
 }
 const emptyStyle = {
-  padding: '10px 12px', fontSize: 12, color: '#888', textAlign: 'center',
+  padding: '10px 12px', fontSize: 12, color: '#6B6B6B', textAlign: 'center',
 }

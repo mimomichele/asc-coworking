@@ -415,8 +415,8 @@ setSavingEdit(false)
     setTimeout(() => setToast(null), 3000)
   }
 
-  if (loading) return <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
-  if (!account) return <div style={{ padding: 40, color: '#888' }}>Account non trovato</div>
+  if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
+  if (!account) return <div style={{ padding: 40, color: '#6B6B6B' }}>Account non trovato</div>
 
   const member = members.find(m => m.id === selectedMember)
   const subs = (member?.subscriptions || []).sort((a, b) => b.active - a.active || new Date(b.created_at) - new Date(a.created_at))
@@ -427,7 +427,7 @@ setSavingEdit(false)
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       {/* breadcrumb */}
-      <div style={{ fontSize: 12, color: '#888', marginBottom: 14, display: 'flex', gap: 6 }}>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 14, display: 'flex', gap: 6 }}>
         <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate('/admin/ospiti')}>Ospiti</span>
         <span>›</span>
         <span>{account.name} {account.surname}</span>
@@ -438,7 +438,7 @@ setSavingEdit(false)
         <div className="avatar avatar-lg">{account.name?.[0]}{account.surname?.[0]}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 500 }}>{account.name} {account.surname}</div>
-          <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>{account.phone} · @{account.username}</div>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 3 }}>{account.phone} · @{account.username}</div>
           <div style={{ marginTop: 6, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <span className={`pill ${account.type === 'family' ? 'pill-info' : 'pill-gray'}`}>
               {account.type === 'family' ? 'Account familiare' : 'Account singolo'}
@@ -455,7 +455,7 @@ setSavingEdit(false)
           {account.attivo === false ? (
             <button
               className="btn-primary"
-              style={{ background: '#1D9E75', fontSize: 13, padding: '8px 16px' }}
+              style={{ background: '#1E8E3E', fontSize: 13, padding: '8px 16px' }}
               onClick={enableAccount}
               disabled={enabling}
             >
@@ -469,8 +469,8 @@ setSavingEdit(false)
 
       {/* banner "account disattivato" */}
       {account.attivo === false && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #E24B4A', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#A32D2D', marginBottom: 4 }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #C5221F', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#C5221F', marginBottom: 4 }}>
             Account disattivato
           </div>
           <div style={{ fontSize: 12, color: '#854F0B' }}>
@@ -482,14 +482,14 @@ setSavingEdit(false)
 
       {/* Stato contratto di membership */}
       {contractSignature && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #3B6D11', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #1E8E3E', borderRadius: '0 12px 12px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                 <span className="pill pill-ok">Contratto firmato</span>
               </div>
-              <div style={{ fontSize: 12, color: '#888' }}>
-                il <strong style={{ color: '#1a1a1a' }}>{fmtSignedAt(contractSignature.signed_at)}</strong>
+              <div style={{ fontSize: 12, color: '#6B6B6B' }}>
+                il <strong style={{ color: '#111111' }}>{fmtSignedAt(contractSignature.signed_at)}</strong>
               </div>
             </div>
             <button
@@ -535,7 +535,7 @@ setSavingEdit(false)
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button className="btn-ghost" onClick={() => setShowConfirmDisable(false)} disabled={disabling}>Annulla</button>
               <button
-                style={{ background: '#E24B4A', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: disabling ? 'default' : 'pointer', opacity: disabling ? 0.6 : 1 }}
+                style={{ background: '#C5221F', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: disabling ? 'default' : 'pointer', opacity: disabling ? 0.6 : 1 }}
                 onClick={disableAccount}
                 disabled={disabling}
               >
@@ -548,7 +548,7 @@ setSavingEdit(false)
 
       {/* form modifica dati */}
       {showEdit && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Modifica dati account</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field"><label>Nome *</label><input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} /></div>
@@ -561,9 +561,9 @@ setSavingEdit(false)
                 {['single', 'family'].map(t => (
                   <div key={t} onClick={() => setEditForm(f => ({ ...f, type: t }))} style={{
                     padding: '8px 16px', borderRadius: 8,
-                    border: `0.5px solid ${editForm.type === t ? '#F5C842' : '#ccc'}`,
+                    border: `0.5px solid ${editForm.type === t ? '#F5B301' : '#E5E3DC'}`,
                     background: editForm.type === t ? '#FAEEDA' : '#fff',
-                    color: editForm.type === t ? '#854F0B' : '#888',
+                    color: editForm.type === t ? '#854F0B' : '#6B6B6B',
                     cursor: 'pointer', fontSize: 13, fontWeight: editForm.type === t ? 500 : 400,
                   }}>
                     {t === 'single' ? 'Singolo' : 'Familiare'}
@@ -578,7 +578,7 @@ setSavingEdit(false)
               <div className="hint">Minimo 6 caratteri. Lascia vuoto per mantenere la password attuale.</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
             <button className="btn-ghost" onClick={() => setShowEdit(false)}>Annulla</button>
             <button className="btn-primary" onClick={saveEdit} disabled={savingEdit}>
               {savingEdit ? 'Salvataggio...' : 'Salva modifiche'}
@@ -591,8 +591,8 @@ setSavingEdit(false)
           mano nel DB senza membri). NuovoOspite garantisce l'invariante per
           gli account creati dall'app. */}
       {members.length === 0 && (
-        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #E24B4A', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#A32D2D', marginBottom: 6 }}>
+        <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #C5221F', borderRadius: '0 12px 12px 0', background: '#FCEBEB' }}>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#C5221F', marginBottom: 6 }}>
             Account senza membri
           </div>
           <div style={{ fontSize: 12, color: '#854F0B', marginBottom: 12 }}>
@@ -615,7 +615,7 @@ setSavingEdit(false)
       {/* selezione membro + aggiungi membro */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ fontSize: 11, color: '#888', fontWeight: 500 }}>MEMBRI</div>
+          <div style={{ fontSize: 11, color: '#6B6B6B', fontWeight: 500 }}>MEMBRI</div>
           <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => { setShowNuovoMembro(v => !v); setShowEdit(false); setShowAlloggiati(false) }}>
             {showNuovoMembro ? 'Chiudi' : '+ Aggiungi membro'}
           </button>
@@ -624,9 +624,9 @@ setSavingEdit(false)
           {members.map(m => (
             <button key={m.id} onClick={() => { setSelectedMember(m.id); setShowForm(false) }} style={{
               padding: '6px 14px', borderRadius: 20, fontSize: 13, cursor: 'pointer',
-              border: '0.5px solid #ccc',
-              background: m.id === selectedMember ? '#1a1a1a' : '#fff',
-              color: m.id === selectedMember ? '#F5C842' : '#888',
+              border: '0.5px solid #E5E3DC',
+              background: m.id === selectedMember ? '#111111' : '#fff',
+              color: m.id === selectedMember ? '#F5B301' : '#6B6B6B',
             }}>
               {m.name} {m.surname}
             </button>
@@ -664,17 +664,17 @@ setSavingEdit(false)
             )}
           </div>
 
-          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
-            <div style={{ fontSize: 12, fontWeight: 500, color: '#888', marginBottom: 4 }}>
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
+            <div style={{ fontSize: 12, fontWeight: 500, color: '#6B6B6B', marginBottom: 4 }}>
               Dati Alloggiati Web — {nuovoMembroForm.name || 'nuovo membro'}
             </div>
-            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, color: '#6B6B6B', marginBottom: 4 }}>
               Obbligatori. Per i nati all'estero comune e provincia restano vuoti.
             </div>
             <AlloggiatiFields value={nuovoMembroAlloggiati} onChange={setNuovoMembroAlloggiati} />
           </div>
 
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
             <button className="btn-ghost" onClick={() => setShowNuovoMembro(false)}>Annulla</button>
             <button className="btn-primary" onClick={aggiungiMembro} disabled={savingMembro}>
               {savingMembro ? 'Salvataggio...' : 'Aggiungi membro'}
@@ -703,14 +703,14 @@ setSavingEdit(false)
             </div>
 
             {showAlloggiati && (
-              <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
-                <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>
+              <div className="card" style={{ marginBottom: 16, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
+                <div style={{ fontSize: 11, color: '#6B6B6B', marginBottom: 4 }}>
                   Campi del tracciato ALLOGGIATI WEB. Qui in modifica i campi possono essere lasciati
                   parziali (la reception li completa nel tempo). Alla creazione di un nuovo ospite o
                   membro invece sono tutti obbligatori.
                 </div>
                 <AlloggiatiFields value={alloggiatiForm} onChange={setAlloggiatiForm} requiredMarker={false} />
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #eee' }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
                   <button className="btn-ghost" onClick={() => setShowAlloggiati(false)}>Annulla</button>
                   <button className="btn-primary" onClick={saveAlloggiati} disabled={savingAlloggiati}>
                     {savingAlloggiati ? 'Salvataggio...' : 'Salva dati Alloggiati'}
@@ -731,7 +731,7 @@ setSavingEdit(false)
       </div>
 
       {showForm && (
-        <div className="card" style={{ marginBottom: 14, borderLeft: '3px solid #F5C842', borderRadius: '0 12px 12px 0' }}>
+        <div className="card" style={{ marginBottom: 14, borderLeft: '3px solid #F5B301', borderRadius: '0 12px 12px 0' }}>
           <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 14 }}>Nuovo abbonamento per {member?.name} {member?.surname}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="field" style={{ gridColumn: '1/-1' }}>
@@ -766,13 +766,13 @@ setSavingEdit(false)
 
       {/* lista abbonamenti */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-        {subs.length === 0 && <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessun abbonamento</div>}
+        {subs.length === 0 && <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessun abbonamento</div>}
         {subs.map(sub => {
           const rem = sub.entries_total - sub.entries_used
           const pct = Math.round((sub.entries_used / sub.entries_total) * 100)
           const label = !sub.active ? 'Disattivo' : rem === 0 ? 'Esaurito' : 'Attivo'
           const pillClass = label === 'Attivo' ? 'pill-ok' : label === 'Esaurito' ? 'pill-alert' : 'pill-gray'
-          const borderColor = label === 'Attivo' ? '#F5C842' : label === 'Esaurito' ? '#E24B4A' : '#ccc'
+          const borderColor = label === 'Attivo' ? '#F5B301' : label === 'Esaurito' ? '#C5221F' : '#E5E3DC'
 
           return (
             <div key={sub.id} className="card" style={{
@@ -784,16 +784,16 @@ setSavingEdit(false)
                 <div style={{ fontWeight: 500, fontSize: 14 }}>{sub.subscription_types?.name}</div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontWeight: 500 }}>€ {(sub.subscription_types?.price || 0).toLocaleString('it-IT')}</div>
-                  <div style={{ fontSize: 11, color: '#888' }}>pagato € {(sub.paid_amount || 0).toLocaleString('it-IT')}</div>
+                  <div style={{ fontSize: 11, color: '#6B6B6B' }}>pagato € {(sub.paid_amount || 0).toLocaleString('it-IT')}</div>
                   <span className={`pill ${pillClass}`} style={{ marginTop: 4 }}>{label}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#888', marginTop: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6B6B6B', marginTop: 10 }}>
                 <span>{sub.entries_used} usati su {sub.entries_total}</span>
-                <span style={{ fontWeight: 500, color: rem <= 3 ? '#E24B4A' : '#1a1a1a' }}>{rem} rimasti</span>
+                <span style={{ fontWeight: 500, color: rem <= 3 ? '#C5221F' : '#111111' }}>{rem} rimasti</span>
               </div>
               <div className="progress" style={{ marginTop: 5 }}>
-                <div className="progress-fill" style={{ width: `${pct}%`, background: rem <= 3 ? '#E24B4A' : '#F5C842' }} />
+                <div className="progress-fill" style={{ width: `${pct}%`, background: rem <= 3 ? '#C5221F' : '#F5B301' }} />
               </div>
             </div>
           )
@@ -803,11 +803,11 @@ setSavingEdit(false)
       {/* storico ingressi */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <h3 style={{ fontSize: 15, fontWeight: 500 }}>Storico ingressi</h3>
-        <span style={{ fontSize: 12, color: '#888' }}>{bookings.length} totali</span>
+        <span style={{ fontSize: 12, color: '#6B6B6B' }}>{bookings.length} totali</span>
       </div>
       <div className="table-wrap">
         {bookings.length === 0
-          ? <div style={{ padding: 16, color: '#888', fontSize: 13 }}>Nessun ingresso registrato</div>
+          ? <div style={{ padding: 16, color: '#6B6B6B', fontSize: 13 }}>Nessun ingresso registrato</div>
           : (
             <table>
               <thead><tr><th>Data</th><th>Stato</th></tr></thead>

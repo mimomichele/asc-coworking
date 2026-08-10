@@ -281,7 +281,7 @@ export default function GuestHome({ session }) {
     return `${first.getDate()} ${MONTH_NAMES[first.getMonth()]} – ${last.getDate()} ${MONTH_NAMES[last.getMonth()]}`
   }
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#888' }}>Caricamento...</div>
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#6B6B6B' }}>Caricamento...</div>
 
   const historyBookings = [...bookings].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -357,8 +357,8 @@ export default function GuestHome({ session }) {
                 onClick={() => { setSelectedMember(m.id); setSelectedDate(null) }}
                 style={{
                   padding: '7px 16px', borderRadius: 20, fontSize: 13, cursor: 'pointer', border: 'none',
-                  background: m.id === selectedMember ? '#1a1a1a' : '#fff',
-                  color: m.id === selectedMember ? '#F5C842' : '#888',
+                  background: m.id === selectedMember ? '#111111' : '#fff',
+                  color: m.id === selectedMember ? '#F5B301' : '#6B6B6B',
                   fontWeight: m.id === selectedMember ? 500 : 400,
                 }}
               >
@@ -372,19 +372,19 @@ export default function GuestHome({ session }) {
       {/* card ingressi */}
       {activeSub && (
         <div style={styles.subCard}>
-          <div style={{ ...styles.circle, background: rem <= 3 ? '#FCEBEB' : '#F5C842' }}>
-            <div style={{ fontSize: 26, fontWeight: 500, color: rem <= 3 ? '#A32D2D' : '#1a1a1a', lineHeight: 1 }}>{rem}</div>
-            <div style={{ fontSize: 10, color: rem <= 3 ? '#A32D2D' : '#1a1a1a', opacity: 0.7 }}>rimasti</div>
+          <div style={{ ...styles.circle, background: rem <= 3 ? '#FCEBEB' : '#F5B301' }}>
+            <div style={{ fontSize: 26, fontWeight: 500, color: rem <= 3 ? '#C5221F' : '#111111', lineHeight: 1 }}>{rem}</div>
+            <div style={{ fontSize: 10, color: rem <= 3 ? '#C5221F' : '#111111', opacity: 0.7 }}>rimasti</div>
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 500, fontSize: 15 }}>Coworking + Piscina</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 3 }}>
+            <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 3 }}>
               {activeSub.entries_used} usati su {activeSub.entries_total}
             </div>
             <div className="progress" style={{ marginTop: 10 }}>
               <div className="progress-fill" style={{
                 width: `${Math.round((activeSub.entries_used / activeSub.entries_total) * 100)}%`,
-                background: rem <= 3 ? '#E24B4A' : '#F5C842',
+                background: rem <= 3 ? '#C5221F' : '#F5B301',
               }} />
             </div>
           </div>
@@ -392,7 +392,7 @@ export default function GuestHome({ session }) {
       )}
 
       {!activeSub && (
-        <div style={{ background: '#FCEBEB', borderRadius: 12, padding: 16, marginBottom: 16, fontSize: 13, color: '#A32D2D' }}>
+        <div style={{ background: '#FCEBEB', borderRadius: 12, padding: 16, marginBottom: 16, fontSize: 13, color: '#C5221F' }}>
           Nessun abbonamento attivo. Contatta la reception ASC Hotel.
         </div>
       )}
@@ -409,20 +409,20 @@ export default function GuestHome({ session }) {
               disabled={weekOffset === 0}
               style={{
                 width: 28, height: 28, borderRadius: '50%',
-                border: '0.5px solid #ddd',
-                background: weekOffset === 0 ? '#f5f5f3' : '#fff',
-                color: weekOffset === 0 ? '#ccc' : '#1a1a1a',
+                border: '0.5px solid #E5E3DC',
+                background: weekOffset === 0 ? '#F6F5F1' : '#fff',
+                color: weekOffset === 0 ? '#E5E3DC' : '#111111',
                 fontSize: 16, cursor: weekOffset === 0 ? 'default' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >‹</button>
-            <span style={{ fontSize: 12, color: '#888', fontWeight: 500 }}>{weekLabel()}</span>
+            <span style={{ fontSize: 12, color: '#6B6B6B', fontWeight: 500 }}>{weekLabel()}</span>
             <button
               onClick={() => { setWeekOffset(w => w + 1); setSelectedDate(null) }}
               style={{
                 width: 28, height: 28, borderRadius: '50%',
-                border: '0.5px solid #ddd', background: '#fff',
-                color: '#1a1a1a', fontSize: 16, cursor: 'pointer',
+                border: '0.5px solid #E5E3DC', background: '#fff',
+                color: '#111111', fontSize: 16, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >›</button>
@@ -442,28 +442,28 @@ export default function GuestHome({ session }) {
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     padding: '10px 4px', borderRadius: 10,
-                    border: isToday && !isSelected ? '1.5px solid #1a1a1a' : '0.5px solid #eee',
-                    background: isSelected ? '#F5C842' : booked ? '#EAF3DE' : '#fafafa',
+                    border: isToday && !isSelected ? '1.5px solid #111111' : '0.5px solid #E5E3DC',
+                    background: isSelected ? '#F5B301' : booked ? '#EAF3DE' : '#fafafa',
                     cursor: booked || isPast ? 'default' : 'pointer',
                     opacity: isPast ? 0.4 : 1,
                     transition: 'all 0.1s',
                   }}
                 >
-                  <div style={{ fontSize: 10, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#888' }}>
+                  <div style={{ fontSize: 10, color: isSelected ? '#111111' : booked ? '#1E8E3E' : '#6B6B6B' }}>
                     {DAY_NAMES[d.getDay()]}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#1a1a1a' : booked ? '#3B6D11' : '#1a1a1a' }}>
+                  <div style={{ fontSize: 16, fontWeight: 500, color: isSelected ? '#111111' : booked ? '#1E8E3E' : '#111111' }}>
                     {d.getDate()}
                   </div>
-                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: booked ? '#3B6D11' : 'transparent' }} />
+                  <div style={{ width: 5, height: 5, borderRadius: '50%', background: booked ? '#1E8E3E' : 'transparent' }} />
                 </div>
               )
             })}
           </div>
 
           {selectedDate && (
-            <div style={{ marginTop: 14, fontSize: 13, color: '#888', marginBottom: 10 }}>
-              Stai prenotando per <strong style={{ color: '#1a1a1a' }}>{formatDate(selectedDate)}</strong>
+            <div style={{ marginTop: 14, fontSize: 13, color: '#6B6B6B', marginBottom: 10 }}>
+              Stai prenotando per <strong style={{ color: '#111111' }}>{formatDate(selectedDate)}</strong>
               {weatherEmoji(weatherByDate[selectedDate]) && (
                 <span style={{ marginLeft: 6 }}>{weatherEmoji(weatherByDate[selectedDate])}</span>
               )}
@@ -492,7 +492,7 @@ export default function GuestHome({ session }) {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {historyBookings.length === 0 && (
-          <div className="card" style={{ color: '#888', fontSize: 13 }}>Nessuna prenotazione</div>
+          <div className="card" style={{ color: '#6B6B6B', fontSize: 13 }}>Nessuna prenotazione</div>
         )}
         {historyBookings.map(b => {
           const isFuture = b.date >= todayStr
@@ -513,7 +513,7 @@ export default function GuestHome({ session }) {
                 {b.source === 'admin_walkin' && (
                   <span style={styles.walkinBadge}>registrato dalla direzione</span>
                 )}
-                <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{member?.name} {member?.surname}</div>
+                <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 2 }}>{member?.name} {member?.surname}</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {b.status === 'cancelled'
@@ -543,7 +543,7 @@ export default function GuestHome({ session }) {
                   </button>
                 )}
                 {isFuture && isActive && !cancellable && (
-                  <span style={{ fontSize: 11, color: '#A32D2D' }}>Non cancellabile</span>
+                  <span style={{ fontSize: 11, color: '#C5221F' }}>Non cancellabile</span>
                 )}
               </div>
             </div>
@@ -555,14 +555,14 @@ export default function GuestHome({ session }) {
 }
 
 const styles = {
-  hero: { background: '#1a1a1a', borderRadius: 16, padding: '20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  yellowPill: { background: '#F5C842', color: '#1a1a1a', fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap' },
+  hero: { background: '#111111', borderRadius: 16, padding: '20px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  yellowPill: { background: '#F5B301', color: '#111111', fontSize: 12, fontWeight: 500, padding: '5px 12px', borderRadius: 20, whiteSpace: 'nowrap' },
   alertBar: { background: '#FAEEDA', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14 },
   walkinBanner: { background: '#FAEEDA', borderLeft: '3px solid #BA7517', borderRadius: '0 10px 10px 0', padding: '10px 14px', fontSize: 13, color: '#854F0B', marginBottom: 14, display: 'flex', alignItems: 'flex-start', gap: 10 },
   walkinDismiss: { background: 'transparent', border: 'none', color: '#854F0B', fontSize: 16, cursor: 'pointer', padding: 0, lineHeight: 1, flexShrink: 0 },
   walkinBadge: { display: 'inline-block', fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#FAEEDA', color: '#854F0B', fontWeight: 500, marginTop: 4, marginBottom: 2, whiteSpace: 'nowrap' },
-  sectionLabel: { fontSize: 11, fontWeight: 500, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
-  subCard: { background: '#fff', border: '0.5px solid #e5e5e5', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 },
+  sectionLabel: { fontSize: 11, fontWeight: 500, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 8 },
+  subCard: { background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 14, padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 16 },
   circle: { width: 64, height: 64, borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   daysGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0,1fr))', gap: 5 },
 }

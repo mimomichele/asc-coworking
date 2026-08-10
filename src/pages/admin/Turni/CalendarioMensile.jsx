@@ -151,11 +151,11 @@ export default function CalendarioMensile() {
       </div>
 
       {loading ? (
-        <div style={{ padding: 40, color: '#888' }}>Caricamento...</div>
+        <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
       ) : (
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1,
-          background: '#e5e5e5', border: '0.5px solid #e5e5e5', borderRadius: 8, overflow: 'hidden',
+          background: '#E5E3DC', border: '0.5px solid #E5E3DC', borderRadius: 8, overflow: 'hidden',
         }}>
           {/* intestazione giorni */}
           {GIORNI.map((g, i) => (
@@ -276,12 +276,12 @@ function CompactCount({ items }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
       {turni > 0 && (
-        <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#1a1a1a', borderRadius: 8, padding: '1px 6px' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: '#fff', background: '#111111', borderRadius: 8, padding: '1px 6px' }}>
           {turni}
         </span>
       )}
       {ferie && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#185FA5' }} />}
-      {malattia && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#E24B4A' }} />}
+      {malattia && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#C5221F' }} />}
     </div>
   )
 }
@@ -296,11 +296,11 @@ function SelettoreDipendente({ dipendenti, anchorRect, onPick, onClose }) {
         position: 'fixed', zIndex: 1101, padding: 8, maxHeight: '70vh', overflowY: 'auto',
         boxShadow: '0 8px 30px rgba(0,0,0,0.18)', ...style,
       }}>
-        <div style={{ fontSize: 11, color: '#888', textTransform: 'uppercase', letterSpacing: 0.4, padding: '4px 8px 8px' }}>
+        <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: 0.4, padding: '4px 8px 8px' }}>
           Scegli dipendente
         </div>
         {dipendenti.length === 0 && (
-          <div style={{ padding: 12, fontSize: 13, color: '#888' }}>Nessun dipendente attivo.</div>
+          <div style={{ padding: 12, fontSize: 13, color: '#6B6B6B' }}>Nessun dipendente attivo.</div>
         )}
         {dipendenti.map(d => (
           <button
@@ -308,9 +308,9 @@ function SelettoreDipendente({ dipendenti, anchorRect, onPick, onClose }) {
             onClick={() => onPick(d)}
             style={{
               display: 'block', width: '100%', textAlign: 'left', border: 'none', background: 'none',
-              padding: '9px 8px', fontSize: 14, cursor: 'pointer', borderRadius: 8, color: '#1a1a1a',
+              padding: '9px 8px', fontSize: 14, cursor: 'pointer', borderRadius: 8, color: '#111111',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = '#f5f5f3'}
+            onMouseEnter={e => e.currentTarget.style.background = '#F6F5F1'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}
           >
             {nomeDipendente(d)}
@@ -338,21 +338,21 @@ function DettaglioGiorno({ dateStr, items, dipMap, onEditShift, onAdd, onClose }
 
         {leaveItems.map((l, i) => (
           <div key={'l' + i} className="card" style={{ marginBottom: 8, padding: '8px 10px', background: l.type === 'malattia' ? '#FCEBEB' : '#E6F1FB' }}>
-            <span style={{ fontSize: 13, fontWeight: 500, color: l.type === 'malattia' ? '#A32D2D' : '#185FA5' }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: l.type === 'malattia' ? '#C5221F' : '#185FA5' }}>
               {nomeDipendente(dipMap[l.dipendente_id] || {})} — {l.type === 'malattia' ? 'malattia' : 'ferie'}
             </span>
           </div>
         ))}
 
         {shiftsItems.length === 0 && leaveItems.length === 0 && (
-          <div style={{ fontSize: 13, color: '#888', padding: '8px 0 14px' }}>Nessun turno in questo giorno.</div>
+          <div style={{ fontSize: 13, color: '#6B6B6B', padding: '8px 0 14px' }}>Nessun turno in questo giorno.</div>
         )}
 
         {shiftsItems.map(({ s }) => (
           <div
             key={s.id}
             onClick={(e) => onEditShift(e, s)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginBottom: 8, border: '0.5px solid #eee', borderRadius: 10, cursor: 'pointer' }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginBottom: 8, border: '0.5px solid #E5E3DC', borderRadius: 10, cursor: 'pointer' }}
           >
             <span style={{ fontSize: 14, fontWeight: 500 }}>{nomeDipendente(dipMap[s.dipendente_id] || {})}</span>
             <span style={{ fontSize: 13, color: '#444' }}>{fmtRangeOrario(s.start_time, s.end_time)}{s.note ? ' ·' : ''}</span>
@@ -366,7 +366,7 @@ function DettaglioGiorno({ dateStr, items, dipMap, onEditShift, onAdd, onClose }
 }
 
 const chipShift = {
-  background: '#1a1a1a', color: '#fff', borderRadius: 5, padding: '2px 5px',
+  background: '#111111', color: '#fff', borderRadius: 5, padding: '2px 5px',
   fontSize: 10, fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap',
   overflow: 'hidden', textOverflow: 'ellipsis',
 }
@@ -375,4 +375,4 @@ const chipLeave = {
   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
 }
 const chipFer = { background: '#E6F1FB', color: '#185FA5' }
-const chipMal = { background: '#FCEBEB', color: '#A32D2D' }
+const chipMal = { background: '#FCEBEB', color: '#C5221F' }
