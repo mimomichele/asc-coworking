@@ -9,11 +9,15 @@
 //     esaurimento ASC; il contatore conta solo questi
 //  2. Hanno gia' rinnovato — rinnovo RILEVATO AUTOMATICAMENTE:
 //     il membro ha un nuovo abbonamento attivo con ingressi
-//     rimasti, creato dopo la data di esaurimento. "Rimuovi
-//     dalla lista" archivia con l'esito 'renewed' (stesso
-//     pattern del tasto Rinnova): la riga finisce nello storico
-//     e non ricompare per QUELLA sub esaurita. Se il membro ha
-//     piu' sub esaurite, solo la piu' recente e' candidata.
+//     rimasti, creato dopo la data di esaurimento (confronto
+//     sulla sub esaurita piu' recente). Il rinnovo e' a livello
+//     di MEMBRO: se rilevato, TUTTE le sue sub esaurite pendenti
+//     escono da "Da contattare" e il membro compare qui una
+//     volta sola. "Rimuovi dalla lista" archivia in un colpo
+//     tutte le sue sub esaurite con l'esito 'renewed' (stesso
+//     pattern del tasto Rinnova): finiscono nello storico e non
+//     ricompaiono; se il nuovo abbonamento si esaurira', il
+//     membro rientrera' normalmente.
 //  3. Gia' contattati — collassabile, default chiusa
 // ============================================================
 
@@ -125,8 +129,8 @@ export default function Esauriti() {
       }
     }
 
-    // Edge case: con piu' sub esaurite dello stesso membro, solo la
-    // piu' recente e' candidata al rilevamento.
+    // Il confronto usa la sub esaurita PIU' RECENTE di ogni membro,
+    // ma il rinnovo rilevato vale per il MEMBRO intero.
     const latestByMember = {}
     for (const s of pendingAug) {
       const m = s.members?.id
@@ -136,7 +140,7 @@ export default function Esauriti() {
       }
     }
 
-    const rinnovoBySub = {}
+    const rinnovoByMember = {}
     for (const s of Object.values(latestByMember)) {
       const nuovi = (subsByMember[s.members.id] || []).filter(n =>
         n.id !== s.id &&
@@ -146,15 +150,23 @@ export default function Esauriti() {
       )
       if (nuovi.length > 0) {
         // il piu' recente: e' quello in uso, con nome e data da mostrare
-        rinnovoBySub[s.id] = [...nuovi].sort((a, b) =>
+        rinnovoByMember[s.members.id] = [...nuovi].sort((a, b) =>
           (b.created_at || '').localeCompare(a.created_at || ''))[0]
       }
     }
 
-    setPending(pendingAug.filter(s => !rinnovoBySub[s.id]))
-    setAutoRenewed(pendingAug
-      .filter(s => rinnovoBySub[s.id])
-      .map(s => ({ ...s, rinnovo: rinnovoBySub[s.id] })))
+    // membro rinnovato → fuori da "Da contattare" TUTTE le sue sub
+    // esaurite pendenti; in "Hanno gia' rinnovato" una riga sola per
+    // membro, che porta con se' gli id di tutte le sub da archiviare
+    setPending(pendingAug.filter(s => !rinnovoByMember[s.members?.id]))
+    setAutoRenewed(Object.values(latestByMember)
+      .filter(s => rinnovoByMember[s.members.id])
+      .map(s => {
+        const subIds = pendingAug
+          .filter(p => p.members?.id === s.members.id)
+          .map(p => p.id)
+        return { ...s, rinnovo: rinnovoByMember[s.members.id], subIds }
+      }))
     setContacted((contactedRes.data || []).map(augment))
     setLoading(false)
   }
@@ -174,6 +186,17 @@ export default function Esauriti() {
       .eq('id', subId)
     if (error) { console.error('[Esauriti.updateFollowUp]', error); return }
     fetchData()  // refetch: la riga sparisce dalla sezione corrente e appare nell'altra
+  }
+
+  // Archivia in un colpo TUTTE le sub esaurite pendenti del membro
+  // rinnovato (il rinnovo e' a livello di membro, non di singola sub).
+  async function archiviaRinnovato(subIds) {
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ follow_up_status: 'renewed', follow_up_date: new Date().toISOString() })
+      .in('id', subIds)
+    if (error) { console.error('[Esauriti.archiviaRinnovato]', error); return }
+    fetchData()
   }
 
   if (loading) return <div style={{ padding: 40, color: '#6B6B6B' }}>Caricamento...</div>
@@ -265,7 +288,14 @@ export default function Esauriti() {
                     <td style={{ fontSize: 12, color: '#6B6B6B' }}>
                       {s.members?.accounts?.name} {s.members?.accounts?.surname}
                     </td>
-                    <td style={{ fontSize: 13 }}>{s.subscription_types?.name || '—'}</td>
+                    <td style={{ fontSize: 13 }}>
+                      {s.subscription_types?.name || '—'}
+                      {s.subIds.length > 1 && (
+                        <div style={{ fontSize: 11, color: '#6B6B6B' }}>
+                          +{s.subIds.length - 1} altr{s.subIds.length - 1 === 1 ? 'a esaurita' : 'e esaurite'}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ fontSize: 13 }}>{fmtDateIt(s.esaurimento)}</td>
                     <td>
                       <span className="pill pill-ok">Rinnovato</span>
@@ -274,7 +304,7 @@ export default function Esauriti() {
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => updateFollowUp(s.id, 'renewed')}>
+                      <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => archiviaRinnovato(s.subIds)}>
                         Rimuovi dalla lista
                       </button>
                     </td>
