@@ -4,9 +4,17 @@
 // l'esito (rinnova / non rinnova) per non ricontattare due
 // volte la stessa persona.
 //
-// 2 sezioni:
-//  1. Da contattare — pending, ordinata per data esaurimento ASC
-//  2. Gia' contattati — collassabile, default chiusa
+// 3 sezioni:
+//  1. Da contattare — pending SENZA rinnovo rilevato, per data
+//     esaurimento ASC; il contatore conta solo questi
+//  2. Hanno gia' rinnovato — rinnovo RILEVATO AUTOMATICAMENTE:
+//     il membro ha un nuovo abbonamento attivo con ingressi
+//     rimasti, creato dopo la data di esaurimento. "Rimuovi
+//     dalla lista" archivia con l'esito 'renewed' (stesso
+//     pattern del tasto Rinnova): la riga finisce nello storico
+//     e non ricompare per QUELLA sub esaurita. Se il membro ha
+//     piu' sub esaurite, solo la piu' recente e' candidata.
+//  3. Gia' contattati — collassabile, default chiusa
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -40,6 +48,7 @@ function fmtDateTimeIt(iso) {
 export default function Esauriti() {
   const navigate = useNavigate()
   const [pending, setPending] = useState([])
+  const [autoRenewed, setAutoRenewed] = useState([])
   const [contacted, setContacted] = useState([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
@@ -95,7 +104,57 @@ export default function Esauriti() {
       esaurimento: maxDateBySub[s.id] || (s.created_at ? s.created_at.slice(0, 10) : null),
     })
 
-    setPending(pendingFiltered.map(augment))
+    const pendingAug = pendingFiltered.map(augment)
+
+    // Round 3: rilevamento automatico dei rinnovi. Per ogni membro in
+    // lista cerco un ALTRO abbonamento attivo con ingressi rimasti,
+    // creato dopo la data di esaurimento (>= sul giorno: il rinnovo
+    // fatto lo stesso giorno dell'esaurimento e' il caso piu' comune).
+    const memberIds = [...new Set(pendingAug.map(s => s.members?.id).filter(Boolean))]
+    const subsByMember = {}
+    if (memberIds.length > 0) {
+      const { data: memberSubs, error: msErr } = await supabase
+        .from('subscriptions')
+        .select('id, member_id, created_at, entries_total, entries_used, subscription_types ( name )')
+        .in('member_id', memberIds)
+        .eq('active', true)
+      if (msErr) console.error('[Esauriti.memberSubs]', msErr)
+      for (const n of (memberSubs || [])) {
+        if (!subsByMember[n.member_id]) subsByMember[n.member_id] = []
+        subsByMember[n.member_id].push(n)
+      }
+    }
+
+    // Edge case: con piu' sub esaurite dello stesso membro, solo la
+    // piu' recente e' candidata al rilevamento.
+    const latestByMember = {}
+    for (const s of pendingAug) {
+      const m = s.members?.id
+      if (!m) continue
+      if (!latestByMember[m] || (s.created_at || '') > (latestByMember[m].created_at || '')) {
+        latestByMember[m] = s
+      }
+    }
+
+    const rinnovoBySub = {}
+    for (const s of Object.values(latestByMember)) {
+      const nuovi = (subsByMember[s.members.id] || []).filter(n =>
+        n.id !== s.id &&
+        n.entries_used < n.entries_total &&
+        (n.created_at || '') > (s.created_at || '') &&
+        (n.created_at || '').slice(0, 10) >= (s.esaurimento || '')
+      )
+      if (nuovi.length > 0) {
+        // il piu' recente: e' quello in uso, con nome e data da mostrare
+        rinnovoBySub[s.id] = [...nuovi].sort((a, b) =>
+          (b.created_at || '').localeCompare(a.created_at || ''))[0]
+      }
+    }
+
+    setPending(pendingAug.filter(s => !rinnovoBySub[s.id]))
+    setAutoRenewed(pendingAug
+      .filter(s => rinnovoBySub[s.id])
+      .map(s => ({ ...s, rinnovo: rinnovoBySub[s.id] })))
     setContacted((contactedRes.data || []).map(augment))
     setLoading(false)
   }
@@ -176,7 +235,58 @@ export default function Esauriti() {
         )
       }
 
-      {/* SEZIONE 2 — GIA' CONTATTATI (collassabile, default chiusa) */}
+      {/* SEZIONE 2 — HANNO GIA' RINNOVATO (rilevati automaticamente) */}
+      {autoRenewed.length > 0 && (
+        <div style={{ marginTop: 28 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 500, marginBottom: 10 }}>
+            Hanno già rinnovato ({autoRenewed.length})
+          </h3>
+          <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 10 }}>
+            Rilevati automaticamente: hanno un nuovo abbonamento attivo, non serve chiamarli.
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ width: '24%' }}>Membro</th>
+                  <th style={{ width: '14%' }}>Account</th>
+                  <th style={{ width: '18%' }}>Abbonamento esaurito</th>
+                  <th style={{ width: '12%' }}>Esaurito il</th>
+                  <th style={{ width: '22%' }}>Nuovo abbonamento</th>
+                  <th style={{ width: 150 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {autoRenewed.map(s => (
+                  <tr key={s.id}>
+                    <td style={{ fontWeight: 500, cursor: 'pointer' }} onClick={() => navigate(`/admin/ospiti/${s.members?.account_id}`)}>
+                      {s.members?.name} {s.members?.surname}
+                    </td>
+                    <td style={{ fontSize: 12, color: '#6B6B6B' }}>
+                      {s.members?.accounts?.name} {s.members?.accounts?.surname}
+                    </td>
+                    <td style={{ fontSize: 13 }}>{s.subscription_types?.name || '—'}</td>
+                    <td style={{ fontSize: 13 }}>{fmtDateIt(s.esaurimento)}</td>
+                    <td>
+                      <span className="pill pill-ok">Rinnovato</span>
+                      <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
+                        {s.rinnovo?.subscription_types?.name || '—'} · {fmtDateIt(s.rinnovo?.created_at)}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button className="btn-ghost" style={{ fontSize: 12 }} onClick={() => updateFollowUp(s.id, 'renewed')}>
+                        Rimuovi dalla lista
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* SEZIONE 3 — GIA' CONTATTATI (collassabile, default chiusa) */}
       <div style={{ marginTop: 28 }}>
         <div
           onClick={() => setExpanded(v => !v)}
