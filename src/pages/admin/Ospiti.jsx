@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import WalkinModal from '../../components/WalkinModal.jsx'
+import ExportContattiModal from '../../components/ExportContattiModal.jsx'
 
 export default function Ospiti() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export default function Ospiti() {
   const [signedUserIds, setSignedUserIds] = useState(() => new Set())
   // Modal "+ Aggiungi ingresso" (walk-in admin) e toast di feedback.
   const [walkinOpen, setWalkinOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [toast, setToast] = useState(null)
 
   useEffect(() => { fetchAccounts() }, [])
@@ -132,6 +134,7 @@ export default function Ospiti() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn-primary" onClick={() => setWalkinOpen(true)}>+ Aggiungi ingresso</button>
+          <button className="btn-ghost" onClick={() => setExportOpen(true)}>Esporta contatti</button>
           <button className="btn-primary" onClick={() => navigate('/admin/nuovo-ospite')}>+ Nuovo ospite</button>
         </div>
       </div>
@@ -276,6 +279,13 @@ export default function Ospiti() {
             showToast(msg)
             fetchAccounts()
           }}
+        />
+      )}
+
+      {exportOpen && (
+        <ExportContattiModal
+          accounts={accounts}
+          onClose={() => setExportOpen(false)}
         />
       )}
     </div>
