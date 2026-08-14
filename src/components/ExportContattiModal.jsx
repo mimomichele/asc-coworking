@@ -25,6 +25,10 @@ const FILTRI = [
 export default function ExportContattiModal({ accounts, onClose }) {
   const [filter, setFilter] = useState('tutti')
   const [tag, setTag] = useState('COW2025')
+  // OFF di default: gli account senza tel valido non entrano nell'export.
+  // ON: entrano nel CSV con Telefono vuoto (lista di lavoro per recupero
+  // anagrafica). La vCard li esclude comunque sempre.
+  const [includiSenzaTel, setIncludiSenzaTel] = useState(false)
 
   // Il campo tag mostra sempre il valore sanificato (uppercase + [A-Z0-9]).
   // L'utente vede in tempo reale cosa finira' in rubrica / nel nome file.
@@ -33,20 +37,25 @@ export default function ExportContattiModal({ accounts, onClose }) {
   }
 
   // Anteprima calcolata al volo su ogni change (accounts/filter/tag).
-  const { contacts, skipped, tagClean } = useMemo(
+  const { contacts, senzaTelefono, tagClean } = useMemo(
     () => buildContactList(accounts, filter, tag),
     [accounts, filter, tag]
   )
 
+  // Lista effettiva usata dal CSV: contatti con tel + (opzionale) senza tel.
+  // La vCard usa SEMPRE solo contacts.
+  const csvRows = includiSenzaTel ? [...contacts, ...senzaTelefono] : contacts
+  const vcfRows = contacts
+
   function scaricaVcf() {
-    if (contacts.length === 0) return
-    downloadBlob(toVcf(contacts), filenameFor(tagClean, 'vcf'), 'text/vcard;charset=utf-8')
+    if (vcfRows.length === 0) return
+    downloadBlob(toVcf(vcfRows), filenameFor(tagClean, 'vcf'), 'text/vcard;charset=utf-8')
   }
 
   function scaricaCsv() {
-    if (contacts.length === 0) return
+    if (csvRows.length === 0) return
     // UTF-8 BOM + CRLF gia' inclusi nel content
-    downloadBlob(toCsv(contacts), filenameFor(tagClean, 'csv'), 'text/csv;charset=utf-8')
+    downloadBlob(toCsv(csvRows), filenameFor(tagClean, 'csv'), 'text/csv;charset=utf-8')
   }
 
   return (
@@ -93,20 +102,49 @@ export default function ExportContattiModal({ accounts, onClose }) {
           </div>
         </div>
 
+        <div style={S.section}>
+          <label style={S.checkLine}>
+            <input
+              type="checkbox"
+              checked={includiSenzaTel}
+              onChange={e => setIncludiSenzaTel(e.target.checked)}
+              style={{ marginRight: 8 }}
+            />
+            <span style={{ fontSize: 13 }}>
+              Includi anche chi non ha telefono
+              <div style={S.hint}>
+                Solo nel CSV, come lista di lavoro. La rubrica .vcf li esclude sempre.
+              </div>
+            </span>
+          </label>
+        </div>
+
         <div style={S.previewBox}>
-          <div style={{ fontSize: 15, fontWeight: 500 }}>
-            Esporterai <strong>{contacts.length}</strong>{' '}
-            contatt{contacts.length === 1 ? 'o' : 'i'}
-          </div>
-          {skipped.length > 0 && (
+          {includiSenzaTel && senzaTelefono.length > 0 ? (
+            <div style={{ fontSize: 14, fontWeight: 500 }}>
+              Esporterai <strong>{csvRows.length}</strong> contatt{csvRows.length === 1 ? 'o' : 'i'} nel CSV,
+              di cui <strong>{senzaTelefono.length}</strong> senza telefono ·{' '}
+              <strong>{vcfRows.length}</strong> nella rubrica .vcf
+            </div>
+          ) : (
+            <div style={{ fontSize: 15, fontWeight: 500 }}>
+              Esporterai <strong>{contacts.length}</strong>{' '}
+              contatt{contacts.length === 1 ? 'o' : 'i'}
+            </div>
+          )}
+          {senzaTelefono.length > 0 && (
             <details style={S.skipped}>
               <summary style={S.skippedSummary}>
-                {skipped.length} saltat{skipped.length === 1 ? 'o' : 'i'} — mostra dettagli
+                {senzaTelefono.length}{' '}
+                {includiSenzaTel
+                  ? (senzaTelefono.length === 1 ? 'senza telefono' : 'senza telefono')
+                  : (senzaTelefono.length === 1 ? 'saltato' : 'saltati')}
+                {' '}— mostra dettagli
               </summary>
               <ul style={S.skippedList}>
-                {skipped.map((s, i) => (
+                {senzaTelefono.map((s, i) => (
                   <li key={i} style={S.skippedItem}>
-                    <span style={{ fontWeight: 500 }}>{s.nome}</span> — {s.motivo}
+                    <span style={{ fontWeight: 500 }}>{s.nome} {s.cognome}</span> — {s.motivo}
                   </li>
                 ))}
               </ul>
@@ -119,19 +157,26 @@ export default function ExportContattiModal({ accounts, onClose }) {
           <button
             className="btn-primary"
             onClick={scaricaCsv}
-            disabled={contacts.length === 0}
-            style={{ opacity: contacts.length === 0 ? 0.5 : 1 }}
+            disabled={csvRows.length === 0}
+            style={{ opacity: csvRows.length === 0 ? 0.5 : 1 }}
           >
-            Scarica .csv
+            Scarica .csv{includiSenzaTel && senzaTelefono.length > 0 ? ` (${csvRows.length})` : ''}
           </button>
-          <button
-            className="btn-primary"
-            onClick={scaricaVcf}
-            disabled={contacts.length === 0}
-            style={{ opacity: contacts.length === 0 ? 0.5 : 1 }}
-          >
-            Scarica .vcf (rubrica)
-          </button>
+          <div style={S.vcfBtnGroup}>
+            <button
+              className="btn-primary"
+              onClick={scaricaVcf}
+              disabled={vcfRows.length === 0}
+              style={{ opacity: vcfRows.length === 0 ? 0.5 : 1 }}
+            >
+              Scarica .vcf (rubrica){includiSenzaTel && senzaTelefono.length > 0 ? ` (${vcfRows.length})` : ''}
+            </button>
+            {includiSenzaTel && senzaTelefono.length > 0 && (
+              <div style={S.vcfNote}>
+                gli {senzaTelefono.length} senza telefono non finiscono in rubrica
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -184,5 +229,13 @@ const S = {
   skippedItem: { color: '#111111', marginBottom: 4 },
   actions: {
     display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4, flexWrap: 'wrap',
+    alignItems: 'flex-end',
   },
+  checkLine: {
+    display: 'flex', alignItems: 'flex-start', padding: '8px 10px',
+    borderRadius: 8, cursor: 'pointer', border: '0.5px solid #E5E3DC',
+    background: '#F6F5F1',
+  },
+  vcfBtnGroup: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 },
+  vcfNote: { fontSize: 11, color: '#6B6B6B', fontStyle: 'italic', maxWidth: 240, textAlign: 'right' },
 }

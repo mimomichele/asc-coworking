@@ -92,13 +92,18 @@ export function matchFilter(account, filter) {
 }
 
 // Costruisce la lista contatti da esportare. Ritorna:
-//   { contacts, skipped, tagClean }
-// - contacts: array di record pronti per vCard/CSV, dedup per phone
-// - skipped: [{nome, motivo}] elenco account esclusi (per anteprima)
-// - tagClean: il TAG sanificato effettivamente usato
+//   { contacts, senzaTelefono, tagClean }
+// - contacts: record CON telefono valido, dedup per phone. Sempre inclusi
+//   in CSV e vCard.
+// - senzaTelefono: record SENZA telefono valido (telefono='', motivo).
+//   Mostrati sempre nell'elenco informativo dell'anteprima. Vengono
+//   inclusi nell'export solo se il chiamante (UI) sceglie di aggiungerli
+//   al CSV (checkbox "Includi anche chi non ha telefono"). Non vanno
+//   MAI nella vCard: un contatto senza numero sporca la rubrica.
+// - tagClean: il TAG sanificato effettivamente usato.
 //
-// Account con attivo=false (disattivati manualmente) sono sempre esclusi
-// senza comparire tra i saltati (sono stati chiusi apposta).
+// Account con attivo=false (disattivati manualmente) sono sempre esclusi,
+// non compaiono nemmeno tra i senzaTelefono (sono stati chiusi apposta).
 export function buildContactList(accounts, filter, tag) {
   const tagClean = sanitizeTag(tag)
   const selezionati = (accounts || [])
@@ -107,13 +112,32 @@ export function buildContactList(accounts, filter, tag) {
 
   const seenPhones = new Set()
   const contacts = []
-  const skipped = []
+  const senzaTelefono = []
 
   for (const a of selezionati) {
+    // familiari = tutti i members TRANNE quello col nome/cognome del titolare
+    // (il titolare compare quasi sempre anche nella lista members)
+    const familiari = (a.members || [])
+      .filter(m => !(m.name === a.name && m.surname === a.surname))
+      .map(m => `${m.name || ''} ${m.surname || ''}`.trim())
+      .filter(Boolean)
+
+    const base = {
+      nome: a.name || '',
+      cognome: a.surname || '',
+      tag: tagClean,
+      tipoAccount: a.type === 'family' ? 'Familiare' : 'Singolo',
+      // Separatore INTERNO virgola (non ';') per non collidere col
+      // separatore CSV. Il quoting con "..." rende comunque robusti.
+      membri: familiari.join(', '),
+      statoAbb: statoLabel(accountAbbStato(a)),
+    }
+
     const phone = normalizePhone(a.phone)
     if (!phone) {
-      skipped.push({
-        nome: `${a.name || ''} ${a.surname || ''}`.trim() || '(senza nome)',
+      senzaTelefono.push({
+        ...base,
+        telefono: '',
         motivo: !a.phone ? 'telefono mancante' : `telefono non valido: "${a.phone}"`,
       })
       continue
@@ -123,28 +147,10 @@ export function buildContactList(accounts, filter, tag) {
       continue
     }
     seenPhones.add(phone)
-
-    // familiari = tutti i members TRANNE quello col nome/cognome del titolare
-    // (il titolare compare quasi sempre anche nella lista members)
-    const familiari = (a.members || [])
-      .filter(m => !(m.name === a.name && m.surname === a.surname))
-      .map(m => `${m.name || ''} ${m.surname || ''}`.trim())
-      .filter(Boolean)
-
-    contacts.push({
-      nome: a.name || '',
-      cognome: a.surname || '',
-      tag: tagClean,
-      telefono: phone,
-      tipoAccount: a.type === 'family' ? 'Familiare' : 'Singolo',
-      // Separatore INTERNO virgola (non ';') per non collidere col
-      // separatore CSV. Il quoting con "..." rende comunque robusti.
-      membri: familiari.join(', '),
-      statoAbb: statoLabel(accountAbbStato(a)),
-    })
+    contacts.push({ ...base, telefono: phone })
   }
 
-  return { contacts, skipped, tagClean }
+  return { contacts, senzaTelefono, tagClean }
 }
 
 // ============================================================
