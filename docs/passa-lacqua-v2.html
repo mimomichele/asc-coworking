@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passa l'Acqua — 24 ore di staffetta di nuoto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --aqua:#17A2A0;
+  --aqua-dark:#0E7A78;
+  --aqua-pale:#E8F6F5;
+  --ink:#11201F;
+  --grey:#5C6B6A;
+  --line:#D8E2E1;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:#fff;color:var(--ink);
+  font-family:'Oswald',sans-serif;font-weight:300;
+  line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding:0 24px}
+a{color:var(--aqua-dark)}
+
+header{padding:52px 0 44px;border-bottom:4px solid var(--aqua)}
+.eyebrow{
+  font-size:14px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--aqua-dark);font-weight:500;margin-bottom:18px;
+}
+h1{
+  font-family:'Anton',sans-serif;font-weight:400;
+  font-size:clamp(58px,12vw,132px);line-height:.84;
+  text-transform:uppercase;color:var(--aqua);
+}
+.sub{font-size:clamp(20px,2.8vw,30px);font-weight:500;margin-top:18px}
+.payoff{font-size:17px;color:var(--grey);margin-top:6px}
+.cta{
+  display:inline-block;padding:20px 40px;
+  background:var(--aqua);color:#fff;text-decoration:none;
+  font-family:'Anton',sans-serif;font-size:23px;
+  letter-spacing:.05em;text-transform:uppercase;border-radius:4px;
+  transition:background .15s;border:0;cursor:pointer;
+}
+.cta:hover{background:var(--aqua-dark)}
+.cta-wrap{margin-top:32px}
+.cta-note{font-size:15px;color:var(--grey);margin-top:12px}
+
+section{padding:56px 0}
+h2{
+  font-family:'Anton',sans-serif;font-weight:400;
+  font-size:clamp(32px,5.5vw,50px);text-transform:uppercase;
+  line-height:1;margin-bottom:20px;
+}
+p{font-size:17.5px;max-width:62ch;color:#2E3E3D}
+p+p{margin-top:16px}
+
+.split{
+  margin-top:34px;display:flex;flex-wrap:wrap;gap:2px;
+  border-radius:4px;overflow:hidden;
+}
+.half{flex:1 1 260px;padding:26px 28px;background:var(--aqua-pale)}
+.half b{
+  display:block;font-family:'Anton',sans-serif;font-size:40px;
+  color:var(--aqua);line-height:1;margin-bottom:8px;
+}
+.half strong{display:block;font-size:19px;font-weight:500;margin-bottom:6px}
+.half span{font-size:15.5px;color:var(--grey);display:block}
+
+.sponsor{
+  margin-top:22px;display:flex;gap:22px;align-items:center;
+  padding:26px 28px;background:var(--aqua-pale);border-left:5px solid var(--aqua);
+  border-radius:4px;
+}
+.sponsor b{font-family:'Anton',sans-serif;font-size:54px;color:var(--aqua);line-height:1}
+.sponsor p{font-size:17px;margin:0}
+
+.prog{margin-top:30px;border-top:2px solid var(--line)}
+.row{display:flex;gap:22px;align-items:baseline;padding:17px 0;border-bottom:1px solid var(--line)}
+.row time{font-family:'Anton',sans-serif;font-size:20px;color:var(--aqua);min-width:120px}
+.row div{font-size:17px;font-weight:400}
+.row small{display:block;color:var(--grey);font-size:15px;font-weight:300}
+
+/* FORM */
+#iscrizione{
+  background:var(--aqua-pale);
+  border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:56px 0;
+}
+.formcard{background:#fff;border:2px solid var(--aqua);border-radius:6px;padding:clamp(26px,5vw,52px)}
+#iscrizione h2{color:var(--aqua)}
+.intro{font-size:17px;color:var(--grey);max-width:60ch;margin-bottom:38px}
+
+fieldset{border:0;margin-bottom:36px}
+legend{
+  font-family:'Anton',sans-serif;font-size:19px;text-transform:uppercase;
+  color:var(--aqua);letter-spacing:.03em;
+  padding-bottom:10px;margin-bottom:22px;
+  border-bottom:2px solid var(--line);width:100%;
+}
+label{display:block;font-size:16px;font-weight:500;margin-bottom:8px}
+.req{color:var(--aqua)}
+input[type=text],input[type=tel],input[type=email]{
+  width:100%;padding:15px 16px;background:#fff;
+  border:2px solid var(--line);border-radius:4px;
+  font-family:'Oswald',sans-serif;font-size:17px;font-weight:300;
+  color:var(--ink);margin-bottom:24px;transition:border-color .15s;
+}
+input[type=text]:focus,input[type=tel]:focus,input[type=email]:focus{border-color:var(--aqua);outline:none}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--aqua-dark);outline-offset:2px}
+input::placeholder{color:#9BAAA9}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;width:0;height:0}
+.chip span{
+  display:block;padding:12px 20px;border:2px solid var(--line);
+  border-radius:999px;font-size:15.5px;cursor:pointer;
+  transition:all .15s;background:#fff;
+}
+.chip span:hover{border-color:var(--aqua)}
+.chip input:checked+span{background:var(--aqua);border-color:var(--aqua);color:#fff;font-weight:500}
+.yesno{display:flex;gap:10px;margin-bottom:24px}
+.yesno .chip span{min-width:92px;text-align:center;font-size:17px;font-weight:500;padding:14px 24px}
+
+#slotbox{display:none}
+#slotbox.on{display:block}
+.note{
+  font-size:15.5px;color:#2E3E3D;background:var(--aqua-pale);
+  border-left:4px solid var(--aqua);padding:16px 18px;margin:8px 0 24px;
+}
+.note b{font-weight:600}
+
+.hourblock{margin-bottom:20px}
+.hourlabel{
+  font-family:'Anton',sans-serif;font-size:17px;color:var(--aqua);
+  letter-spacing:.04em;margin-bottom:8px;display:flex;align-items:baseline;gap:10px;
+}
+.hourlabel em{font-family:'Oswald',sans-serif;font-style:normal;font-size:13.5px;color:var(--grey);font-weight:300}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:7px}
+.slot input{position:absolute;opacity:0;width:0;height:0}
+.slot span{
+  display:block;text-align:center;padding:11px 4px;
+  border:2px solid var(--line);border-radius:4px;
+  font-size:15px;cursor:pointer;transition:all .15s;background:#fff;
+}
+.slot span:hover{border-color:var(--aqua)}
+.slot input:checked+span{background:var(--aqua);border-color:var(--aqua);color:#fff;font-weight:600}
+.slot.night span{border-color:#B9DDDC;background:#F7FCFC}
+.counter{
+  font-size:16px;font-weight:500;color:var(--aqua-dark);
+  background:var(--aqua-pale);padding:12px 16px;border-radius:4px;margin-bottom:22px;
+}
+
+.check{display:flex;gap:12px;align-items:flex-start;margin-bottom:20px}
+.check input{margin-top:4px;accent-color:var(--aqua);width:20px;height:20px;flex-shrink:0}
+.check label{font-size:16px;font-weight:300;margin:0}
+
+button[type=submit]{
+  width:100%;padding:22px;background:var(--aqua);border:0;border-radius:4px;
+  color:#fff;font-family:'Anton',sans-serif;font-size:25px;
+  letter-spacing:.05em;text-transform:uppercase;cursor:pointer;
+  transition:background .15s;margin-top:8px;
+}
+button[type=submit]:hover{background:var(--aqua-dark)}
+.err{
+  color:#B32D1E;font-size:16px;margin-top:16px;display:none;
+  background:#FDECEA;border-left:4px solid #B32D1E;padding:12px 14px;
+}
+.err.on{display:block}
+#done{display:none;text-align:center;padding:40px 0}
+#done.on{display:block}
+#done h2{color:var(--aqua)}
+#done p{font-size:18px;color:var(--grey);max-width:46ch;margin:0 auto}
+
+footer{border-top:4px solid var(--aqua);padding:34px 0 56px;font-size:15px;color:var(--grey)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <p class="eyebrow">Sab 12 › Dom 13 settembre 2026 · Piscina dell'ASC Hotel</p>
+  <h1>Passa<br>l'Acqua</h1>
+  <p class="sub">24 ore di staffetta di nuoto</p>
+  <p class="payoff">Passa l'acqua a chi viene dopo</p>
+  <div class="cta-wrap">
+    <a href="#iscrizione" class="cta">Iscriviti ora</a>
+    <p class="cta-note">Non serve essere abbonati. Bastano trenta secondi.</p>
+  </div>
+</header>
+
+<section class="wrap">
+  <h2>Chiunque può nuotare</h2>
+  <p>Per 24 ore consecutive l'acqua non resta mai vuota. Si prenota il proprio turno, si nuota quanto si vuole e si passa il testimone a chi viene dopo. Non serve essere abbonati, non serve essere veloci: serve solo esserci.</p>
+  <p>Si parte sabato 12 settembre alle 10:00 e si va avanti fino a domenica alle 10:00, senza mai interrompersi. Anche di notte.</p>
+  <p>Chi nuota lascia un'offerta libera. Tutto quello che si raccoglie viene diviso a metà fra due realtà del territorio.</p>
+
+  <div class="split">
+    <div class="half">
+      <b>50%</b>
+      <strong>Calcit</strong>
+      <span>Comitato Autonomo Lotta Contro i Tumori</span>
+    </div>
+    <div class="half">
+      <b>50%</b>
+      <strong>AllStars</strong>
+      <span>Special Olympics</span>
+    </div>
+  </div>
+
+  <div class="sponsor">
+    <b>1 €</b>
+    <p>Per ogni 50 metri nuotati, Lapi Chimici aggiunge un euro alla raccolta. Più bracciate facciamo, più cresce la cifra.</p>
+  </div>
+</section>
+
+<section class="wrap">
+  <h2>Non solo nuoto</h2>
+  <div class="prog">
+    <div class="row"><time>Sab 10:00</time><div>Partenza della staffetta<small>Apre anche il bar, aperto per tutte le 24 ore</small></div></div>
+    <div class="row"><time>Sab 24:00</time><div>Circolo di lettura<small>Si legge a bordo vasca mentre qualcuno nuota — 5 €</small></div></div>
+    <div class="row"><time>Dom 06:45</time><div>Yoga all'alba<small>A bordo piscina, mentre sorge il sole. Ricavato interamente in beneficenza</small></div></div>
+    <div class="row"><time>Dom 07:45</time><div>Colazione<small>10 €, per chi ha nuotato e per chi arriva solo adesso</small></div></div>
+    <div class="row"><time>Dom 10:00</time><div>Ultima vasca<small>E consegna della somma raccolta</small></div></div>
+  </div>
+  <div class="cta-wrap"><a href="#iscrizione" class="cta">Iscriviti ora</a></div>
+</section>
+
+<section id="iscrizione">
+<div class="wrap">
+  <div class="formcard">
+    <h2>Entra nella community</h2>
+    <p class="intro">Passa l'Acqua nasce dalla 24 ore di nuoto solidale, ma vuole andare oltre: creare una community fatta di solidarietà, sport, benessere e nuove iniziative per la città.</p>
+
+    <form id="f" novalidate>
+      <fieldset>
+        <legend>Chi sei</legend>
+
+        <label for="nome">Nome e cognome <span class="req">*</span></label>
+        <input type="text" id="nome" name="nome" placeholder="Come ti chiami" autocomplete="name">
+
+        <label for="tel">Numero di telefono <span class="req">*</span></label>
+        <input type="tel" id="tel" name="telefono" placeholder="Per avvisarti del tuo turno" autocomplete="tel">
+
+        <label for="mail">Email</label>
+        <input type="email" id="mail" name="email" placeholder="Per ricevere gli aggiornamenti" autocomplete="email">
+
+        <label>Quali attività ti interessano?</label>
+        <div class="chips">
+          <div class="chip"><input type="checkbox" name="interessi" value="Nuoto" id="i1"><label for="i1"><span>Nuoto</span></label></div>
+          <div class="chip"><input type="checkbox" name="interessi" value="Fitness" id="i2"><label for="i2"><span>Fitness</span></label></div>
+          <div class="chip"><input type="checkbox" name="interessi" value="Yoga e benessere" id="i3"><label for="i3"><span>Yoga e benessere</span></label></div>
+          <div class="chip"><input type="checkbox" name="interessi" value="Eventi solidali" id="i4"><label for="i4"><span>Eventi solidali</span></label></div>
+          <div class="chip"><input type="checkbox" name="interessi" value="Open day e prove" id="i5"><label for="i5"><span>Open day e prove</span></label></div>
+          <div class="chip"><input type="checkbox" name="interessi" value="Altro" id="i6"><label for="i6"><span>Altro</span></label></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Partecipa alla 24 ore</legend>
+
+        <label>Vuoi partecipare alla 24 ore di nuoto solidale del 12–13 settembre? <span class="req">*</span></label>
+        <div class="yesno">
+          <div class="chip"><input type="radio" name="partecipa" value="si" id="p1"><label for="p1"><span>Sì</span></label></div>
+          <div class="chip"><input type="radio" name="partecipa" value="no" id="p2"><label for="p2"><span>No</span></label></div>
+        </div>
+
+        <div id="slotbox">
+          <label>Quando vuoi nuotare?</label>
+          <p class="note">Ogni turno dura <b>10 minuti</b>. Puoi sceglierne quanti vuoi, anche di seguito: se vuoi nuotare mezz'ora, seleziona tre turni consecutivi.<br><br>Qui sotto vedi solo i turni ancora liberi. <b>Le fasce indicate rappresentano una preferenza. La partecipazione alla 24 ore sarà confermata dall'organizzazione.</b></p>
+          <div id="turni"></div>
+          <p class="counter" id="counter">Nessun turno selezionato.</p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Ultima cosa</legend>
+
+        <div class="check">
+          <input type="checkbox" id="news" name="newsletter" value="si">
+          <label for="news">Voglio ricevere aggiornamenti sui prossimi eventi e sulle iniziative di Passa l'Acqua</label>
+        </div>
+
+        <div class="check">
+          <input type="checkbox" id="gdpr" name="privacy" value="si">
+          <label for="gdpr">Acconsento al trattamento dei miei dati personali secondo l'<a href="#privacy">informativa privacy</a> <span class="req">*</span></label>
+        </div>
+
+        <button type="submit">Entra in Passa l'Acqua</button>
+        <p class="err" id="err"></p>
+      </fieldset>
+    </form>
+
+    <div id="done">
+      <h2>Ci sei</h2>
+      <p>Ti abbiamo registrato. Se hai scelto dei turni ti ricontattiamo per confermarli.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<footer class="wrap">
+  <p>Passa l'Acqua — Piscina dell'ASC Hotel · Raccolta divisa fra Calcit e AllStars Special Olympics<br>
+  Sponsor principale: Lapi Chimici · #passalacqua</p>
+</footer>
+
+<script>
+/* ═════════════════════════════════════════════
+   COLLEGAMENTO ALL'APP DI PRENOTAZIONE
+
+   1. Metti qui l'indirizzo da cui l'app restituisce
+      i turni occupati.
+   2. L'app deve rispondere in JSON, in uno di questi
+      due formati:
+         ["10:00","10:10","18:00"]
+      oppure
+         {"occupati":["10:00","10:10","18:00"]}
+   3. Se l'indirizzo non risponde, la pagina mostra
+      comunque tutti i turni (elenco RISERVA qui sotto)
+      così il modulo resta utilizzabile.
+   ═════════════════════════════════════════════ */
+const API_TURNI = ''; // es. 'https://tuo-dominio.it/api/turni-occupati'
+const RISERVA   = []; // usato solo se l'API non risponde
+
+const box = document.getElementById('turni');
+
+async function caricaTurni() {
+  let occupati = RISERVA;
+
+  if (API_TURNI) {
+    box.innerHTML = '<p class="counter">Carico i turni disponibili…</p>';
+    try {
+      const r = await fetch(API_TURNI, {cache:'no-store'});
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      occupati = Array.isArray(j) ? j : (j.occupati || j.slots || []);
+    } catch (e) {
+      console.warn('Turni non caricati dall\'app, uso l\'elenco di riserva.', e);
+    }
+  }
+
+  disegna(occupati.map(String));
+}
+
+function disegna(occupati) {
+  box.innerHTML = '';
+  let h = 10, m = 0, oraCorrente = null, griglia = null;
+
+  for (let i = 0; i < 144; i++) {
+    const t = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+
+    if (h !== oraCorrente) {
+      oraCorrente = h;
+      const gruppo = document.createElement('div');
+      gruppo.className = 'hourblock';
+      const lab = document.createElement('p');
+      lab.className = 'hourlabel';
+      const notte = (h >= 23 || h < 6);
+      lab.innerHTML = String(h).padStart(2,'0') + ':00' + (notte ? ' <em>fascia notturna</em>' : '');
+      gruppo.appendChild(lab);
+      griglia = document.createElement('div');
+      griglia.className = 'grid';
+      gruppo.appendChild(griglia);
+      box.appendChild(gruppo);
+    }
+
+    if (!occupati.includes(t)) {
+      const el = document.createElement('label');
+      el.className = 'slot' + ((h >= 23 || h < 6) ? ' night' : '');
+      el.innerHTML = '<input type="checkbox" name="turni" value="'+t+'"><span>'+t+'</span>';
+      griglia.appendChild(el);
+    }
+
+    m += 10; if (m === 60) { m = 0; h = (h + 1) % 24; }
+  }
+
+  // nasconde le ore completamente piene
+  box.querySelectorAll('.hourblock').forEach(b => {
+    if (!b.querySelector('.slot')) b.remove();
+  });
+
+  if (!box.querySelector('.slot')) {
+    box.innerHTML = '<p class="counter">Tutti i turni sono al completo. Iscriviti comunque alla community: ti avvisiamo se si libera qualcosa.</p>';
+  }
+}
+
+caricaTurni();
+
+const counter = document.getElementById('counter');
+box.addEventListener('change', () => {
+  const n = box.querySelectorAll('input:checked').length;
+  counter.textContent = n === 0
+    ? 'Nessun turno selezionato.'
+    : n + (n === 1 ? ' turno selezionato — 10 minuti in acqua.' : ' turni selezionati — ' + n*10 + ' minuti in acqua.');
+});
+
+const slotbox = document.getElementById('slotbox');
+document.querySelectorAll('input[name=partecipa]').forEach(r =>
+  r.addEventListener('change', e => {
+    const apre = e.target.value === 'si';
+    slotbox.classList.toggle('on', apre);
+    if (apre) caricaTurni(); // riallinea con l'app al momento della scelta
+  })
+);
+
+document.getElementById('f').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('err');
+  const f = e.target;
+  const manca = [];
+  if (!f.nome.value.trim()) manca.push('il nome');
+  if (!f.telefono.value.trim()) manca.push('il telefono');
+  if (!f.querySelector('input[name=partecipa]:checked')) manca.push('se partecipi alla 24 ore');
+  if (!f.privacy.checked) manca.push('il consenso privacy');
+
+  if (manca.length) {
+    err.textContent = 'Manca ' + manca.join(', ') + '.';
+    err.classList.add('on');
+    err.scrollIntoView({behavior:'smooth', block:'center'});
+    return;
+  }
+  err.classList.remove('on');
+
+  const turni = [...box.querySelectorAll('input:checked')].map(c => c.value).sort();
+  const dati = {
+    nome: f.nome.value.trim(),
+    telefono: f.telefono.value.trim(),
+    email: f.email.value.trim(),
+    interessi: [...f.querySelectorAll('input[name=interessi]:checked')].map(c => c.value).join(', '),
+    partecipa: f.querySelector('input[name=partecipa]:checked').value,
+    turni: turni.join(', '),
+    minuti: turni.length * 10,
+    newsletter: f.newsletter.checked ? 'sì' : 'no',
+    data: new Date().toISOString()
+  };
+
+  /* ─────────────────────────────────────────────
+     DOVE FINISCONO I DATI
+     Incolla qui l'endpoint Formspree e togli i commenti.
+     ─────────────────────────────────────────────
+  await fetch('https://formspree.io/f/TUO_CODICE', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(dati)
+  });
+  */
+
+  console.log('Iscrizione:', dati);
+  f.style.display = 'none';
+  document.getElementById('done').classList.add('on');
+  document.getElementById('done').scrollIntoView({behavior:'smooth', block:'center'});
+});
+</script>
+</body>
+</html>
