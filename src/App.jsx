@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { fetchUserHasSigned } from './lib/contract'
@@ -9,8 +9,10 @@ import GuestLayout from './pages/guest/GuestLayout.jsx'
 import RosticceriaLayout from './pages/rosticceria/RosticceriaLayout.jsx'
 import DipendenteLayout from './pages/dipendente/DipendenteLayout.jsx'
 import ContrattoFirma from './pages/guest/ContrattoFirma.jsx'
+import PassaLacqua from './pages/pubblico/PassaLacqua.jsx'
 
 export default function App() {
+  const location = useLocation()
   const [session, setSession] = useState(null)
   const [role, setRole] = useState(null)
   // null = ancora da determinare; true = ospite attivo / N/A per altri ruoli;
@@ -63,6 +65,11 @@ export default function App() {
     }
     setLoading(false)
   }
+
+  // Rotta PUBBLICA dell'evento: nessun login richiesto. Sta prima dello
+  // splash e del gate di sessione, altrimenti chi arriva dal QR o dai
+  // social vedrebbe lampeggiare "ASC HOTEL" e poi la schermata di login.
+  if (location.pathname.startsWith('/passa-lacqua')) return <PassaLacqua />
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#111111' }}>
