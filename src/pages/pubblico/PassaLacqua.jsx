@@ -203,7 +203,7 @@ export default function PassaLacqua() {
         <h2>Non solo nuoto</h2>
         <div className="pl-prog">
           <div className="pl-row"><time>Sab 10:00</time><div>Partenza della staffetta<small>Apre anche il bar, aperto per tutte le 24 ore</small></div></div>
-          <div className="pl-row"><time>Sab 24:00</time><div>Circolo di lettura<small>Si legge a bordo vasca mentre qualcuno nuota — 5 €</small></div></div>
+          <div className="pl-row"><time>Mezzanotte</time><div>Circolo di lettura<small>Si legge a bordo vasca mentre qualcuno nuota — 5 €</small></div></div>
           <div className="pl-row"><time>Dom 06:45</time><div>Yoga all'alba<small>A bordo piscina, mentre sorge il sole. Ricavato interamente in beneficenza</small></div></div>
           <div className="pl-row"><time>Dom 07:45</time><div>Colazione<small>10 €, per chi ha nuotato e per chi arriva solo adesso</small></div></div>
           <div className="pl-row"><time>Dom 10:00</time><div>Ultima vasca<small>E consegna della somma raccolta</small></div></div>
@@ -383,7 +383,10 @@ const CSS = `
   padding:15px 34px;border-radius:999px;font-size:19px;letter-spacing:.5px;text-transform:uppercase;}
 .pl-cta:hover{background:var(--aqua-dark);}
 .pl-cta-note{font-size:13.5px;color:#5B5754;margin:9px 0 0;}
-.pl section{padding:34px 0;}
+/* solo verticale, coi longhand: il padding LATERALE arriva da .pl-wrap
+   (la shorthand "padding:34px 0" lo azzerava per specificità e le card
+   50/50 e il box 1€ finivano a filo dello schermo su mobile) */
+.pl section{padding-top:34px;padding-bottom:34px;}
 .pl-split{display:flex;gap:14px;margin:20px 0;flex-wrap:wrap;}
 .pl-half{flex:1 1 220px;background:var(--aqua-pale);border-radius:14px;padding:18px;}
 .pl-half b{font-family:'Anton',sans-serif;font-size:30px;color:var(--aqua-dark);display:block;line-height:1;}
@@ -396,7 +399,9 @@ const CSS = `
 .pl-prog .pl-row:last-child{border-bottom:none;}
 .pl-prog time{flex:none;width:92px;color:var(--aqua-dark);font-weight:500;font-size:14.5px;}
 .pl-prog small{display:block;color:#5B5754;font-size:13.5px;}
-.pl-formsec{background:var(--aqua-pale);padding:34px 0 44px;}
+/* la sezione form è full-bleed di proposito (fondo acqua): il respiro
+   laterale lo dà il .pl-wrap interno */
+.pl-formsec{background:var(--aqua-pale);padding-top:34px;padding-bottom:44px;}
 .pl-formcard{background:#fff;border-radius:18px;padding:26px 22px;}
 .pl-intro{font-size:15px;color:#4A4644;}
 .pl fieldset{border:none;padding:0;margin:0 0 26px;}
