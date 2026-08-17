@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import DashboardHome from './DashboardHome.jsx'
@@ -11,6 +11,7 @@ import InEsaurimento from './InEsaurimento.jsx'
 import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
 import Staffetta from './Staffetta.jsx'
+import PassaLacquaRichieste, { PL_EVENTO_AGGIORNAMENTO } from './PassaLacquaRichieste.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 import PlannerTurni from './Turni/PlannerTurni.jsx'
 import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
@@ -29,6 +30,35 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  // richieste Passa l'Acqua in stato 'nuova', per il badge rosso in barra.
+  // Polling lento + evento emesso dalla pagina richieste al cambio stato.
+  const [plNuove, setPlNuove] = useState(0)
+
+  useEffect(() => {
+    let alive = true
+    async function contaNuove() {
+      const { count, error } = await supabase
+        .from('passa_lacqua_iscrizioni')
+        .select('id', { count: 'exact', head: true })
+        .eq('stato', 'nuova')
+      if (!error && alive) setPlNuove(count || 0)
+    }
+    contaNuove()
+    const t = setInterval(contaNuove, 60000)
+    window.addEventListener(PL_EVENTO_AGGIORNAMENTO, contaNuove)
+    return () => {
+      alive = false
+      clearInterval(t)
+      window.removeEventListener(PL_EVENTO_AGGIORNAMENTO, contaNuove)
+    }
+  }, [])
+
+  const etichettaPL = (
+    <>
+      Passa l'Acqua
+      {plNuove > 0 && <span style={styles.redBadge}>{plNuove}</span>}
+    </>
+  )
 
   async function logout() {
     await supabase.auth.signOut()
@@ -43,6 +73,7 @@ export default function AdminLayout() {
   const isRosticceria = path.startsWith('/admin/rosticceria')
   const isLeMieApp = path.startsWith('/admin/le-mie-app')
   const isStaffetta = path.startsWith('/admin/staffetta')
+  const isPassaLacqua = path.startsWith('/admin/passa-lacqua')
   const isDash = path === '/admin'
 
   return (
@@ -61,6 +92,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)}>Rosticceria</NavLink>
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)}>Staffetta</NavLink>
+          <NavLink to="/admin/passa-lacqua" style={topStyle(isPassaLacqua)}>{etichettaPL}</NavLink>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)}>Le mie app</NavLink>
         </div>
 
@@ -100,6 +132,7 @@ export default function AdminLayout() {
           <NavLink to="/admin/turni" style={topStyle(isTurni)} onClick={closeMenu}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)} onClick={closeMenu}>Staffetta</NavLink>
+          <NavLink to="/admin/passa-lacqua" style={topStyle(isPassaLacqua)} onClick={closeMenu}>{etichettaPL}</NavLink>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)} onClick={closeMenu}>Le mie app</NavLink>
 
           <button onClick={logout} style={styles.logoutBtn}>Esci</button>
@@ -119,6 +152,7 @@ export default function AdminLayout() {
           <Route path="esauriti" element={<Esauriti />} />
           <Route path="le-mie-app" element={<LeMieApp />} />
           <Route path="staffetta" element={<Staffetta />} />
+          <Route path="passa-lacqua" element={<PassaLacquaRichieste />} />
           <Route path="turni" element={<PlannerTurni />} />
           <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
           <Route path="turni/dipendenti" element={<Dipendenti />} />
@@ -162,6 +196,11 @@ const styles = {
   },
   logo: { fontSize: 14, fontWeight: 600, color: '#fff', letterSpacing: 1.5, marginRight: 16, whiteSpace: 'nowrap' },
   adminBadge: { fontSize: 11, color: 'rgba(255,255,255,0.55)', fontWeight: 400, marginLeft: 8, letterSpacing: 0 },
+  redBadge: {
+    display: 'inline-block', background: '#C5221F', color: '#fff',
+    borderRadius: 999, padding: '1px 6px', fontSize: 10.5, fontWeight: 700,
+    marginLeft: 6, verticalAlign: 'middle', lineHeight: '14px',
+  },
   navLinks: { display: 'flex', gap: 4, flex: 1, flexWrap: 'nowrap' },
   subnav: {
     background: '#efeee9', display: 'flex', gap: 6, alignItems: 'center',

@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 
 export default function DashboardHome() {
   const navigate = useNavigate()
-  const [m, setM] = useState({ ospiti: 0, esaurimento: 0, prenotazioniOggi: 0, richieste: 0, dipendenti: 0 })
+  const [m, setM] = useState({ ospiti: 0, esaurimento: 0, prenotazioniOggi: 0, richieste: 0, dipendenti: 0, passaLacqua: 0 })
   const [loading, setLoading] = useState(true)
   // giorno locale, mai toISOString (regola ASC-DESIGN: i confronti per
   // giorno si fanno in orario locale, non UTC)
@@ -14,13 +14,14 @@ export default function DashboardHome() {
   useEffect(() => { fetchMetriche() }, [])
 
   async function fetchMetriche() {
-    const [accounts, subs, bookings, scr, leave, dip] = await Promise.all([
+    const [accounts, subs, bookings, scr, leave, dip, pl] = await Promise.all([
       supabase.from('accounts').select('id, attivo'),
       supabase.from('subscriptions').select('entries_total, entries_used').eq('active', true),
       supabase.from('bookings').select('id').eq('date', today).neq('status', 'cancelled'),
       supabase.from('shift_change_requests').select('id', { count: 'exact', head: true }).eq('stato', 'pending'),
       supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('stato', 'pending'),
       supabase.from('dipendenti').select('id', { count: 'exact', head: true }).eq('attivo', true),
+      supabase.from('passa_lacqua_iscrizioni').select('id', { count: 'exact', head: true }).eq('stato', 'nuova'),
     ])
     const ospitiAttivi = (accounts.data || []).filter(a => a.attivo !== false).length
     const esaurimento = (subs.data || []).filter(s => (s.entries_total - s.entries_used) <= 3).length
@@ -30,6 +31,7 @@ export default function DashboardHome() {
       prenotazioniOggi: (bookings.data || []).length,
       richieste: (scr.count || 0) + (leave.count || 0),
       dipendenti: dip.count || 0,
+      passaLacqua: pl.count || 0,
     })
     setLoading(false)
   }
@@ -40,6 +42,13 @@ export default function DashboardHome() {
     <div>
       <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Dashboard</h2>
       <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 20 }}>Riepilogo a colpo d'occhio</div>
+
+      {/* alert richieste Passa l'Acqua (stesso spirito dell'alert esaurimento) */}
+      {m.passaLacqua > 0 && (
+        <div onClick={() => navigate('/admin/passa-lacqua')} style={styles.plAlert}>
+          🌊 {m.passaLacqua} {m.passaLacqua === 1 ? 'nuova richiesta' : 'nuove richieste'} Passa l'Acqua da gestire — tocca per aprirle
+        </div>
+      )}
 
       {/* METRICHE */}
       <div style={styles.grid}>
@@ -105,6 +114,11 @@ const styles = {
   metricValue: { fontSize: 26, fontWeight: 700 },
   metricSub: { fontSize: 11, color: '#6B6B6B', marginTop: 3 },
   h3: { fontSize: 14, fontWeight: 500, color: '#444', marginBottom: 10 },
+  plAlert: {
+    background: '#FCEBEB', border: '0.5px solid #F2C9C9', borderRadius: 10,
+    padding: '12px 16px', fontSize: 13.5, color: '#C5221F', fontWeight: 500,
+    marginBottom: 16, cursor: 'pointer',
+  },
   card: {
     display: 'block', background: '#fff', border: '0.5px solid #E5E3DC', borderRadius: 12,
     padding: '14px 16px', textDecoration: 'none', cursor: 'pointer',
