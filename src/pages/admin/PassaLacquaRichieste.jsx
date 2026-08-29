@@ -28,6 +28,13 @@ const STATI = [
 ]
 const statoDi = (k) => STATI.find(s => s.key === k) || STATI[0]
 
+// eventi collaterali: chiavi della tabella passa_lacqua_eventi_richiesti
+const EVENTI_LABEL = {
+  letture:   'Reading sab 19:30',
+  yoga:      "Yoga all'alba dom 6:30",
+  colazione: 'Colazione Wellness',
+}
+
 function fmtDataOra(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('it-IT', {
@@ -58,7 +65,7 @@ export default function PassaLacquaRichieste() {
     setLoadError('')
     const { data, error } = await supabase
       .from('passa_lacqua_iscrizioni')
-      .select('*, passa_lacqua_turni_richiesti(slot_id, staffetta_slots(inizio))')
+      .select('*, passa_lacqua_turni_richiesti(slot_id, staffetta_slots(inizio)), passa_lacqua_eventi_richiesti(evento, persone)')
       .order('created_at', { ascending: false })
     if (error) {
       console.error('[PassaLacquaRichieste]', error)
@@ -158,6 +165,10 @@ export default function PassaLacquaRichieste() {
           .map(t => t.staffetta_slots?.inizio)
           .filter(Boolean)
           .sort()
+        // nell'ordine del programma, non in quello di inserimento
+        const eventiRic = Object.keys(EVENTI_LABEL)
+          .map(k => (r.passa_lacqua_eventi_richiesti || []).find(e => e.evento === k))
+          .filter(Boolean)
         return (
           <div key={r.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -196,6 +207,17 @@ export default function PassaLacquaRichieste() {
                 ) : <span style={{ color: '#6B6B6B' }}> · nessun turno indicato</span>
               )}
             </div>
+
+            {eventiRic.length > 0 && (
+              <div style={{ fontSize: 13, marginBottom: 10 }}>
+                <span style={{ color: '#6B6B6B' }}>Eventi: </span>
+                {eventiRic.map(e => (
+                  <span key={e.evento} style={S.turnoChip}>
+                    {EVENTI_LABEL[e.evento]} · {e.persone === 1 ? '1 persona' : `${e.persone} persone`}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* cambio stato */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
