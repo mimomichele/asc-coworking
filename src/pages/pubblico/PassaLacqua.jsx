@@ -10,6 +10,9 @@
 //   passa_lacqua_turni()   → disponibilità, senza nomi
 //   passa_lacqua_iscrivi() → invio, upsert per telefono
 // Le preferenze NON scrivono nella griglia della staffetta.
+// Oltre ai turni si raccolgono le iscrizioni agli eventi
+// collaterali (letture/yoga/colazione) con il numero di persone:
+// vedi EVENTI e la migrazione …passa_lacqua_eventi.sql.
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
@@ -18,6 +21,16 @@ import { normalizePhone } from '../../lib/exportContatti'
 
 const INTERESSI = ['Nuoto', 'Fitness', 'Yoga e benessere', 'Eventi solidali', 'Open day e prove', 'Altro']
 const CANALI = ['Instagram', 'Passaparola', 'Coworking', 'Altro']
+
+// Eventi collaterali che richiedono l'iscrizione (niente slot:
+// solo l'evento e in quanti si viene). Le chiavi sono quelle del
+// CHECK di passa_lacqua_eventi_richiesti — non cambiarle da sole.
+const EVENTI = [
+  { key: 'letture',   nome: 'Reading a bordo piscina', quando: 'Sabato 19:30' },
+  { key: 'yoga',      nome: "Yoga all'alba",           quando: 'Domenica 6:30' },
+  { key: 'colazione', nome: 'Colazione Wellness',      quando: 'Domenica, dopo lo yoga' },
+]
+const MAX_PERSONE = 10
 
 // fascia notturna: dalle 23:00 alle 06:00 (esclusa)
 const isNotturna = (h) => h >= 23 || h < 6
@@ -33,6 +46,7 @@ export default function PassaLacqua() {
   const [canale, setCanale] = useState('')
   const [partecipa, setPartecipa] = useState(null)   // null | true | false
   const [scelti, setScelti] = useState([])           // slot_id[]
+  const [eventi, setEventi] = useState({})           // { letture: 2, … } — assente = non iscritto
   const [newsletter, setNewsletter] = useState(false)
   const [privacy, setPrivacy] = useState(false)
   const [esca, setEsca] = useState('')               // honeypot
@@ -100,6 +114,22 @@ export default function PassaLacqua() {
     setScelti(l => l.includes(id) ? l.filter(x => x !== id) : [...l, id])
   }
 
+  // spuntare un evento lo iscrive per 1 persona; togliere la spunta
+  // cancella anche il numero, così non resta un conteggio orfano
+  function toggleEvento(key) {
+    setEventi(ev => {
+      if (key in ev) {
+        const { [key]: _via, ...resto } = ev
+        return resto
+      }
+      return { ...ev, [key]: 1 }
+    })
+  }
+
+  function setPersone(key, n) {
+    setEventi(ev => ({ ...ev, [key]: n }))
+  }
+
   // Il contatore vive sulla selezione: azzerando scelti si azzera anche
   // il testo, quindi rispondere "No" non lascia mai un conteggio stale.
   function setPartecipazione(v) {
@@ -145,6 +175,7 @@ export default function PassaLacqua() {
       p_come_conosciuto: canale || null,
       p_partecipa: partecipa,
       p_slot_ids: partecipa ? scelti : [],
+      p_eventi: eventi,
       p_newsletter: newsletter,
       p_privacy: privacy,
       p_honeypot: esca,
@@ -203,10 +234,12 @@ export default function PassaLacqua() {
         <h2>Non solo nuoto</h2>
         <div className="pl-prog">
           <div className="pl-row"><time>Sab 10:00</time><div>Partenza della staffetta<small>Apre anche il bar, aperto per tutte le 24 ore</small></div></div>
-          <div className="pl-row"><time>Mezzanotte</time><div>Circolo di lettura<small>Si legge a bordo vasca mentre qualcuno nuota — 5 €</small></div></div>
-          <div className="pl-row"><time>Dom 06:45</time><div>Yoga all'alba<small>A bordo piscina, mentre sorge il sole. Ricavato interamente in beneficenza</small></div></div>
-          <div className="pl-row"><time>Dom 07:45</time><div>Colazione<small>10 €, per chi ha nuotato e per chi arriva solo adesso</small></div></div>
-          <div className="pl-row"><time>Dom 10:00</time><div>Ultima vasca<small>E consegna della somma raccolta</small></div></div>
+          <div className="pl-row"><time>Sab 19:30</time><div>Reading a bordo piscina<small>Si legge a bordo vasca mentre qualcuno nuota</small></div></div>
+          <div className="pl-row"><time>In serata</time><div>Aperitivo a bordo piscina<small>Si brinda senza fermare la staffetta</small></div></div>
+          <div className="pl-row"><time>Cena</time><div>Asporto da “Fuorimenù”<small>La cena arriva dal ristorante, si mangia a bordo vasca</small></div></div>
+          <div className="pl-row"><time>Dom 06:30</time><div>Yoga all'alba<small>A bordo piscina, mentre sorge il sole. Ricavato interamente in beneficenza</small></div></div>
+          <div className="pl-row"><time>A seguire</time><div>Colazione Wellness<small>Per chi ha nuotato e per chi arriva solo adesso</small></div></div>
+          <div className="pl-row"><time>Dom 10:00</time><div>Ultima vasca<small>Chiusura delle 24 ore e consegna della somma raccolta</small></div></div>
         </div>
         <div className="pl-cta-wrap"><a href="#iscrizione" className="pl-cta">Iscriviti ora</a></div>
       </section>
@@ -217,7 +250,7 @@ export default function PassaLacqua() {
             {fatto ? (
               <div className="pl-done">
                 <h2>Ci sei</h2>
-                <p>Ti abbiamo registrato. Se hai scelto dei turni ti ricontattiamo per confermarli.</p>
+                <p>Ti abbiamo registrato. Se hai scelto dei turni o degli eventi ti ricontattiamo per confermarli.</p>
               </div>
             ) : (
               <>
@@ -324,6 +357,39 @@ export default function PassaLacqua() {
                   </fieldset>
 
                   <fieldset>
+                    <legend>Partecipa agli eventi</legend>
+
+                    <label>Oltre al nuoto, per questi momenti serve l'iscrizione: spunta quelli a cui vuoi esserci e dicci in quanti venite.</label>
+                    <div className="pl-eventi">
+                      {EVENTI.map(ev => {
+                        const on = ev.key in eventi
+                        return (
+                          <div key={ev.key} className={`pl-evento ${on ? 'on' : ''}`}>
+                            <label className="pl-evento-main">
+                              <input type="checkbox" checked={on} onChange={() => toggleEvento(ev.key)} />
+                              <span className="pl-evento-txt">
+                                <b>{ev.nome}</b>
+                                <small>{ev.quando}</small>
+                              </span>
+                            </label>
+                            {on && (
+                              <label className="pl-evento-persone">
+                                <span>In quanti?</span>
+                                <select value={eventi[ev.key]} onChange={e => setPersone(ev.key, Number(e.target.value))}>
+                                  {Array.from({ length: MAX_PERSONE }, (_, i) => i + 1).map(n => (
+                                    <option key={n} value={n}>{n === 1 ? '1 persona' : `${n} persone`}</option>
+                                  ))}
+                                </select>
+                              </label>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <p className="pl-note">Anche qui vale la stessa regola dei turni: è una richiesta, ti confermiamo noi il posto.</p>
+                  </fieldset>
+
+                  <fieldset>
                     <legend>Ultima cosa</legend>
 
                     <label className="pl-check">
@@ -421,6 +487,17 @@ const CSS = `
 .pl-chip:hover span{border-color:var(--aqua);}
 /* focus da tastiera: l'input è invisibile, l'anello va sullo span */
 .pl-chip:focus-within span{outline:3px solid rgba(23,162,160,.45);outline-offset:2px;}
+.pl-eventi{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+.pl-evento{border:1.5px solid #D9D5D1;border-radius:12px;padding:4px 14px 4px;transition:border-color .12s;}
+.pl-evento.on{border-color:var(--aqua);background:var(--aqua-pale);}
+/* .pl .pl-… per battere la specificità di ".pl label" (display:block) */
+.pl .pl-evento-main{display:flex;gap:12px;align-items:center;cursor:pointer;margin:8px 0;}
+.pl-evento-main input{width:22px;height:22px;flex:none;accent-color:var(--aqua);}
+.pl-evento-txt b{display:block;font-weight:500;font-size:15.5px;}
+.pl-evento-txt small{display:block;color:#5B5754;font-size:13px;}
+.pl .pl-evento-persone{display:flex;gap:10px;align-items:center;margin:2px 0 10px 34px;font-size:14px;}
+.pl-evento-persone span{flex:none;}
+.pl .pl-evento-persone select{width:auto;padding:8px 10px;font-size:14.5px;}
 .pl-slotbox{margin-top:8px;}
 .pl-note{font-size:13.5px;color:#4A4644;background:#F7F6F4;border-radius:10px;padding:12px 14px;}
 .pl-ore{max-height:420px;overflow-y:auto;border:1.5px solid #E7E4E1;border-radius:12px;padding:12px;}

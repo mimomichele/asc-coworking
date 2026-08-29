@@ -28,6 +28,13 @@ const STATI = [
 ]
 const statoDi = (k) => STATI.find(s => s.key === k) || STATI[0]
 
+// eventi collaterali: chiavi della tabella passa_lacqua_eventi_richiesti
+const EVENTI_LABEL = {
+  letture:   'Reading sab 19:30',
+  yoga:      "Yoga all'alba dom 6:30",
+  colazione: 'Colazione Wellness',
+}
+
 function fmtDataOra(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('it-IT', {
@@ -47,6 +54,7 @@ export default function PassaLacquaRichieste() {
   const [richieste, setRichieste] = useState(null)
   const [loadError, setLoadError] = useState('')
   const [filtro, setFiltro] = useState('')
+  const [filtroEvento, setFiltroEvento] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [opError, setOpError] = useState('')
   const [note, setNote] = useState({})          // id -> testo in modifica
@@ -58,7 +66,7 @@ export default function PassaLacquaRichieste() {
     setLoadError('')
     const { data, error } = await supabase
       .from('passa_lacqua_iscrizioni')
-      .select('*, passa_lacqua_turni_richiesti(slot_id, staffetta_slots(inizio))')
+      .select('*, passa_lacqua_turni_richiesti(slot_id, staffetta_slots(inizio)), passa_lacqua_eventi_richiesti(evento, persone)')
       .order('created_at', { ascending: false })
     if (error) {
       console.error('[PassaLacquaRichieste]', error)
@@ -107,14 +115,59 @@ export default function PassaLacquaRichieste() {
     }
   }
 
+  const eventiDi = (r) => r.passa_lacqua_eventi_richiesti || []
+  const personeEvento = (r, k) => eventiDi(r).find(e => e.evento === k)?.persone || 0
+
   // nuove prima, poi per data di iscrizione (già desc dal server)
   const visibili = useMemo(() => {
     if (!richieste) return []
-    const filtrate = filtro ? richieste.filter(r => r.stato === filtro) : richieste
+    let filtrate = filtro ? richieste.filter(r => r.stato === filtro) : richieste
+    if (filtroEvento) filtrate = filtrate.filter(r => personeEvento(r, filtroEvento) > 0)
     return [...filtrate].sort((a, b) =>
       (a.stato === 'nuova' ? 0 : 1) - (b.stato === 'nuova' ? 0 : 1) ||
       (b.created_at || '').localeCompare(a.created_at || ''))
-  }, [richieste, filtro])
+  }, [richieste, filtro, filtroEvento])
+
+  // riepilogo per evento: persone totali richieste e quante di queste
+  // appartengono a iscrizioni già confermate (le rifiutate non contano)
+  const riepilogo = useMemo(() => {
+    if (!richieste) return []
+    return Object.keys(EVENTI_LABEL).map(k => {
+      let tot = 0, conf = 0
+      for (const r of richieste) {
+        if (r.stato === 'rifiutata') continue
+        const p = personeEvento(r, k)
+        tot += p
+        if (r.stato === 'confermata') conf += p
+      }
+      return { key: k, tot, conf }
+    })
+  }, [richieste])
+
+  // CSV per Excel italiano: separatore ";" e BOM. Esporta le righe
+  // VISIBILI, così i filtri attivi valgono anche per l'export.
+  function esportaCsv() {
+    const intest = ['Nome', 'Telefono', 'Email', 'Stato', '24 ore', 'Turni preferiti',
+      'Reading (persone)', 'Yoga (persone)', 'Colazione (persone)', 'Newsletter', 'Iscritto il', 'Note']
+    const cella = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const righe = visibili.map(r => {
+      const turni = (r.passa_lacqua_turni_richiesti || [])
+        .map(t => t.staffetta_slots?.inizio).filter(Boolean).sort().map(fmtTurno).join(', ')
+      return [
+        r.nome_completo, r.telefono, r.email || '', statoDi(r.stato).label,
+        r.partecipa ? 'Sì' : 'No', turni,
+        personeEvento(r, 'letture') || '', personeEvento(r, 'yoga') || '', personeEvento(r, 'colazione') || '',
+        r.newsletter_consent ? 'Sì' : 'No', fmtDataOra(r.created_at), r.note_admin || '',
+      ].map(cella).join(';')
+    })
+    const csv = '\uFEFF' + [intest.map(cella).join(';'), ...righe].join('\r\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `passa-lacqua-iscritti-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const nuove = richieste ? richieste.filter(r => r.stato === 'nuova').length : 0
 
@@ -140,12 +193,43 @@ export default function PassaLacquaRichieste() {
       )}
       {opError && <div style={S.errorBar}>{opError}</div>}
 
+      {/* riepilogo persone per evento */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+        {riepilogo.map(e => (
+          <div key={e.key} className="card" style={S.eventoCard}>
+            <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 2 }}>{EVENTI_LABEL[e.key]}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>
+              {e.tot} <span style={{ fontSize: 12, fontWeight: 400 }}>{e.tot === 1 ? 'persona' : 'persone'}</span>
+            </div>
+            <div style={{ fontSize: 11.5, color: e.conf > 0 ? '#1E8E3E' : '#6B6B6B' }}>
+              {e.conf} confermate
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* filtro per stato */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
         <FiltroBtn label="Tutte" attivo={filtro === ''} onClick={() => setFiltro('')} />
         {STATI.map(s => (
           <FiltroBtn key={s.key} label={s.label} attivo={filtro === s.key} onClick={() => setFiltro(s.key)} />
         ))}
+      </div>
+
+      {/* filtro per evento + export di ciò che è visibile */}
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
+        <FiltroBtn label="Tutti gli eventi" attivo={filtroEvento === ''} onClick={() => setFiltroEvento('')} />
+        {Object.entries(EVENTI_LABEL).map(([k, label]) => (
+          <FiltroBtn key={k} label={label} attivo={filtroEvento === k} onClick={() => setFiltroEvento(k)} />
+        ))}
+        <button
+          className="btn-ghost"
+          onClick={esportaCsv}
+          disabled={visibili.length === 0}
+          style={{ fontSize: 12, marginLeft: 'auto', whiteSpace: 'nowrap' }}
+        >
+          ⬇ Scarica CSV ({visibili.length})
+        </button>
       </div>
 
       {visibili.length === 0 ? (
@@ -158,6 +242,10 @@ export default function PassaLacquaRichieste() {
           .map(t => t.staffetta_slots?.inizio)
           .filter(Boolean)
           .sort()
+        // nell'ordine del programma, non in quello di inserimento
+        const eventiRic = Object.keys(EVENTI_LABEL)
+          .map(k => (r.passa_lacqua_eventi_richiesti || []).find(e => e.evento === k))
+          .filter(Boolean)
         return (
           <div key={r.id} className="card" style={{ padding: 16, marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -196,6 +284,17 @@ export default function PassaLacquaRichieste() {
                 ) : <span style={{ color: '#6B6B6B' }}> · nessun turno indicato</span>
               )}
             </div>
+
+            {eventiRic.length > 0 && (
+              <div style={{ fontSize: 13, marginBottom: 10 }}>
+                <span style={{ color: '#6B6B6B' }}>Eventi: </span>
+                {eventiRic.map(e => (
+                  <span key={e.evento} style={S.turnoChip}>
+                    {EVENTI_LABEL[e.evento]} · {e.persone === 1 ? '1 persona' : `${e.persone} persone`}
+                  </span>
+                ))}
+              </div>
+            )}
 
             {/* cambio stato */}
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
@@ -258,6 +357,9 @@ function FiltroBtn({ label, attivo, onClick }) {
 }
 
 const S = {
+  eventoCard: {
+    flex: '1 1 150px', padding: '12px 14px', minWidth: 140,
+  },
   alertBar: {
     background: '#FCEBEB', borderRadius: 8, padding: '10px 14px',
     fontSize: 13, color: '#C5221F', fontWeight: 500, marginBottom: 12,
