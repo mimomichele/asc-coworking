@@ -1,52 +1,60 @@
 // ============================================================
-// Passa l'Acqua — pagina PUBBLICA di iscrizione (/passa-lacqua).
+// Passa l'Acqua — pagina PUBBLICA di prenotazione (/passa-lacqua).
 // Nessun login: il visitatore non ha un account.
 //
 // Identità visiva dell'EVENTO, non il design system ASC: palette
-// acqua (#17A2A0), font Anton/Oswald caricati solo qui. Copy e
-// struttura vengono da docs/passa-lacqua-v2.html.
+// acqua (#17A2A0), font Anton/Oswald caricati solo qui.
+//
+// Struttura pensata per il telefono, in tre passi sulla stessa
+// pagina, nell'ordine in cui una persona ragiona:
+//   1. Cosa vuoi fare   → card: nuotare e/o gli eventi collaterali
+//   2. Quando nuoti     → solo se ha scelto di nuotare: chip da
+//                          10 minuti divisi per giorno e per ora
+//   3. I tuoi dati      → nome e telefono, email facoltativa,
+//                          consensi
+// I dati personali arrivano per ULTIMI: prima si sceglie, poi ci
+// si presenta. Sopra al bottone un riepilogo in parole di quello
+// che si sta chiedendo.
 //
 // Dati: due sole RPC (vedi supabase/migrations/…passa_lacqua…):
 //   passa_lacqua_turni()   → disponibilità, senza nomi
 //   passa_lacqua_iscrivi() → invio, upsert per telefono
 // Le preferenze NON scrivono nella griglia della staffetta.
-// Oltre ai turni si raccolgono le iscrizioni agli eventi
-// collaterali (letture/yoga/colazione) con il numero di persone:
-// vedi EVENTI e la migrazione …passa_lacqua_eventi.sql.
+// I campi interessi / come_conosciuto restano nel DB e nella RPC
+// ma la pagina non li chiede più: si inviano vuoti.
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { normalizePhone } from '../../lib/exportContatti'
 
-const INTERESSI = ['Nuoto', 'Fitness', 'Yoga e benessere', 'Eventi solidali', 'Open day e prove', 'Altro']
-const CANALI = ['Instagram', 'Passaparola', 'Coworking', 'Altro']
-
 // Eventi collaterali che richiedono l'iscrizione (niente slot:
 // solo l'evento e in quanti si viene). Le chiavi sono quelle del
 // CHECK di passa_lacqua_eventi_richiesti — non cambiarle da sole.
 const EVENTI = [
-  { key: 'letture',   nome: 'Reading a bordo piscina', quando: 'Sabato 19:30' },
-  { key: 'yoga',      nome: "Yoga all'alba",           quando: 'Domenica 6:30' },
-  { key: 'colazione', nome: 'Colazione Wellness',      quando: 'Domenica, dopo lo yoga' },
+  { key: 'letture',   nome: 'Reading a bordo piscina', quando: 'Sabato 19:30',            desc: 'Si legge a bordo vasca mentre qualcuno nuota' },
+  { key: 'yoga',      nome: "Yoga all'alba",           quando: 'Domenica 6:30',           desc: 'A bordo piscina, mentre sorge il sole' },
+  { key: 'colazione', nome: 'Colazione Wellness',      quando: 'Domenica, dopo lo yoga',  desc: 'Per chi ha nuotato e per chi arriva solo adesso' },
 ]
 const MAX_PERSONE = 10
 
 // fascia notturna: dalle 23:00 alle 06:00 (esclusa)
 const isNotturna = (h) => h >= 23 || h < 6
 
+const hh = (n) => String(n).padStart(2, '0')
+
 export default function PassaLacqua() {
   const [turni, setTurni] = useState(null)      // null = caricamento
   const [turniError, setTurniError] = useState(false)
 
+  const [nuota, setNuota] = useState(false)          // card "Nuotare"
+  const [scelti, setScelti] = useState([])           // slot_id[]
+  const [giorno, setGiorno] = useState(12)           // tab del selettore turni
+  const [eventi, setEventi] = useState({})           // { letture: 2, … } — assente = non iscritto
+
   const [nome, setNome] = useState('')
   const [telefono, setTelefono] = useState('')
   const [email, setEmail] = useState('')
-  const [interessi, setInteressi] = useState([])
-  const [canale, setCanale] = useState('')
-  const [partecipa, setPartecipa] = useState(null)   // null | true | false
-  const [scelti, setScelti] = useState([])           // slot_id[]
-  const [eventi, setEventi] = useState({})           // { letture: 2, … } — assente = non iscritto
   const [newsletter, setNewsletter] = useState(false)
   const [privacy, setPrivacy] = useState(false)
   const [esca, setEsca] = useState('')               // honeypot
@@ -79,35 +87,43 @@ export default function PassaLacqua() {
     setTurni(data.map(t => ({ ...t, inizioDate: new Date(t.inizio) })))
   }
 
-  // Solo i turni liberi, raggruppati per ora; le ore piene spariscono
-  // del tutto. Etichette con il giorno perché la griglia attraversa
-  // la mezzanotte.
+  // Tutti i turni del giorno scelto, raggruppati per ora: una riga
+  // per ora, sei chip sempre nella stessa posizione. I turni presi
+  // restano visibili ma spenti, così si capisce perché mancano.
   const gruppi = useMemo(() => {
     if (!turni) return []
-    const liberi = turni.filter(t => !t.occupato)
+    const delGiorno = turni.filter(t => t.inizioDate.getDate() === giorno)
     const out = []
-    for (const t of liberi) {
-      const d = t.inizioDate
-      const key = `${d.getDate()}-${d.getHours()}`
+    for (const t of delGiorno) {
+      const h = t.inizioDate.getHours()
       let g = out[out.length - 1]
-      if (!g || g.key !== key) {
-        const h = d.getHours()
-        g = {
-          key,
-          giorno: d.getDate() === 12 ? 'Sab 12' : 'Dom 13',
-          ora: `${String(h).padStart(2, '0')}:00`,
-          notturna: isNotturna(h),
-          turni: [],
-        }
+      if (!g || g.h !== h) {
+        g = { h, ora: `Ore ${hh(h)}`, notturna: isNotturna(h), turni: [] }
         out.push(g)
       }
       g.turni.push(t)
     }
     return out
+  }, [turni, giorno])
+
+  // quanti turni liberi ha ciascun giorno: va sulle tab, così chi
+  // apre la pagina capisce subito dove c'è posto
+  const liberiPerGiorno = useMemo(() => {
+    const c = { 12: 0, 13: 0 }
+    for (const t of turni || []) if (!t.occupato) c[t.inizioDate.getDate()] += 1
+    return c
   }, [turni])
 
-  function toggleInteresse(v) {
-    setInteressi(l => l.includes(v) ? l.filter(x => x !== v) : [...l, v])
+  const sceltiOrdinati = useMemo(() => {
+    if (!turni) return []
+    return turni.filter(t => scelti.includes(t.slot_id)).sort((a, b) => a.inizioDate - b.inizioDate)
+  }, [turni, scelti])
+
+  function toggleNuota() {
+    setNuota(v => {
+      if (v) setScelti([])   // togliere "Nuotare" azzera anche i turni
+      return !v
+    })
   }
 
   function toggleTurno(id) {
@@ -126,27 +142,51 @@ export default function PassaLacqua() {
     })
   }
 
-  function setPersone(key, n) {
-    setEventi(ev => ({ ...ev, [key]: n }))
+  function cambiaPersone(key, delta) {
+    setEventi(ev => ({ ...ev, [key]: Math.min(MAX_PERSONE, Math.max(1, (ev[key] || 1) + delta)) }))
   }
 
-  // Il contatore vive sulla selezione: azzerando scelti si azzera anche
-  // il testo, quindi rispondere "No" non lascia mai un conteggio stale.
-  function setPartecipazione(v) {
-    setPartecipa(v)
-    if (!v) setScelti([])
-  }
+  const haScelto = nuota || Object.keys(eventi).length > 0
+  const nStepDati = nuota ? 3 : 2
 
-  const minuti = scelti.length * 10
-  const contatore = scelti.length === 0
-    ? 'Nessun turno selezionato.'
-    : `${scelti.length} ${scelti.length === 1 ? 'turno selezionato' : 'turni selezionati'} — ${minuti} minuti in acqua`
+  // "Sab 12 · 21:00, 21:10" — testo del riepilogo e della conferma
+  const riepilogo = useMemo(() => {
+    const righe = []
+    if (nuota) {
+      if (sceltiOrdinati.length === 0) {
+        righe.push({ k: 'nuoto', txt: 'Nuoti nella staffetta', sub: 'scegli almeno un turno qui sopra', warn: true })
+      } else {
+        const perGiorno = {}
+        for (const t of sceltiOrdinati) {
+          const d = t.inizioDate.getDate()
+          ;(perGiorno[d] ||= []).push(`${hh(t.inizioDate.getHours())}:${hh(t.inizioDate.getMinutes())}`)
+        }
+        const parti = Object.entries(perGiorno).map(([d, ore]) => `${d === '12' ? 'sab' : 'dom'} ${ore.join(', ')}`)
+        righe.push({ k: 'nuoto', txt: `Nuoti ${sceltiOrdinati.length * 10} minuti`, sub: parti.join(' · ') })
+      }
+    }
+    for (const ev of EVENTI) {
+      if (ev.key in eventi) {
+        const n = eventi[ev.key]
+        righe.push({ k: ev.key, txt: ev.nome, sub: `${ev.quando} · ${n === 1 ? '1 persona' : `${n} persone`}` })
+      }
+    }
+    return righe
+  }, [nuota, sceltiOrdinati, eventi])
 
   async function invia(e) {
     e.preventDefault()
     if (invio) return
     setErrore('')
 
+    if (!haScelto) {
+      setErrore('Scegli almeno una cosa da fare: nuotare o uno degli eventi.')
+      return
+    }
+    if (nuota && scelti.length === 0) {
+      setErrore('Hai scelto di nuotare: indica almeno un turno.')
+      return
+    }
     const nomePulito = nome.trim().replace(/\s+/g, ' ')
     if (nomePulito.split(' ').length < 2) {
       setErrore('Scrivi nome e cognome, servono entrambi per riconoscerti.')
@@ -157,12 +197,8 @@ export default function PassaLacqua() {
       setErrore('Il numero di telefono non sembra valido. Controllalo e riprova.')
       return
     }
-    if (partecipa === null) {
-      setErrore('Dicci se vuoi partecipare alla 24 ore.')
-      return
-    }
     if (!privacy) {
-      setErrore('Per iscriverti serve il consenso al trattamento dei dati.')
+      setErrore('Per prenotare serve il consenso al trattamento dei dati.')
       return
     }
 
@@ -171,10 +207,10 @@ export default function PassaLacqua() {
       p_nome: nomePulito,
       p_telefono: tel,
       p_email: email.trim() || null,
-      p_interessi: interessi,
-      p_come_conosciuto: canale || null,
-      p_partecipa: partecipa,
-      p_slot_ids: partecipa ? scelti : [],
+      p_interessi: [],
+      p_come_conosciuto: null,
+      p_partecipa: nuota,
+      p_slot_ids: nuota ? scelti : [],
       p_eventi: eventi,
       p_newsletter: newsletter,
       p_privacy: privacy,
@@ -183,7 +219,7 @@ export default function PassaLacqua() {
     setInvio(false)
     if (error) {
       console.error('[PassaLacqua invio]', error)
-      setErrore('Non siamo riusciti a registrarti. Riprova fra un momento.')
+      setErrore('Non siamo riusciti a registrare la richiesta. Riprova fra un momento.')
       return
     }
     setFatto(true)
@@ -197,51 +233,24 @@ export default function PassaLacqua() {
       <header className="pl-wrap pl-hero">
         <p className="pl-eyebrow">Sab 12 › Dom 13 settembre 2026 · Piscina dell'ASC Hotel</p>
         <h1>Passa<br />l'Acqua</h1>
-        <p className="pl-sub">24 ore di staffetta di nuoto</p>
+        <p className="pl-sub">24 ore di staffetta di nuoto per Calcit e AllStars</p>
         <p className="pl-payoff">Passa l'acqua a chi viene dopo</p>
         <div className="pl-cta-wrap">
-          <a href="#iscrizione" className="pl-cta">Iscriviti ora</a>
+          <a href="#iscrizione" className="pl-cta">Prenota il tuo posto</a>
           <p className="pl-cta-note">Non serve essere abbonati. Bastano trenta secondi.</p>
         </div>
       </header>
 
-      <section className="pl-wrap">
-        <h2>Chiunque può nuotare</h2>
-        <p>Per 24 ore consecutive l'acqua non resta mai vuota. Si prenota il proprio turno, si nuota quanto si vuole e si passa il testimone a chi viene dopo. Non serve essere abbonati, non serve essere veloci: serve solo esserci.</p>
-        <p>Si parte sabato 12 settembre alle 10:00 e si va avanti fino a domenica alle 10:00, senza mai interrompersi. Anche di notte.</p>
-        <p>Chi nuota lascia un'offerta libera. Tutto quello che si raccoglie viene diviso a metà fra due realtà del territorio.</p>
-
-        <div className="pl-split">
-          <div className="pl-half">
-            <b>50%</b>
-            <strong>Calcit</strong>
-            <span>Comitato Autonomo Lotta Contro i Tumori</span>
-          </div>
-          <div className="pl-half">
-            <b>50%</b>
-            <strong>AllStars</strong>
-            <span>Special Olympics</span>
-          </div>
+      <section className="pl-wrap pl-come">
+        <h2>Come funziona</h2>
+        <ol className="pl-mosse">
+          <li><b>1</b><div><strong>Scegli cosa fare.</strong> Nuotare dieci minuti (o di più) nella staffetta, venire agli eventi a bordo piscina, o tutte e due le cose.</div></li>
+          <li><b>2</b><div><strong>Lascia nome e telefono.</strong> Niente account, niente password.</div></li>
+          <li><b>3</b><div><strong>Ti confermiamo noi.</strong> Ti scriviamo su WhatsApp con il tuo turno.</div></li>
+        </ol>
+        <div className="pl-causa">
+          <p><b>Chi nuota lascia un'offerta libera.</b> Tutto quello che si raccoglie va metà a <strong>Calcit</strong> e metà ad <strong>AllStars Special Olympics</strong>. E per ogni 50 metri nuotati <strong>Lapi Chimici</strong> aggiunge un euro.</p>
         </div>
-
-        <div className="pl-sponsor">
-          <b>1 €</b>
-          <p>Per ogni 50 metri nuotati, Lapi Chimici aggiunge un euro alla raccolta. Più bracciate facciamo, più cresce la cifra.</p>
-        </div>
-      </section>
-
-      <section className="pl-wrap">
-        <h2>Non solo nuoto</h2>
-        <div className="pl-prog">
-          <div className="pl-row"><time>Sab 10:00</time><div>Partenza della staffetta<small>Apre anche il bar, aperto per tutte le 24 ore</small></div></div>
-          <div className="pl-row"><time>Sab 19:30</time><div>Reading a bordo piscina<small>Si legge a bordo vasca mentre qualcuno nuota</small></div></div>
-          <div className="pl-row"><time>In serata</time><div>Aperitivo a bordo piscina<small>Si brinda senza fermare la staffetta</small></div></div>
-          <div className="pl-row"><time>Cena</time><div>Asporto da “Fuorimenù”<small>La cena arriva dal ristorante, si mangia a bordo vasca</small></div></div>
-          <div className="pl-row"><time>Dom 06:30</time><div>Yoga all'alba<small>A bordo piscina, mentre sorge il sole. Ricavato interamente in beneficenza</small></div></div>
-          <div className="pl-row"><time>A seguire</time><div>Colazione Wellness<small>Per chi ha nuotato e per chi arriva solo adesso</small></div></div>
-          <div className="pl-row"><time>Dom 10:00</time><div>Ultima vasca<small>Chiusura delle 24 ore e consegna della somma raccolta</small></div></div>
-        </div>
-        <div className="pl-cta-wrap"><a href="#iscrizione" className="pl-cta">Iscriviti ora</a></div>
       </section>
 
       <section id="iscrizione" className="pl-formsec">
@@ -250,168 +259,181 @@ export default function PassaLacqua() {
             {fatto ? (
               <div className="pl-done">
                 <h2>Ci sei</h2>
-                <p>Ti abbiamo registrato. Se hai scelto dei turni o degli eventi ti ricontattiamo per confermarli.</p>
+                <p>Abbiamo ricevuto la tua richiesta:</p>
+                <ul className="pl-done-list">
+                  {riepilogo.map(r => <li key={r.k}><strong>{r.txt}</strong><small>{r.sub}</small></li>)}
+                </ul>
+                <p>Ti scriviamo su WhatsApp per confermare. A presto in acqua.</p>
               </div>
             ) : (
-              <>
-                <h2>Entra nella community</h2>
-                <p className="pl-intro">Passa l'Acqua nasce dalla 24 ore di nuoto solidale, ma vuole andare oltre: creare una community fatta di solidarietà, sport, benessere e nuove iniziative per la città.</p>
+              <form onSubmit={invia} noValidate>
 
-                <form onSubmit={invia} noValidate>
-                  <fieldset>
-                    <legend>Chi sei</legend>
+                {/* ---- passo 1: cosa vuoi fare ---- */}
+                <fieldset>
+                  <legend><span className="pl-num">1</span>Cosa vuoi fare?</legend>
+                  <p className="pl-hint">Puoi scegliere più di una cosa.</p>
 
-                    <label htmlFor="pl-nome">Nome e cognome <span className="pl-req">*</span></label>
-                    <input id="pl-nome" type="text" autoComplete="name" placeholder="Come ti chiami"
-                           value={nome} onChange={e => setNome(e.target.value)} />
-
-                    <label htmlFor="pl-tel">Numero di telefono <span className="pl-req">*</span></label>
-                    <input id="pl-tel" type="tel" autoComplete="tel" placeholder="Per avvisarti del tuo turno"
-                           value={telefono} onChange={e => setTelefono(e.target.value)} />
-
-                    <label htmlFor="pl-mail">Email</label>
-                    <input id="pl-mail" type="email" autoComplete="email" placeholder="Per ricevere gli aggiornamenti"
-                           value={email} onChange={e => setEmail(e.target.value)} />
-
-                    <label>Quali attività ti interessano?</label>
-                    <div className="pl-chips">
-                      {INTERESSI.map(v => (
-                        <label key={v} className={`pl-chip ${interessi.includes(v) ? 'on' : ''}`}>
-                          <input type="checkbox" checked={interessi.includes(v)} onChange={() => toggleInteresse(v)} />
-                          <span>{v}</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <label htmlFor="pl-canale">Come ci hai conosciuto?</label>
-                    <select id="pl-canale" value={canale} onChange={e => setCanale(e.target.value)}>
-                      <option value="">Preferisco non dirlo</option>
-                      {CANALI.map(c => <option key={c} value={c}>{c}</option>)}
-                    </select>
-
-                    {/* honeypot: invisibile agli umani, i bot lo riempiono */}
-                    <div className="pl-esca" aria-hidden="true">
-                      <label htmlFor="pl-azienda">Azienda</label>
-                      <input id="pl-azienda" type="text" tabIndex={-1} autoComplete="off"
-                             value={esca} onChange={e => setEsca(e.target.value)} />
-                    </div>
-                  </fieldset>
-
-                  <fieldset>
-                    <legend>Partecipa alla 24 ore</legend>
-
-                    <label>Vuoi partecipare alla 24 ore di nuoto solidale del 12–13 settembre? <span className="pl-req">*</span></label>
-                    <div className="pl-chips">
-                      <label className={`pl-chip ${partecipa === true ? 'on' : ''}`}>
-                        <input type="radio" name="pl-partecipa" checked={partecipa === true} onChange={() => setPartecipazione(true)} />
-                        <span>Sì</span>
-                      </label>
-                      <label className={`pl-chip ${partecipa === false ? 'on' : ''}`}>
-                        <input type="radio" name="pl-partecipa" checked={partecipa === false} onChange={() => setPartecipazione(false)} />
-                        <span>No</span>
-                      </label>
-                    </div>
-
-                    {partecipa === true && (
-                      <div className="pl-slotbox">
-                        <label>Quando vuoi nuotare?</label>
-                        <p className="pl-note">
-                          Ogni turno dura <b>10 minuti</b>. Puoi sceglierne quanti vuoi, anche di seguito: se vuoi nuotare mezz'ora, seleziona tre turni consecutivi.
-                          <br /><br />
-                          Qui sotto vedi solo i turni ancora liberi. <b>Le fasce indicate rappresentano una preferenza. La partecipazione alla 24 ore sarà confermata dall'organizzazione.</b>
-                        </p>
-
-                        {turniError ? (
-                          <div className="pl-turni-msg">
-                            Non riesco a caricare i turni.{' '}
-                            <button type="button" className="pl-link" onClick={caricaTurni}>Riprova</button>
-                          </div>
-                        ) : turni === null ? (
-                          <div className="pl-turni-msg">Carico i turni disponibili…</div>
-                        ) : gruppi.length === 0 ? (
-                          <div className="pl-turni-msg">Al momento non ci sono turni liberi. Iscriviti lo stesso: ti avvisiamo se si libera qualcosa.</div>
-                        ) : (
-                          <div className="pl-ore">
-                            {gruppi.map(g => (
-                              <div key={g.key} className="pl-ora">
-                                <p className="pl-ora-tit">
-                                  {g.giorno} · {g.ora}
-                                  {g.notturna && <span className="pl-notte"> — fascia notturna</span>}
-                                </p>
-                                <div className="pl-chips">
-                                  {g.turni.map(t => (
-                                    <label key={t.slot_id} className={`pl-chip ${scelti.includes(t.slot_id) ? 'on' : ''}`}>
-                                      <input type="checkbox" checked={scelti.includes(t.slot_id)} onChange={() => toggleTurno(t.slot_id)} />
-                                      <span>{t.ora}</span>
-                                    </label>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <p className="pl-counter">{contatore}</p>
-                      </div>
-                    )}
-                  </fieldset>
-
-                  <fieldset>
-                    <legend>Partecipa agli eventi</legend>
-
-                    <label>Oltre al nuoto, per questi momenti serve l'iscrizione: spunta quelli a cui vuoi esserci e dicci in quanti venite.</label>
-                    <div className="pl-eventi">
-                      {EVENTI.map(ev => {
-                        const on = ev.key in eventi
-                        return (
-                          <div key={ev.key} className={`pl-evento ${on ? 'on' : ''}`}>
-                            <label className="pl-evento-main">
-                              <input type="checkbox" checked={on} onChange={() => toggleEvento(ev.key)} />
-                              <span className="pl-evento-txt">
-                                <b>{ev.nome}</b>
-                                <small>{ev.quando}</small>
-                              </span>
-                            </label>
-                            {on && (
-                              <label className="pl-evento-persone">
-                                <span>In quanti?</span>
-                                <select value={eventi[ev.key]} onChange={e => setPersone(ev.key, Number(e.target.value))}>
-                                  {Array.from({ length: MAX_PERSONE }, (_, i) => i + 1).map(n => (
-                                    <option key={n} value={n}>{n === 1 ? '1 persona' : `${n} persone`}</option>
-                                  ))}
-                                </select>
-                              </label>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    <p className="pl-note">Anche qui vale la stessa regola dei turni: è una richiesta, ti confermiamo noi il posto.</p>
-                  </fieldset>
-
-                  <fieldset>
-                    <legend>Ultima cosa</legend>
-
-                    <label className="pl-check">
-                      <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)} />
-                      <span>Voglio ricevere aggiornamenti sui prossimi eventi e sulle iniziative di Passa l'Acqua</span>
-                    </label>
-
-                    <label className="pl-check">
-                      <input type="checkbox" checked={privacy} onChange={e => setPrivacy(e.target.checked)} />
-                      <span>
-                        Acconsento al trattamento dei miei dati personali secondo l'
-                        {/* TODO: sostituire con il link all'informativa quando il testo sarà disponibile */}
-                        <a href="#privacy" onClick={e => { e.preventDefault(); alert('Informativa privacy in preparazione: sarà pubblicata prima dell\'evento.') }}>informativa privacy</a>
-                        {' '}<span className="pl-req">*</span>
+                  <div className="pl-cards">
+                    <label className={`pl-card ${nuota ? 'on' : ''}`}>
+                      <input type="checkbox" checked={nuota} onChange={toggleNuota} />
+                      <span className="pl-card-box" aria-hidden="true" />
+                      <span className="pl-card-txt">
+                        <b>Nuotare nella staffetta</b>
+                        <small>Da sabato 10:00 a domenica 10:00, anche di notte</small>
+                        <em>Turni da 10 minuti · offerta libera</em>
                       </span>
                     </label>
 
-                    <button type="submit" disabled={invio}>{invio ? 'Un attimo…' : "Entra in Passa l'Acqua"}</button>
-                    {errore && <p className="pl-err">{errore}</p>}
+                    {EVENTI.map(ev => {
+                      const on = ev.key in eventi
+                      return (
+                        <div key={ev.key} className={`pl-card pl-card-ev ${on ? 'on' : ''}`}>
+                          <label className="pl-card-main">
+                            <input type="checkbox" checked={on} onChange={() => toggleEvento(ev.key)} />
+                            <span className="pl-card-box" aria-hidden="true" />
+                            <span className="pl-card-txt">
+                              <b>{ev.nome}</b>
+                              <small>{ev.quando}</small>
+                              <em>{ev.desc}</em>
+                            </span>
+                          </label>
+                          {on && (
+                            <div className="pl-persone">
+                              <span>In quanti venite?</span>
+                              <div className="pl-stepper">
+                                <button type="button" aria-label="Una persona in meno" disabled={eventi[ev.key] <= 1} onClick={() => cambiaPersone(ev.key, -1)}>−</button>
+                                <output>{eventi[ev.key]}</output>
+                                <button type="button" aria-label="Una persona in più" disabled={eventi[ev.key] >= MAX_PERSONE} onClick={() => cambiaPersone(ev.key, +1)}>+</button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </fieldset>
+
+                {/* ---- passo 2: quando nuoti (solo se nuota) ---- */}
+                {nuota && (
+                  <fieldset>
+                    <legend><span className="pl-num">2</span>Quando vuoi nuotare?</legend>
+                    <p className="pl-hint">Ogni riga è un'ora, ogni casella un turno da 10 minuti. Toccane quanti ne vuoi: per mezz'ora, tre di seguito.</p>
+
+                    {turniError ? (
+                      <div className="pl-turni-msg">
+                        Non riesco a caricare i turni.{' '}
+                        <button type="button" className="pl-link" onClick={caricaTurni}>Riprova</button>
+                      </div>
+                    ) : turni === null ? (
+                      <div className="pl-turni-msg">Carico i turni disponibili…</div>
+                    ) : (
+                      <>
+                        <div className="pl-tabs" role="tablist">
+                          {[12, 13].map(d => (
+                            <button key={d} type="button" role="tab" aria-selected={giorno === d}
+                                    className={giorno === d ? 'on' : ''} onClick={() => setGiorno(d)}>
+                              {d === 12 ? 'Sabato 12' : 'Domenica 13'}
+                              <small>{liberiPerGiorno[d]} turni liberi</small>
+                            </button>
+                          ))}
+                        </div>
+
+                        {liberiPerGiorno[giorno] === 0 && (
+                          <div className="pl-turni-msg">
+                            {liberiPerGiorno[12] + liberiPerGiorno[13] === 0
+                              ? 'Al momento non ci sono turni liberi. Manda lo stesso la richiesta: ti avvisiamo se si libera qualcosa.'
+                              : `${giorno === 12 ? 'Sabato' : 'Domenica'} è pieno: prova l'altro giorno.`}
+                          </div>
+                        )}
+                        <div className="pl-ore">
+                          {gruppi.map(g => (
+                            <div key={g.h} className="pl-ora">
+                              <p className="pl-ora-tit">
+                                {g.ora}
+                                {g.notturna && <span className="pl-notte"> · notte</span>}
+                              </p>
+                              <div className="pl-chips">
+                                {g.turni.map(t => (
+                                  <label key={t.slot_id} className={`pl-chip ${scelti.includes(t.slot_id) ? 'on' : ''} ${t.occupato ? 'full' : ''}`}>
+                                    <input type="checkbox" disabled={t.occupato} checked={scelti.includes(t.slot_id)} onChange={() => toggleTurno(t.slot_id)} />
+                                    <span>{t.ora}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="pl-legenda"><i className="lib" /> libero <i className="sel" /> scelto <i className="occ" /> già preso</p>
+                      </>
+                    )}
+
+                    <p className={`pl-counter ${scelti.length === 0 ? 'muted' : ''}`}>
+                      {scelti.length === 0
+                        ? 'Nessun turno scelto'
+                        : `${scelti.length} ${scelti.length === 1 ? 'turno' : 'turni'} · ${scelti.length * 10} minuti in acqua`}
+                    </p>
+                    <p className="pl-note">I turni che scegli sono una preferenza: te li confermiamo noi.</p>
                   </fieldset>
-                </form>
-              </>
+                )}
+
+                {/* ---- passo 3: i tuoi dati ---- */}
+                <fieldset>
+                  <legend><span className="pl-num">{nStepDati}</span>I tuoi dati</legend>
+
+                  <label htmlFor="pl-nome">Nome e cognome</label>
+                  <input id="pl-nome" type="text" autoComplete="name" placeholder="Es. Maria Rossi"
+                         value={nome} onChange={e => setNome(e.target.value)} />
+
+                  <label htmlFor="pl-tel">Numero di telefono</label>
+                  <input id="pl-tel" type="tel" autoComplete="tel" inputMode="tel" placeholder="Ti scriviamo qui per confermare"
+                         value={telefono} onChange={e => setTelefono(e.target.value)} />
+
+                  <label htmlFor="pl-mail">Email <span className="pl-opt">facoltativa</span></label>
+                  <input id="pl-mail" type="email" autoComplete="email" inputMode="email" placeholder="Per ricevere gli aggiornamenti"
+                         value={email} onChange={e => setEmail(e.target.value)} />
+
+                  {/* honeypot: invisibile agli umani, i bot lo riempiono */}
+                  <div className="pl-esca" aria-hidden="true">
+                    <label htmlFor="pl-azienda">Azienda</label>
+                    <input id="pl-azienda" type="text" tabIndex={-1} autoComplete="off"
+                           value={esca} onChange={e => setEsca(e.target.value)} />
+                  </div>
+
+                  <label className="pl-check">
+                    <input type="checkbox" checked={privacy} onChange={e => setPrivacy(e.target.checked)} />
+                    <span>
+                      Acconsento al trattamento dei miei dati secondo l'
+                      {/* TODO: sostituire con il link all'informativa quando il testo sarà disponibile */}
+                      <a href="#privacy" onClick={e => { e.preventDefault(); alert('Informativa privacy in preparazione: sarà pubblicata prima dell\'evento.') }}>informativa privacy</a>
+                    </span>
+                  </label>
+
+                  <label className="pl-check">
+                    <input type="checkbox" checked={newsletter} onChange={e => setNewsletter(e.target.checked)} />
+                    <span>Tenetemi aggiornato sui prossimi eventi di Passa l'Acqua</span>
+                  </label>
+                </fieldset>
+
+                {/* ---- riepilogo + invio ---- */}
+                <div className="pl-riepilogo">
+                  <p className="pl-riepilogo-tit">La tua richiesta</p>
+                  {riepilogo.length === 0 ? (
+                    <p className="pl-riepilogo-vuoto">Non hai ancora scelto niente: torna al passo 1.</p>
+                  ) : (
+                    <ul>
+                      {riepilogo.map(r => (
+                        <li key={r.k} className={r.warn ? 'warn' : ''}>
+                          <strong>{r.txt}</strong><small>{r.sub}</small>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <button type="submit" disabled={invio}>{invio ? 'Un attimo…' : 'Invia la richiesta'}</button>
+                {errore && <p className="pl-err" role="alert">{errore}</p>}
+                <p className="pl-fine">Ti rispondiamo noi su WhatsApp. Non è ancora una conferma.</p>
+              </form>
             )}
           </div>
         </div>
@@ -419,8 +441,8 @@ export default function PassaLacqua() {
 
       <footer className="pl-wrap pl-footer">
         <p>
-          Passa l'Acqua — Piscina dell'ASC Hotel · Raccolta divisa fra Calcit e AllStars Special Olympics<br />
-          Sponsor principale: Lapi Chimici · #passalacqua
+          Passa l'Acqua — Piscina dell'ASC Hotel, via di Castelsecco 8/h, Arezzo<br />
+          Raccolta divisa fra Calcit e AllStars Special Olympics · Sponsor principale: Lapi Chimici · #passalacqua
         </p>
       </footer>
     </div>
@@ -431,96 +453,138 @@ export default function PassaLacqua() {
 // dell'app. Serve un foglio vero (non stili inline) per :focus-within,
 // hover e media query.
 const CSS = `
-.pl{--aqua:#17A2A0;--aqua-dark:#0E7A78;--aqua-pale:#E8F6F5;
-  background:#fff;color:#12100F;font-family:'Oswald',sans-serif;font-weight:300;
-  min-height:100vh;line-height:1.6;}
+.pl{--aqua:#17A2A0;--aqua-dark:#0E7A78;--aqua-pale:#E8F6F5;--ink:#12100F;--mute:#5B5754;--line:#D9D5D1;
+  background:#fff;color:var(--ink);font-family:'Oswald',sans-serif;font-weight:300;
+  min-height:100vh;line-height:1.55;}
 .pl *{box-sizing:border-box;}
-.pl-wrap{max-width:720px;margin:0 auto;padding:0 22px;}
+.pl-wrap{max-width:640px;margin:0 auto;padding:0 20px;}
 .pl h1,.pl h2,.pl legend,.pl .pl-cta,.pl button[type=submit]{font-family:'Anton',sans-serif;font-weight:400;}
 .pl h1{font-size:clamp(56px,16vw,104px);line-height:.92;letter-spacing:-.5px;margin:6px 0 10px;text-transform:uppercase;}
-.pl h2{font-size:clamp(26px,6vw,34px);line-height:1.1;margin:0 0 14px;text-transform:uppercase;}
+.pl h2{font-size:clamp(24px,6vw,32px);line-height:1.1;margin:0 0 14px;text-transform:uppercase;}
 .pl p{margin:0 0 12px;}
-.pl-hero{padding:46px 22px 34px;}
+.pl-hero{padding:44px 20px 30px;}
 .pl-eyebrow{font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:var(--aqua-dark);font-weight:500;margin:0;}
-.pl-sub{font-size:20px;font-weight:400;margin:0 0 2px;}
+.pl-sub{font-size:19px;font-weight:400;margin:0 0 2px;}
 .pl-payoff{font-size:16px;color:var(--aqua-dark);font-weight:400;font-style:italic;margin:0;}
-.pl-cta-wrap{margin:26px 0 0;}
+.pl-cta-wrap{margin:24px 0 0;}
 .pl-cta{display:inline-block;background:var(--aqua);color:#fff;text-decoration:none;
   padding:15px 34px;border-radius:999px;font-size:19px;letter-spacing:.5px;text-transform:uppercase;}
 .pl-cta:hover{background:var(--aqua-dark);}
-.pl-cta-note{font-size:13.5px;color:#5B5754;margin:9px 0 0;}
-/* solo verticale, coi longhand: il padding LATERALE arriva da .pl-wrap
-   (la shorthand "padding:34px 0" lo azzerava per specificità e le card
-   50/50 e il box 1€ finivano a filo dello schermo su mobile) */
-.pl section{padding-top:34px;padding-bottom:34px;}
-.pl-split{display:flex;gap:14px;margin:20px 0;flex-wrap:wrap;}
-.pl-half{flex:1 1 220px;background:var(--aqua-pale);border-radius:14px;padding:18px;}
-.pl-half b{font-family:'Anton',sans-serif;font-size:30px;color:var(--aqua-dark);display:block;line-height:1;}
-.pl-half strong{display:block;font-weight:600;font-size:17px;margin-top:6px;}
-.pl-half span{font-size:13.5px;color:#5B5754;}
-.pl-sponsor{display:flex;gap:14px;align-items:flex-start;border:2px solid var(--aqua);border-radius:14px;padding:18px;}
-.pl-sponsor b{font-family:'Anton',sans-serif;font-size:30px;color:var(--aqua-dark);line-height:1;flex:none;}
-.pl-sponsor p{margin:0;font-size:15px;}
-.pl-prog .pl-row{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #E7E4E1;}
-.pl-prog .pl-row:last-child{border-bottom:none;}
-.pl-prog time{flex:none;width:92px;color:var(--aqua-dark);font-weight:500;font-size:14.5px;}
-.pl-prog small{display:block;color:#5B5754;font-size:13.5px;}
-/* la sezione form è full-bleed di proposito (fondo acqua): il respiro
-   laterale lo dà il .pl-wrap interno */
-.pl-formsec{background:var(--aqua-pale);padding-top:34px;padding-bottom:44px;}
-.pl-formcard{background:#fff;border-radius:18px;padding:26px 22px;}
-.pl-intro{font-size:15px;color:#4A4644;}
-.pl fieldset{border:none;padding:0;margin:0 0 26px;}
-.pl legend{font-size:21px;text-transform:uppercase;margin-bottom:12px;}
+.pl-cta-note{font-size:13.5px;color:var(--mute);margin:9px 0 0;}
+/* solo verticale, coi longhand: il padding LATERALE arriva da .pl-wrap */
+.pl section{padding-top:30px;padding-bottom:30px;}
+
+/* come funziona */
+.pl-mosse{list-style:none;margin:0 0 18px;padding:0;}
+.pl-mosse li{display:flex;gap:14px;align-items:flex-start;padding:10px 0;font-size:15.5px;}
+.pl-mosse li b{flex:none;width:34px;height:34px;border-radius:50%;background:var(--aqua);color:#fff;
+  font-family:'Anton',sans-serif;font-weight:400;font-size:18px;display:flex;align-items:center;justify-content:center;}
+.pl-mosse strong{font-weight:500;}
+.pl-causa{background:var(--aqua-pale);border-radius:14px;padding:16px 18px;font-size:15px;}
+.pl-causa p{margin:0;}
+.pl-causa strong{font-weight:500;}
+.pl-causa b{font-weight:500;color:var(--aqua-dark);}
+
+/* form: full-bleed di proposito (fondo acqua) */
+.pl-formsec{background:var(--aqua-pale);padding-top:30px;padding-bottom:44px;}
+.pl-formcard{background:#fff;border-radius:18px;padding:24px 20px;}
+.pl fieldset{border:none;padding:0;margin:0 0 30px;}
+.pl legend{font-size:22px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:10px;}
+.pl-num{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;font-size:17px;
+  display:inline-flex;align-items:center;justify-content:center;}
+.pl-hint{font-size:14px;color:var(--mute);margin:0 0 12px;}
 .pl label{display:block;font-size:14.5px;font-weight:400;margin:14px 0 6px;}
-.pl input[type=text],.pl input[type=tel],.pl input[type=email],.pl select{
-  width:100%;padding:13px 14px;border:1.5px solid #D9D5D1;border-radius:10px;
-  font-family:'Oswald',sans-serif;font-size:16px;font-weight:300;background:#fff;color:#12100F;}
-.pl input:focus,.pl select:focus{outline:none;border-color:var(--aqua);box-shadow:0 0 0 3px rgba(23,162,160,.18);}
-.pl-req{color:#C5221F;}
-.pl-chips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 2px;}
-.pl-chip{display:inline-flex;margin:0;cursor:pointer;}
-.pl-chip input{position:absolute;opacity:0;width:0;height:0;}
-.pl-chip span{display:inline-block;padding:10px 16px;border:1.5px solid #D9D5D1;border-radius:999px;
-  font-size:14.5px;background:#fff;transition:all .12s;}
-.pl-chip.on span{background:var(--aqua);border-color:var(--aqua);color:#fff;font-weight:400;}
-.pl-chip:hover span{border-color:var(--aqua);}
-/* focus da tastiera: l'input è invisibile, l'anello va sullo span */
-.pl-chip:focus-within span{outline:3px solid rgba(23,162,160,.45);outline-offset:2px;}
-.pl-eventi{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
-.pl-evento{border:1.5px solid #D9D5D1;border-radius:12px;padding:4px 14px 4px;transition:border-color .12s;}
-.pl-evento.on{border-color:var(--aqua);background:var(--aqua-pale);}
-/* .pl .pl-… per battere la specificità di ".pl label" (display:block) */
-.pl .pl-evento-main{display:flex;gap:12px;align-items:center;cursor:pointer;margin:8px 0;}
-.pl-evento-main input{width:22px;height:22px;flex:none;accent-color:var(--aqua);}
-.pl-evento-txt b{display:block;font-weight:500;font-size:15.5px;}
-.pl-evento-txt small{display:block;color:#5B5754;font-size:13px;}
-.pl .pl-evento-persone{display:flex;gap:10px;align-items:center;margin:2px 0 10px 34px;font-size:14px;}
-.pl-evento-persone span{flex:none;}
-.pl .pl-evento-persone select{width:auto;padding:8px 10px;font-size:14.5px;}
-.pl-slotbox{margin-top:8px;}
-.pl-note{font-size:13.5px;color:#4A4644;background:#F7F6F4;border-radius:10px;padding:12px 14px;}
-.pl-ore{max-height:420px;overflow-y:auto;border:1.5px solid #E7E4E1;border-radius:12px;padding:12px;}
-.pl-ora{margin-bottom:14px;}
+.pl-opt{color:var(--mute);font-weight:300;font-size:13px;}
+.pl input[type=text],.pl input[type=tel],.pl input[type=email]{
+  width:100%;padding:14px;border:1.5px solid var(--line);border-radius:10px;
+  font-family:'Oswald',sans-serif;font-size:17px;font-weight:300;background:#fff;color:var(--ink);}
+.pl input:focus{outline:none;border-color:var(--aqua);box-shadow:0 0 0 3px rgba(23,162,160,.18);}
+
+/* card di scelta (passo 1) — ".pl .pl-…" per battere ".pl label" */
+.pl-cards{display:flex;flex-direction:column;gap:10px;}
+.pl .pl-card{margin:0;border:1.5px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .12s,background .12s;}
+.pl .pl-card.on{border-color:var(--aqua);background:var(--aqua-pale);}
+.pl .pl-card,.pl .pl-card-main{display:flex;gap:12px;align-items:flex-start;}
+.pl .pl-card-main{margin:0;cursor:pointer;}
+.pl-card input{position:absolute;opacity:0;width:0;height:0;}
+.pl-card-box{flex:none;width:26px;height:26px;border:2px solid var(--line);border-radius:8px;margin-top:1px;background:#fff;position:relative;}
+.pl-card.on .pl-card-box{background:var(--aqua);border-color:var(--aqua);}
+.pl-card.on .pl-card-box::after{content:'';position:absolute;left:8px;top:3px;width:6px;height:12px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg);}
+.pl-card:focus-within .pl-card-box{outline:3px solid rgba(23,162,160,.45);outline-offset:2px;}
+.pl-card-txt{display:block;line-height:1.35;}
+.pl-card-txt b{display:block;font-weight:500;font-size:17px;}
+.pl-card-txt small{display:block;color:var(--aqua-dark);font-weight:500;font-size:14px;margin-top:2px;}
+.pl-card-txt em{display:block;color:var(--mute);font-style:normal;font-size:13.5px;margin-top:2px;}
+/* stepper persone dentro la card: un div, non parte della label */
+.pl .pl-card-ev{flex-direction:column;gap:0;}
+.pl .pl-card-ev > .pl-card-main{width:100%;}
+.pl-persone{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0 0 38px;font-size:14.5px;}
+.pl-stepper{display:inline-flex;align-items:center;border:1.5px solid var(--aqua);border-radius:999px;background:#fff;overflow:hidden;}
+.pl-stepper button{width:42px;height:38px;border:none;background:none;font-size:22px;color:var(--aqua-dark);cursor:pointer;font-family:inherit;}
+.pl-stepper button:disabled{color:#C9C5C1;cursor:default;}
+.pl-stepper output{display:inline-block;min-width:34px;text-align:center;font-weight:500;font-size:17px;}
+
+/* selettore turni (passo 2) */
+.pl-tabs{display:flex;gap:8px;margin:4px 0 12px;}
+.pl-tabs button{flex:1;padding:10px 8px;border:1.5px solid var(--line);border-radius:12px;background:#fff;
+  font-family:'Oswald',sans-serif;font-weight:500;font-size:15.5px;color:var(--ink);cursor:pointer;line-height:1.2;}
+.pl-tabs button small{display:block;font-weight:300;font-size:12.5px;color:var(--mute);margin-top:2px;}
+.pl-tabs button.on{border-color:var(--aqua);background:var(--aqua);color:#fff;}
+.pl-tabs button.on small{color:rgba(255,255,255,.85);}
+.pl-ore{max-height:400px;overflow-y:auto;border:1.5px solid #E7E4E1;border-radius:12px;padding:10px;}
+.pl-ora{margin-bottom:10px;}
 .pl-ora:last-child{margin-bottom:0;}
-.pl-ora-tit{font-size:13px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--aqua-dark);margin:0 0 6px;}
-.pl-notte{color:#5B5754;font-weight:300;text-transform:none;letter-spacing:0;}
-.pl-counter{font-size:14.5px;font-weight:500;color:var(--aqua-dark);margin:12px 0 0;}
-.pl-turni-msg{font-size:14.5px;color:#5B5754;padding:14px 0;}
-.pl-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0;font-size:14.5px;cursor:pointer;}
+.pl-ora-tit{font-size:13px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--aqua-dark);margin:0 0 4px;}
+.pl-notte{color:var(--mute);font-weight:300;text-transform:none;letter-spacing:0;}
+/* una riga per ora: sei chip da 10' sempre nella stessa colonna */
+.pl-chips{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin:4px 0 2px;}
+.pl .pl-chip{display:block;margin:0;cursor:pointer;min-width:0;}
+.pl-chip input{position:absolute;opacity:0;width:0;height:0;}
+.pl-chip span{display:block;text-align:center;padding:10px 0;border:1.5px solid var(--line);border-radius:10px;
+  font-size:13.5px;font-weight:400;background:#fff;transition:all .12s;font-variant-numeric:tabular-nums;}
+.pl-chip.on span{background:var(--aqua);border-color:var(--aqua);color:#fff;}
+.pl-chip:hover span{border-color:var(--aqua);}
+.pl-chip.full{cursor:default;}
+.pl-chip.full span{background:#F1EFEC;border-color:#F1EFEC;color:#B5B0AB;text-decoration:line-through;}
+.pl-chip.full:hover span{border-color:#F1EFEC;}
+.pl-chip:focus-within span{outline:3px solid rgba(23,162,160,.45);outline-offset:2px;}
+.pl-legenda{display:flex;gap:14px;align-items:center;font-size:12.5px;color:var(--mute);margin:8px 0 0;}
+.pl-legenda i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:5px;vertical-align:-2px;border:1.5px solid var(--line);background:#fff;}
+.pl-legenda i.sel{background:var(--aqua);border-color:var(--aqua);}
+.pl-legenda i.occ{background:#F1EFEC;border-color:#F1EFEC;}
+.pl-counter{font-size:15px;font-weight:500;color:var(--aqua-dark);margin:12px 0 8px;}
+.pl-counter.muted{color:var(--mute);font-weight:300;}
+.pl-note{font-size:13.5px;color:#4A4644;background:#F7F6F4;border-radius:10px;padding:10px 14px;margin:0;}
+.pl-turni-msg{font-size:14.5px;color:var(--mute);padding:14px 0;}
+
+/* consensi */
+.pl .pl-check{display:flex;gap:10px;align-items:flex-start;margin:14px 0 0;font-size:14.5px;cursor:pointer;}
 .pl-check input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--aqua);}
 .pl-check span{font-weight:300;}
 .pl-check a{color:var(--aqua-dark);}
-.pl button[type=submit]{width:100%;margin-top:18px;background:var(--aqua);color:#fff;border:none;
-  border-radius:999px;padding:17px 20px;font-size:20px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;}
+
+/* riepilogo + invio */
+.pl-riepilogo{border:2px solid var(--aqua);border-radius:14px;padding:14px 16px;margin-bottom:4px;}
+.pl-riepilogo-tit{font-size:12.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--aqua-dark);font-weight:500;margin:0 0 6px;}
+.pl-riepilogo ul,.pl-done-list{list-style:none;margin:0;padding:0;}
+.pl-riepilogo li,.pl-done-list li{padding:6px 0;border-top:1px solid #E7E4E1;}
+.pl-riepilogo li:first-child,.pl-done-list li:first-child{border-top:none;}
+.pl-riepilogo strong,.pl-done-list strong{display:block;font-weight:500;font-size:15.5px;}
+.pl-riepilogo small,.pl-done-list small{display:block;color:var(--mute);font-size:13.5px;}
+.pl-riepilogo li.warn small{color:#B3261E;}
+.pl-riepilogo-vuoto{font-size:14.5px;color:var(--mute);margin:0;}
+.pl button[type=submit]{width:100%;margin-top:14px;background:var(--aqua);color:#fff;border:none;
+  border-radius:999px;padding:18px 20px;font-size:21px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;}
 .pl button[type=submit]:hover:not(:disabled){background:var(--aqua-dark);}
 .pl button[type=submit]:disabled{opacity:.6;cursor:default;}
 .pl-link{background:none;border:none;color:var(--aqua-dark);font-family:inherit;font-size:inherit;
   text-decoration:underline;cursor:pointer;padding:0;}
-.pl-err{color:#C5221F;font-size:14.5px;margin-top:10px;}
-.pl-done{text-align:center;padding:20px 0;}
+.pl-err{color:#B3261E;font-size:15px;margin:12px 0 0;font-weight:400;}
+.pl-fine{font-size:13px;color:var(--mute);text-align:center;margin:10px 0 0;}
+.pl-done{text-align:center;padding:16px 0;}
 .pl-done h2{color:var(--aqua-dark);}
+.pl-done-list{text-align:left;max-width:360px;margin:0 auto 16px;}
 .pl-esca{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
-.pl-footer{padding:26px 22px 40px;font-size:13px;color:#5B5754;text-align:center;}
+.pl-footer{padding:24px 20px 40px;font-size:13px;color:var(--mute);text-align:center;}
 @media(prefers-reduced-motion:reduce){.pl *{transition:none!important;}}
 `
