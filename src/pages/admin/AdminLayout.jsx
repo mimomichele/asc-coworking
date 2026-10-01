@@ -11,7 +11,7 @@ import InEsaurimento from './InEsaurimento.jsx'
 import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
 import Staffetta from './Staffetta.jsx'
-import PassaLacquaRichieste, { PL_EVENTO_AGGIORNAMENTO } from './PassaLacquaRichieste.jsx'
+import PassaLacquaRichieste from './PassaLacquaRichieste.jsx'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 import PlannerTurni from './Turni/PlannerTurni.jsx'
 import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
@@ -30,36 +30,6 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  // richieste Passa l'Acqua in stato 'nuova', per il badge rosso in barra.
-  // Polling lento + evento emesso dalla pagina richieste al cambio stato.
-  const [plNuove, setPlNuove] = useState(0)
-
-  useEffect(() => {
-    let alive = true
-    async function contaNuove() {
-      const { count, error } = await supabase
-        .from('passa_lacqua_iscrizioni')
-        .select('id', { count: 'exact', head: true })
-        .eq('stato', 'nuova')
-      if (!error && alive) setPlNuove(count || 0)
-    }
-    contaNuove()
-    const t = setInterval(contaNuove, 60000)
-    window.addEventListener(PL_EVENTO_AGGIORNAMENTO, contaNuove)
-    return () => {
-      alive = false
-      clearInterval(t)
-      window.removeEventListener(PL_EVENTO_AGGIORNAMENTO, contaNuove)
-    }
-  }, [])
-
-  const etichettaPL = (
-    <>
-      Passa l'Acqua
-      {plNuove > 0 && <span style={styles.redBadge}>{plNuove}</span>}
-    </>
-  )
-
   async function logout() {
     await supabase.auth.signOut()
     navigate('/')
@@ -88,11 +58,14 @@ export default function AdminLayout() {
         {/* DESKTOP LINKS */}
         <div style={styles.navLinks} className="nav-links-desktop">
           <NavLink to="/admin" end style={topStyle(isDash)}>Dashboard</NavLink>
-          <NavLink to="/admin/coworking" style={topStyle(isCoworking)}>Coworking</NavLink>
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)}>Rosticceria</NavLink>
-          <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)}>Staffetta</NavLink>
-          <NavLink to="/admin/passa-lacqua" style={topStyle(isPassaLacqua)}>{etichettaPL}</NavLink>
+          {/* Coworking, Staffetta e Passa l'Acqua sono fuori dalla barra
+              per l'inverno: route attive, si raggiungono dalla dashboard
+              (blocco "In pausa") o dai vecchi link diretti */}
+          {isCoworking && <NavLink to="/admin/coworking" style={topStyle(true)}>Coworking</NavLink>}
+          {isStaffetta && <NavLink to="/admin/staffetta" style={topStyle(true)}>Staffetta</NavLink>}
+          {isPassaLacqua && <NavLink to="/admin/passa-lacqua" style={topStyle(true)}>Passa l'Acqua</NavLink>}
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)}>Le mie app</NavLink>
         </div>
 
