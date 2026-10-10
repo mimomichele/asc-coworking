@@ -5,7 +5,9 @@
 //
 // Azioni (solo admin autenticato):
 //   anteprima : cosa c'e' da comunicare / annullare (nessun effetto)
-//   invia     : genera l'XML e lo spedisce via email, poi registra.
+//   invia     : compila il modulo PDF ministeriale e lo spedisce in
+//               allegato via email, poi registra (nel registro resta
+//               anche l'XML equivalente dei dati inviati).
 //               Richiede l'impronta dell'anteprima confermata: se nel
 //               frattempo i turni sono cambiati NON invia.
 //   notifica  : avviso Telegram se ci sono comunicazioni in attesa
@@ -27,13 +29,15 @@
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
+import * as PDFLib from 'npm:pdf-lib@1.17.1'
+import { compilaPdf } from '../_shared/intermittenti_pdf.ts'
+import { modelloPdf } from '../_shared/modulo_intermittenti.ts'
 import {
-  aBlocchi, calcolaPiano, dataModulo, generaXml, improntaPiano,
+  calcolaPiano, dataModulo, generaXml, improntaPiano, lottiPerLavoratore, nomeAllegato, oggettoEmail, OGGETTO_EMAIL,
   Lavoratore, Piano, RigaAttiva, RigaDaAnnullare,
 } from '../_shared/intermittenti.ts'
 
 const DESTINATARIO_MINISTERO = 'intermittenti@pec.lavoro.gov.it'
-const OGGETTO = 'Invio telematico Modulo Intermittenti'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -99,7 +103,7 @@ async function caricaPiano(db: SupabaseClient): Promise<{ piano: Piano; righeAtt
   return { piano: calcolaPiano(lavoratori, giorni, righeAttive, oggi), righeAttive, oggi }
 }
 
-async function spedisci(xml: string, prova: boolean): Promise<string> {
+async function spedisci(pdf: Uint8Array, prova: boolean, nome: string, codiceFiscale: string): Promise<string> {
   const user = Deno.env.get('SMTP_USER')
   const pass = Deno.env.get('SMTP_PASS')
   if (!user || !pass) throw new Error('SMTP_USER / SMTP_PASS non configurati')
@@ -116,9 +120,9 @@ async function spedisci(xml: string, prova: boolean): Promise<string> {
     from,
     to,
     bcc: prova ? undefined : from,
-    subject: prova ? `[PROVA] ${OGGETTO}` : OGGETTO,
-    text: OGGETTO,
-    attachments: [{ filename: 'UNI_Intermittenti.xml', content: xml, contentType: 'text/xml; charset=UTF-8' }],
+    subject: oggettoEmail(nome, prova),
+    text: OGGETTO_EMAIL,
+    attachments: [{ filename: nomeAllegato(codiceFiscale), content: pdf, contentType: 'application/pdf' }],
   })
   return to
 }
@@ -207,14 +211,18 @@ Deno.serve(async (req: Request) => {
       // Prima gli annullamenti: se uno fallisce non si ricomunica nulla,
       // per non avere due comunicazioni valide sugli stessi giorni.
       const lotti = [
-        ...aBlocchi(piano.annullamenti).map(r => ({ tipo: 'annullamento' as const, righe: r })),
-        ...aBlocchi(piano.comunicazioni).map(r => ({ tipo: 'comunicazione' as const, righe: r })),
+        ...lottiPerLavoratore(piano.annullamenti).map(r => ({ tipo: 'annullamento' as const, righe: r })),
+        ...lottiPerLavoratore(piano.comunicazioni).map(r => ({ tipo: 'comunicazione' as const, righe: r })),
       ]
       for (const lotto of lotti) {
-        const xml = generaXml(lotto.righe, { emailDatore: mittente(), annullamento: lotto.tipo === 'annullamento' })
+        const opts = { emailDatore: mittente(), annullamento: lotto.tipo === 'annullamento' }
+        const xml = generaXml(lotto.righe, opts)
         let errore: string | null = null
         let destinatario = prova ? mittente() : DESTINATARIO_MINISTERO
-        try { destinatario = await spedisci(xml, prova) } catch (e) { errore = (e as Error).message }
+        try {
+          const pdf = await compilaPdf(PDFLib, modelloPdf(), lotto.righe, opts)
+          destinatario = await spedisci(pdf, prova, lotto.righe[0].nome, lotto.righe[0].codice_fiscale)
+        } catch (e) { errore = (e as Error).message }
 
         const { data: invio, error: insErr } = await db.from('intermittenti_invii').insert({
           admin_id: user.id,

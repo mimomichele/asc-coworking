@@ -199,3 +199,27 @@ export function improntaPiano(p: Piano): string {
   const a = p.annullamenti.map(r => `A|${r.id}`)
   return [...c, ...a].sort().join(';')
 }
+
+// Un modulo (e quindi un'email) per lavoratore, cosi' allegato e oggetto
+// possono riportare il suo codice fiscale e il suo nome. Oltre le 10 righe
+// lo stesso lavoratore viene diviso su piu' moduli.
+export function lottiPerLavoratore<T extends { dipendente_id: string }>(righe: T[]): T[][] {
+  const perLav = new Map<string, T[]>()
+  for (const r of righe) {
+    if (!perLav.has(r.dipendente_id)) perLav.set(r.dipendente_id, [])
+    perLav.get(r.dipendente_id)!.push(r)
+  }
+  return [...perLav.values()].flatMap(rr => aBlocchi(rr))
+}
+
+export const OGGETTO_EMAIL = 'Invio telematico Modulo Intermittenti'
+
+export function oggettoEmail(nome: string, prova: boolean): string {
+  const n = (nome || '').replace(/[\r\n]+/g, ' ').trim()
+  return `${prova ? '[PROVA] ' : ''}${OGGETTO_EMAIL}${n ? ' - ' + n : ''}`
+}
+
+export function nomeAllegato(codiceFiscale: string): string {
+  const cf = (codiceFiscale || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+  return cf ? `UNI_Intermittenti_${cf}.pdf` : 'UNI_Intermittenti.pdf'
+}
