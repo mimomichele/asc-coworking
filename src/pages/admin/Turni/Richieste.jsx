@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import { turniCambiati } from '../../../lib/intermittenti'
 import { fmtRangeOrario, MESI, nomeDipendente } from '../../../lib/turni'
 
 function fmtBreve(ds) {
@@ -67,6 +68,7 @@ export default function Richieste() {
       if (req.requested_data) upd.data = req.requested_data
       const { error } = await supabase.from('shifts').update(upd).eq('id', req.shift_id)
       if (error) { showToast('Errore aggiornamento turno: ' + error.message, 'error'); setBusy(null); return }
+      if (req.requested_data) turniCambiati()
     }
     // 2. segna la richiesta approvata
     const { error } = await supabase.from('shift_change_requests')
