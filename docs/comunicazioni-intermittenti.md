@@ -14,7 +14,8 @@ UNI-Intermittenti ML-15-01), dopo la conferma di un admin.
    Telegram.
 3. **Rivedi e invia** mostra le righe: giorni consecutivi su una riga (max 30
    giorni), giorni staccati una riga ciascuno, massimo 10 righe per email.
-4. **Conferma e invia** spedisce l'XML a `intermittenti@pec.lavoro.gov.it` da
+4. **Conferma e invia** compila il modulo PDF ministeriale e lo spedisce in
+   allegato a `intermittenti@pec.lavoro.gov.it` da
    `amministrazione@aschotel.com` (in copia nascosta a se stessa).
 5. **Turni → Comunicazioni** è il registro di tutti gli invii, con l'XML.
 
@@ -43,9 +44,9 @@ turno viene segnato come comunicato.
 
 Prima di impostare `INTERMITTENTI_PROVA=false`:
 
-- compilare una volta il modulo PDF originale in Acrobat, generare l'XML e
-  confrontarlo con quello arrivato nell'email di prova (struttura, formato
-  delle date `GG/MM/AAAA`, nome dell'allegato);
+- aprire in Adobe Acrobat Reader il PDF arrivato nell'email di prova e
+  controllare che sia identico a un modulo compilato a mano (codici, date
+  `GG/MM/AAAA`, casella Annullamento);
 - verificare che l'email di prova risulti inviata da amministrazione@aschotel.com.
 
 ## Test
