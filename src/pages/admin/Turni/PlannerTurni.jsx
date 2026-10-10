@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import CellaPopover from './CellaPopover'
 import CalendarioMensile from './CalendarioMensile'
+import ComunicazioniBanner from './ComunicazioniBanner'
+import { useIntermittenti, statoGiorno, turniCambiati } from '../../../lib/intermittenti'
 import {
   GIORNI, addDays, oggiStr, giorniSettimana, lunediDellaSettimana,
   fmtRangeSettimana, fmtRangeOrario, nomeDipendente, iniziali,
@@ -21,6 +23,7 @@ export default function PlannerTurni() {
   const [popover, setPopover] = useState(null) // { dipendente, dateStr, shift, anchorRect }
   const [confirmCopy, setConfirmCopy] = useState(null) // { count, rows, skipExisting }
   const [copying, setCopying] = useState(false)
+  const { stato: intermittenti, ricarica: ricaricaIntermittenti } = useIntermittenti()
 
   const weekDays = useMemo(() => giorniSettimana(monday), [monday])
   const TODAY = oggiStr()
@@ -132,6 +135,7 @@ export default function PlannerTurni() {
     setCopying(false)
     setConfirmCopy(null)
     fetchAll()
+    turniCambiati()
   }
 
   const copyCount = useMemo(() => {
@@ -180,9 +184,12 @@ export default function PlannerTurni() {
           )}
           <Link to="/admin/turni/report" className="btn-ghost" style={{ textDecoration: 'none' }}>Report ore</Link>
           <Link to="/admin/turni/predefiniti" className="btn-ghost" style={{ textDecoration: 'none' }}>Turni predefiniti</Link>
+          <Link to="/admin/turni/comunicazioni" className="btn-ghost" style={{ textDecoration: 'none' }}>Comunicazioni</Link>
           <Link to="/admin/turni/dipendenti" className="btn-ghost" style={{ textDecoration: 'none' }}>Dipendenti</Link>
         </div>
       </div>
+
+      <ComunicazioniBanner stato={intermittenti} onInviato={ricaricaIntermittenti} onToast={showToast} />
 
       {vista === 'mese' && <CalendarioMensile />}
 
@@ -236,6 +243,7 @@ export default function PlannerTurni() {
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 500, lineHeight: 1.1 }}>{nomeDipendente(dip)}</div>
                         {dip.ruolo && <div style={{ fontSize: 11, color: '#aaa' }}>{dip.ruolo}</div>}
+                        {dip.a_chiamata && <div style={{ fontSize: 10, color: '#854F0B', fontWeight: 600 }}>A chiamata</div>}
                       </div>
                     </div>
                   </td>
@@ -244,6 +252,7 @@ export default function PlannerTurni() {
                     const leave = leaveMap[dip.id]?.[d]
                     const isToday = d === TODAY
                     const isWeekend = i >= 5
+                    const com = dip.a_chiamata ? COM[statoGiorno(intermittenti, dip.id, d)] : null
                     return (
                       <td
                         key={d}
@@ -253,6 +262,14 @@ export default function PlannerTurni() {
                           background: isToday ? '#FFFBF2' : isWeekend ? '#fbfaf7' : '#fff',
                         }}
                       >
+                        {com && (
+                          <div style={{
+                            fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 4px', marginBottom: 4,
+                            textAlign: 'center', background: com.bg, color: com.fg,
+                          }}>
+                            {com.label}
+                          </div>
+                        )}
                         {leave && (
                           <div style={{
                             fontSize: 10, fontWeight: 600, borderRadius: 4, padding: '2px 4px', marginBottom: 4,
@@ -336,6 +353,13 @@ export default function PlannerTurni() {
       )}
     </div>
   )
+}
+
+// Etichette di stato della comunicazione al Ministero (solo lavoratori a chiamata).
+const COM = {
+  da_comunicare: { label: 'Da comunicare', bg: '#FAEEDA', fg: '#854F0B' },
+  da_annullare: { label: 'Da annullare', bg: '#FCEBEB', fg: '#C5221F' },
+  comunicato: { label: 'Comunicato', bg: '#E7F4EA', fg: '#1E7B34' },
 }
 
 const thStyle = {

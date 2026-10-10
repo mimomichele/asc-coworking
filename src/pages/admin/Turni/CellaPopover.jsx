@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
+import { turniCambiati } from '../../../lib/intermittenti'
 import { GIORNI, fmtTime, nomeDipendente } from '../../../lib/turni'
 
 // Popover inline per creare / modificare / eliminare un turno.
@@ -86,6 +87,7 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
       onToast(rows.length > 1 ? `${rows.length} turni creati` : 'Turno creato')
     }
     setSaving(false)
+    if (dipendente.a_chiamata) turniCambiati()
     onSaved()
   }
 
@@ -95,6 +97,7 @@ export default function CellaPopover({ dipendente, dateStr, shift, templates, we
     if (error) { onToast('Errore: ' + error.message, 'error'); setSaving(false); return }
     onToast('Turno eliminato')
     setSaving(false)
+    if (dipendente.a_chiamata) turniCambiati()
     onSaved()
   }
 

@@ -6,8 +6,17 @@ import {
   resetDipendenteCodice,
   revokeDipendenteCredentials,
 } from '../../../lib/dipendentiAccount'
+import { turniCambiati } from '../../../lib/intermittenti'
 
-const emptyForm = { nome: '', cognome: '', ruolo: '', attivo: true }
+const emptyForm = {
+  nome: '', cognome: '', ruolo: '', attivo: true,
+  a_chiamata: false, codice_fiscale: '', codice_comunicazione: '', a_chiamata_dal: '',
+}
+
+function oggiLocale() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 // Suggerisce uno username dal nome/cognome: iniziale nome + cognome, ripulito.
 function suggestUsername(d) {
@@ -47,7 +56,11 @@ export default function Dipendenti() {
   }
 
   function openEdit(d) {
-    setForm({ nome: d.nome, cognome: d.cognome || '', ruolo: d.ruolo || '', attivo: d.attivo })
+    setForm({
+      nome: d.nome, cognome: d.cognome || '', ruolo: d.ruolo || '', attivo: d.attivo,
+      a_chiamata: !!d.a_chiamata, codice_fiscale: d.codice_fiscale || '',
+      codice_comunicazione: d.codice_comunicazione || '', a_chiamata_dal: d.a_chiamata_dal || '',
+    })
     setEditingId(d.id)
     setShowForm(true)
   }
@@ -60,12 +73,23 @@ export default function Dipendenti() {
 
   async function salva() {
     if (!form.nome.trim()) { showToast('Inserisci il nome', 'error'); return }
+    const cf = form.codice_fiscale.trim().toUpperCase()
+    const cc = form.codice_comunicazione.trim()
+    if (form.a_chiamata) {
+      if (!/^[A-Z0-9]{16}$/.test(cf)) { showToast('Codice fiscale: servono 16 caratteri', 'error'); return }
+      if (!/^[0-9]{16}$/.test(cc)) { showToast('Codice comunicazione: servono 16 cifre', 'error'); return }
+      if (!form.a_chiamata_dal) { showToast('Indica da quando comunicare i turni', 'error'); return }
+    }
     setSaving(true)
     const payload = {
       nome: form.nome.trim(),
       cognome: form.cognome.trim() || null,
       ruolo: form.ruolo.trim() || null,
       attivo: !!form.attivo,
+      a_chiamata: !!form.a_chiamata,
+      codice_fiscale: cf || null,
+      codice_comunicazione: cc || null,
+      a_chiamata_dal: form.a_chiamata_dal || null,
     }
     const { error } = editingId
       ? await supabase.from('dipendenti').update(payload).eq('id', editingId)
@@ -76,6 +100,7 @@ export default function Dipendenti() {
     closeForm()
     fetchDipendenti()
     setSaving(false)
+    turniCambiati()
   }
 
   async function toggleActive(d) {
@@ -204,6 +229,51 @@ export default function Dipendenti() {
               </div>
             </div>
           </div>
+
+          <div style={{ marginTop: 14, paddingTop: 14, borderTop: '0.5px solid #E5E3DC' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.a_chiamata}
+                onChange={e => setForm(f => ({
+                  ...f, a_chiamata: e.target.checked,
+                  a_chiamata_dal: e.target.checked && !f.a_chiamata_dal ? oggiLocale() : f.a_chiamata_dal,
+                }))}
+              />
+              Contratto a chiamata (intermittente)
+            </label>
+            <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
+              I turni di questo lavoratore vanno comunicati al Ministero prima dell'inizio.
+            </div>
+            {form.a_chiamata && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 12 }}>
+                <div className="field">
+                  <label>Codice fiscale *</label>
+                  <input
+                    value={form.codice_fiscale} maxLength={16} autoCapitalize="characters" autoCorrect="off"
+                    onChange={e => setForm(f => ({ ...f, codice_fiscale: e.target.value.toUpperCase().replace(/\s/g, '') }))}
+                    placeholder="16 caratteri"
+                  />
+                </div>
+                <div className="field">
+                  <label>Codice comunicazione (UNILAV) *</label>
+                  <input
+                    value={form.codice_comunicazione} maxLength={16} inputMode="numeric"
+                    onChange={e => setForm(f => ({ ...f, codice_comunicazione: e.target.value.replace(/\D/g, '') }))}
+                    placeholder="16 cifre dell'assunzione"
+                  />
+                </div>
+                <div className="field">
+                  <label>Comunica i turni dal *</label>
+                  <input
+                    type="date" value={form.a_chiamata_dal}
+                    onChange={e => setForm(f => ({ ...f, a_chiamata_dal: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
             <button className="btn-ghost" onClick={closeForm}>Annulla</button>
             <button className="btn-primary" onClick={salva} disabled={saving}>
@@ -311,7 +381,10 @@ export default function Dipendenti() {
               <tr key={d.id} style={{ opacity: d.attivo ? 1 : 0.5 }}>
                 <td style={{ fontWeight: 500 }}>{d.nome}</td>
                 <td>{d.cognome || '—'}</td>
-                <td style={{ fontSize: 12, color: '#6B6B6B' }}>{d.ruolo || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6B6B6B' }}>
+                  {d.ruolo || '—'}
+                  {d.a_chiamata && <span className="pill" style={{ marginLeft: 6, background: '#FAEEDA', color: '#854F0B' }}>A chiamata</span>}
+                </td>
                 <td>
                   <span className={`pill ${d.attivo ? 'pill-ok' : 'pill-gray'}`}>
                     {d.attivo ? 'Attivo' : 'Disattivato'}
