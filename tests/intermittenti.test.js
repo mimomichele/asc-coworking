@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   raggruppaGiorni, calcolaPiano, generaXml, aBlocchi, giorniTra, improntaPiano,
+  lottiPerLavoratore, oggettoEmail, nomeAllegato,
 } from '../supabase/functions/_shared/intermittenti.ts'
 
 const LAV = { id: 'a', nome: 'Anna Rossi', codice_fiscale: 'rssnna90a41a390x', codice_comunicazione: '1700026201104147', a_chiamata_dal: null }
@@ -114,5 +115,23 @@ describe('generaXml', () => {
   })
   it('piu di 10 righe = piu moduli', () => {
     expect(aBlocchi(Array(23).fill(riga)).map(b => b.length)).toEqual([10, 10, 3])
+  })
+})
+
+describe('un modulo per lavoratore', () => {
+  it('separa i lavoratori e divide oltre le 10 righe', () => {
+    const righe = [
+      ...Array(12).fill({ dipendente_id: 'a' }), { dipendente_id: 'b' }, { dipendente_id: 'a' },
+    ]
+    const lotti = lottiPerLavoratore(righe)
+    expect(lotti.map(l => [l[0].dipendente_id, l.length])).toEqual([['a', 10], ['a', 3], ['b', 1]])
+    expect(lotti.every(l => new Set(l.map(r => r.dipendente_id)).size === 1)).toBe(true)
+  })
+  it('oggetto con nome e cognome', () => {
+    expect(oggettoEmail('Anna Rossi', false)).toBe('Invio telematico Modulo Intermittenti - Anna Rossi')
+    expect(oggettoEmail('Anna Rossi', true)).toBe('[PROVA] Invio telematico Modulo Intermittenti - Anna Rossi')
+  })
+  it('allegato con codice fiscale', () => {
+    expect(nomeAllegato('rssnna90a41a390x')).toBe('UNI_Intermittenti_RSSNNA90A41A390X.pdf')
   })
 })

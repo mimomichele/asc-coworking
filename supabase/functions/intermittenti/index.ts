@@ -33,12 +33,11 @@ import * as PDFLib from 'npm:pdf-lib@1.17.1'
 import { compilaPdf } from '../_shared/intermittenti_pdf.ts'
 import { modelloPdf } from '../_shared/modulo_intermittenti.ts'
 import {
-  aBlocchi, calcolaPiano, dataModulo, generaXml, improntaPiano,
+  calcolaPiano, dataModulo, generaXml, improntaPiano, lottiPerLavoratore, nomeAllegato, oggettoEmail, OGGETTO_EMAIL,
   Lavoratore, Piano, RigaAttiva, RigaDaAnnullare,
 } from '../_shared/intermittenti.ts'
 
 const DESTINATARIO_MINISTERO = 'intermittenti@pec.lavoro.gov.it'
-const OGGETTO = 'Invio telematico Modulo Intermittenti'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -104,7 +103,7 @@ async function caricaPiano(db: SupabaseClient): Promise<{ piano: Piano; righeAtt
   return { piano: calcolaPiano(lavoratori, giorni, righeAttive, oggi), righeAttive, oggi }
 }
 
-async function spedisci(pdf: Uint8Array, prova: boolean): Promise<string> {
+async function spedisci(pdf: Uint8Array, prova: boolean, nome: string, codiceFiscale: string): Promise<string> {
   const user = Deno.env.get('SMTP_USER')
   const pass = Deno.env.get('SMTP_PASS')
   if (!user || !pass) throw new Error('SMTP_USER / SMTP_PASS non configurati')
@@ -121,9 +120,9 @@ async function spedisci(pdf: Uint8Array, prova: boolean): Promise<string> {
     from,
     to,
     bcc: prova ? undefined : from,
-    subject: prova ? `[PROVA] ${OGGETTO}` : OGGETTO,
-    text: OGGETTO,
-    attachments: [{ filename: 'UNI_Intermittenti.pdf', content: pdf, contentType: 'application/pdf' }],
+    subject: oggettoEmail(nome, prova),
+    text: OGGETTO_EMAIL,
+    attachments: [{ filename: nomeAllegato(codiceFiscale), content: pdf, contentType: 'application/pdf' }],
   })
   return to
 }
@@ -212,8 +211,8 @@ Deno.serve(async (req: Request) => {
       // Prima gli annullamenti: se uno fallisce non si ricomunica nulla,
       // per non avere due comunicazioni valide sugli stessi giorni.
       const lotti = [
-        ...aBlocchi(piano.annullamenti).map(r => ({ tipo: 'annullamento' as const, righe: r })),
-        ...aBlocchi(piano.comunicazioni).map(r => ({ tipo: 'comunicazione' as const, righe: r })),
+        ...lottiPerLavoratore(piano.annullamenti).map(r => ({ tipo: 'annullamento' as const, righe: r })),
+        ...lottiPerLavoratore(piano.comunicazioni).map(r => ({ tipo: 'comunicazione' as const, righe: r })),
       ]
       for (const lotto of lotti) {
         const opts = { emailDatore: mittente(), annullamento: lotto.tipo === 'annullamento' }
@@ -222,7 +221,7 @@ Deno.serve(async (req: Request) => {
         let destinatario = prova ? mittente() : DESTINATARIO_MINISTERO
         try {
           const pdf = await compilaPdf(PDFLib, modelloPdf(), lotto.righe, opts)
-          destinatario = await spedisci(pdf, prova)
+          destinatario = await spedisci(pdf, prova, lotto.righe[0].nome, lotto.righe[0].codice_fiscale)
         } catch (e) { errore = (e as Error).message }
 
         const { data: invio, error: insErr } = await db.from('intermittenti_invii').insert({

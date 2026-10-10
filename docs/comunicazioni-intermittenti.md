@@ -14,6 +14,8 @@ UNI-Intermittenti ML-15-01), dopo la conferma di un admin.
    Telegram.
 3. **Rivedi e invia** mostra le righe: giorni consecutivi su una riga (max 30
    giorni), giorni staccati una riga ciascuno, massimo 10 righe per email.
+   Parte un'email per ogni lavoratore: allegato `UNI_Intermittenti_<codice
+   fiscale>.pdf`, oggetto con nome e cognome.
 4. **Conferma e invia** compila il modulo PDF ministeriale e lo spedisce in
    allegato a `intermittenti@pec.lavoro.gov.it` da
    `amministrazione@aschotel.com` (in copia nascosta a se stessa).
