@@ -6,8 +6,9 @@ import {
   resetDipendenteCodice,
   revokeDipendenteCredentials,
 } from '../../../lib/dipendentiAccount'
+import { validaCodiceFiscale, validaCodiceComunicazione, normalizzaCodice } from '../../../lib/intermittenti'
 
-const emptyForm = { nome: '', cognome: '', ruolo: '', attivo: true }
+const emptyForm = { nome: '', cognome: '', ruolo: '', attivo: true, a_chiamata: false, codice_fiscale: '', codice_comunicazione: '' }
 
 // Suggerisce uno username dal nome/cognome: iniziale nome + cognome, ripulito.
 function suggestUsername(d) {
@@ -47,7 +48,10 @@ export default function Dipendenti() {
   }
 
   function openEdit(d) {
-    setForm({ nome: d.nome, cognome: d.cognome || '', ruolo: d.ruolo || '', attivo: d.attivo })
+    setForm({
+      nome: d.nome, cognome: d.cognome || '', ruolo: d.ruolo || '', attivo: d.attivo,
+      a_chiamata: !!d.a_chiamata, codice_fiscale: d.codice_fiscale || '', codice_comunicazione: d.codice_comunicazione || '',
+    })
     setEditingId(d.id)
     setShowForm(true)
   }
@@ -60,12 +64,21 @@ export default function Dipendenti() {
 
   async function salva() {
     if (!form.nome.trim()) { showToast('Inserisci il nome', 'error'); return }
+    const cf = normalizzaCodice(form.codice_fiscale)
+    const cc = normalizzaCodice(form.codice_comunicazione)
+    if (form.a_chiamata) {
+      if (!validaCodiceFiscale(cf)) { showToast('Codice fiscale non valido (16 caratteri)', 'error'); return }
+      if (!validaCodiceComunicazione(cc)) { showToast('Codice comunicazione non valido (16 caratteri della comunicazione UNILAV)', 'error'); return }
+    }
     setSaving(true)
     const payload = {
       nome: form.nome.trim(),
       cognome: form.cognome.trim() || null,
       ruolo: form.ruolo.trim() || null,
       attivo: !!form.attivo,
+      a_chiamata: !!form.a_chiamata,
+      codice_fiscale: cf || null,
+      codice_comunicazione: cc || null,
     }
     const { error } = editingId
       ? await supabase.from('dipendenti').update(payload).eq('id', editingId)
@@ -204,6 +217,43 @@ export default function Dipendenti() {
               </div>
             </div>
           </div>
+
+          {/* contratto a chiamata (lavoratore intermittente) */}
+          <div style={{ marginTop: 6, paddingTop: 12, borderTop: '0.5px solid #E5E3DC' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', marginBottom: form.a_chiamata ? 12 : 0 }}>
+              <input
+                type="checkbox"
+                checked={!!form.a_chiamata}
+                onChange={e => setForm(f => ({ ...f, a_chiamata: e.target.checked }))}
+              />
+              <span style={{ fontWeight: 500 }}>Contratto a chiamata</span>
+              <span style={{ color: '#6B6B6B', fontSize: 12 }}>ogni giornata va comunicata al Ministero prima del turno</span>
+            </label>
+            {form.a_chiamata && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Codice fiscale *</label>
+                  <input
+                    value={form.codice_fiscale}
+                    onChange={e => setForm(f => ({ ...f, codice_fiscale: e.target.value.toUpperCase() }))}
+                    placeholder="RSSMRA80A01A390X" maxLength={16} autoCapitalize="characters" autoCorrect="off"
+                    style={{ fontFamily: 'monospace', letterSpacing: 1 }}
+                  />
+                </div>
+                <div className="field" style={{ marginBottom: 0 }}>
+                  <label>Codice comunicazione *</label>
+                  <input
+                    value={form.codice_comunicazione}
+                    onChange={e => setForm(f => ({ ...f, codice_comunicazione: e.target.value.toUpperCase() }))}
+                    placeholder="16 caratteri UNILAV" maxLength={16} autoCapitalize="characters" autoCorrect="off"
+                    style={{ fontFamily: 'monospace', letterSpacing: 1 }}
+                  />
+                  <span className="hint">Codice della comunicazione UNILAV di assunzione</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
             <button className="btn-ghost" onClick={closeForm}>Annulla</button>
             <button className="btn-primary" onClick={salva} disabled={saving}>
@@ -311,7 +361,10 @@ export default function Dipendenti() {
               <tr key={d.id} style={{ opacity: d.attivo ? 1 : 0.5 }}>
                 <td style={{ fontWeight: 500 }}>{d.nome}</td>
                 <td>{d.cognome || '—'}</td>
-                <td style={{ fontSize: 12, color: '#6B6B6B' }}>{d.ruolo || '—'}</td>
+                <td style={{ fontSize: 12, color: '#6B6B6B' }}>
+                  {d.ruolo || '—'}
+                  {d.a_chiamata && <span className="pill pill-warn" style={{ marginLeft: 6 }} title={`CF ${d.codice_fiscale || '—'} · com. ${d.codice_comunicazione || '—'}`}>A chiamata</span>}
+                </td>
                 <td>
                   <span className={`pill ${d.attivo ? 'pill-ok' : 'pill-gray'}`}>
                     {d.attivo ? 'Attivo' : 'Disattivato'}

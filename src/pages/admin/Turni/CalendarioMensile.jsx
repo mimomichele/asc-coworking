@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase'
 import CellaPopover from './CellaPopover'
+import { bordoStatoCom } from './PannelloComunicazioni'
 import {
   GIORNI, oggiStr, giorniSettimana, lunediDellaSettimana,
   fmtRangeOrario, nomeDipendente, primoDelMese, addMesi, fmtMeseAnno,
@@ -36,7 +37,9 @@ function anchoredStyle(anchorRect, width = 240, estH = 300) {
   return { left, top, width }
 }
 
-export default function CalendarioMensile() {
+// onSavedChiamata: chiamata dal parent dopo il salvataggio di un turno
+// di un lavoratore a chiamata (apre il riepilogo comunicazioni).
+export default function CalendarioMensile({ onSavedChiamata }) {
   const [mese, setMese] = useState(() => primoDelMese(oggiStr()))
   const [dipendenti, setDipendenti] = useState([])
   const [templates, setTemplates] = useState([])
@@ -130,8 +133,10 @@ export default function CalendarioMensile() {
     setPicker({ dateStr, anchorRect: e.currentTarget.getBoundingClientRect() })
   }
   function onSaved() {
+    const aChiamata = !!popover?.dipendente?.a_chiamata
     setPopover(null)
     fetchMese()
+    if (aChiamata) onSavedChiamata?.()
   }
 
   const popWeekDays = popover ? giorniSettimana(lunediDellaSettimana(popover.dateStr)) : []
@@ -202,7 +207,7 @@ export default function CalendarioMensile() {
                         key={'s' + it.s.id}
                         onClick={(e) => openEditShift(e, it.s)}
                         title={`${nomeDipendente(dipMap[it.s.dipendente_id] || {})} ${fmtRangeOrario(it.s.start_time, it.s.end_time)}`}
-                        style={chipShift}
+                        style={{ ...chipShift, ...bordoStatoCom(it.s) }}
                       >
                         {etichettaDip(dipMap[it.s.dipendente_id])} {oraBreve(it.s.start_time)}-{oraBreve(it.s.end_time)}
                       </div>
@@ -352,7 +357,7 @@ function DettaglioGiorno({ dateStr, items, dipMap, onEditShift, onAdd, onClose }
           <div
             key={s.id}
             onClick={(e) => onEditShift(e, s)}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginBottom: 8, border: '0.5px solid #E5E3DC', borderRadius: 10, cursor: 'pointer' }}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', marginBottom: 8, border: '0.5px solid #E5E3DC', borderRadius: 10, cursor: 'pointer', ...bordoStatoCom(s, 3) }}
           >
             <span style={{ fontSize: 14, fontWeight: 500 }}>{nomeDipendente(dipMap[s.dipendente_id] || {})}</span>
             <span style={{ fontSize: 13, color: '#444' }}>{fmtRangeOrario(s.start_time, s.end_time)}{s.note ? ' ·' : ''}</span>

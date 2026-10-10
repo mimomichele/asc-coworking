@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import CellaPopover from './CellaPopover'
 import CalendarioMensile from './CalendarioMensile'
+import PannelloComunicazioni, { bordoStatoCom, AvvisoUrgenti, LegendaStatiCom } from './PannelloComunicazioni'
+import { contaPendenti } from '../../../lib/intermittenti'
 import {
   GIORNI, addDays, oggiStr, giorniSettimana, lunediDellaSettimana,
   fmtRangeSettimana, fmtRangeOrario, nomeDipendente, iniziali,
@@ -21,6 +23,8 @@ export default function PlannerTurni() {
   const [popover, setPopover] = useState(null) // { dipendente, dateStr, shift, anchorRect }
   const [confirmCopy, setConfirmCopy] = useState(null) // { count, rows, skipExisting }
   const [copying, setCopying] = useState(false)
+  const [pendentiCom, setPendentiCom] = useState(0)     // comunicazioni intermittenti da inviare
+  const [pannelloCom, setPannelloCom] = useState(false) // riepilogo dopo un salvataggio a chiamata
 
   const weekDays = useMemo(() => giorniSettimana(monday), [monday])
   const TODAY = oggiStr()
@@ -52,6 +56,7 @@ export default function PlannerTurni() {
     setLeaves(leaveRes.data || [])
     setPendingCount((scrCount.count || 0) + (ferieCount.count || 0))
     setLoading(false)
+    contaPendenti().then(setPendentiCom)
   }
 
   // mappa { dipendente_id: { 'YYYY-MM-DD': [shift...] } }
@@ -91,8 +96,10 @@ export default function PlannerTurni() {
   }
 
   function onSaved() {
+    const aChiamata = !!popover?.dipendente?.a_chiamata
     setPopover(null)
     fetchAll()
+    if (aChiamata) setPannelloCom(true)
   }
 
   // --- Copia settimana precedente ---
@@ -132,6 +139,8 @@ export default function PlannerTurni() {
     setCopying(false)
     setConfirmCopy(null)
     fetchAll()
+    const chiamata = new Set(dipendenti.filter(d => d.a_chiamata).map(d => d.id))
+    if (rows.some(r => chiamata.has(r.dipendente_id))) setPannelloCom(true)
   }
 
   const copyCount = useMemo(() => {
@@ -178,13 +187,24 @@ export default function PlannerTurni() {
           {vista === 'settimana' && (
             <button className="btn-ghost" onClick={preparaCopia}>Copia settimana precedente</button>
           )}
+          <Link to="/admin/turni/comunicazioni" className="btn-ghost" style={{ textDecoration: 'none', position: 'relative' }} title="Comunicazioni lavoratori a chiamata">
+            Comunicazioni
+            {pendentiCom > 0 && (
+              <span style={{
+                marginLeft: 6, background: '#854F0B', color: '#fff', borderRadius: 10,
+                fontSize: 11, fontWeight: 600, padding: '1px 7px',
+              }}>{pendentiCom}</span>
+            )}
+          </Link>
           <Link to="/admin/turni/report" className="btn-ghost" style={{ textDecoration: 'none' }}>Report ore</Link>
           <Link to="/admin/turni/predefiniti" className="btn-ghost" style={{ textDecoration: 'none' }}>Turni predefiniti</Link>
           <Link to="/admin/turni/dipendenti" className="btn-ghost" style={{ textDecoration: 'none' }}>Dipendenti</Link>
         </div>
       </div>
 
-      {vista === 'mese' && <CalendarioMensile />}
+      <AvvisoUrgenti dipendenti={dipendenti} />
+
+      {vista === 'mese' && <CalendarioMensile onSavedChiamata={() => setPannelloCom(true)} />}
 
       {vista === 'settimana' && (<>
       {/* NAV SETTIMANA */}
@@ -195,6 +215,7 @@ export default function PlannerTurni() {
         </div>
         <button className="btn-ghost" onClick={() => setMonday(m => addDays(m, 7))}>▶</button>
         <button className="btn-ghost" onClick={() => setMonday(lunediDellaSettimana(oggiStr()))}>Oggi</button>
+        {dipendenti.some(d => d.a_chiamata) && <div style={{ marginLeft: 'auto' }}><LegendaStatiCom /></div>}
       </div>
 
       {loading ? (
@@ -276,6 +297,7 @@ export default function PlannerTurni() {
                                   background: '#111111', color: '#fff', borderRadius: 6,
                                   padding: '4px 6px', fontSize: 11, fontWeight: 500,
                                   whiteSpace: 'nowrap', textAlign: 'center',
+                                  ...bordoStatoCom(s),
                                 }}
                               >
                                 {fmtRangeOrario(s.start_time, s.end_time)}
@@ -306,6 +328,13 @@ export default function PlannerTurni() {
           onSaved={onSaved}
           onClose={() => setPopover(null)}
           onToast={showToast}
+        />
+      )}
+
+      {pannelloCom && (
+        <PannelloComunicazioni
+          onClose={() => { setPannelloCom(false); contaPendenti().then(setPendentiCom) }}
+          onChange={() => { fetchAll() }}
         />
       )}
 
