@@ -27,6 +27,7 @@ import {
 } from '../../../lib/preventivi'
 import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
 import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
+import ImportoMancanteBadge from '../../../components/ImportoMancanteBadge.jsx'
 
 const SELECT_FULL = `
   *,
@@ -61,6 +62,8 @@ export default function SchedaRichiesta() {
   const [rigenerando, setRigenerando] = useState(false)
   const [modalConferma, setModalConferma] = useState(null) // {tipo, ...}
   const [syncing, setSyncing] = useState(false)
+  const [importoLocal, setImportoLocal] = useState('')   // campo accanto alle azioni
+  const [chiediImporto, setChiediImporto] = useState(false) // prompt inline prima di Gmail
 
   useEffect(() => { fetchRichiesta() }, [id])
 
@@ -96,6 +99,7 @@ export default function SchedaRichiesta() {
     setEdits({})
     setBozza(data.bozza_risposta || '')
     setBozzaDirty(false)
+    setImportoLocal(data.importo_preventivo ?? '')
   }
 
   function flashSalva(txt = 'Salvato') {
@@ -150,9 +154,15 @@ export default function SchedaRichiesta() {
   // 2) poi apre https://mail.google.com/mail/?view=cm... in nuova tab
   // Richiesta arrivata via email: apriamo la CONVERSAZIONE originale in
   // Gmail (non un nuovo messaggio), cosi' la risposta resta nello stesso
-  // thread del cliente. La bozza viene copiata negli appunti: Rispondi +
-  // incolla. Richiesta manuale: compose nuovo con tutto precompilato.
-  async function apriInGmail() {
+  // thread del cliente, con la bozza copiata negli appunti. Richiesta
+  // manuale: compose nuovo con tutto precompilato.
+  //
+  // window.open deve avvenire in modo SINCRONO dentro il click: dopo un
+  // await il browser lo considera un popup non richiesto e lo blocca.
+  // Per questo lo stato passa a 'inviato' solo DOPO, e solo se la
+  // finestra si e' davvero aperta. Se manca l'importo, al primo click
+  // mostriamo il prompt inline: sara' il click sul prompt ad aprire Gmail.
+  function apriInGmail({ conImporto = null, salta = false } = {}) {
     const to = r.contatto?.email
     const corpo = bozza || r.bozza_risposta || ''
     const haThread = !!(r.email_origine_thread_id || r.email_origine_id)
@@ -161,32 +171,55 @@ export default function SchedaRichiesta() {
       return
     }
 
-    // Clipboard PRIMA di qualsiasi await: alcuni browser perdono il
-    // permesso di scrittura se passa troppo tempo dal click.
-    let copiata = false
-    if (haThread && corpo) {
-      try { await navigator.clipboard.writeText(corpo); copiata = true } catch { /* ignora */ }
-    }
-
-    if (r.stato === 'ricevuta' || r.stato === 'scaduta') {
-      // Salva prima la bozza se modificata, cosi' il "torna indietro"
-      // ritrova il testo coerente a quello aperto in Gmail.
-      const payload = { stato: 'inviato', operatore_invio: (await supabase.auth.getUser()).data.user?.id ?? null }
-      if (bozzaDirty) payload.bozza_risposta = bozza
-      const ok = await aggiorna(payload, 'Apertura Gmail')
-      if (!ok) return
-    }
-
-    if (haThread) {
-      const url = urlGmailThread({ threadId: r.email_origine_thread_id, messageId: r.email_origine_id })
-      window.open(url, '_blank', 'noopener,noreferrer')
-      flashSalva(copiata
-        ? 'Bozza copiata negli appunti: in Gmail premi Rispondi e incolla.'
-        : 'Conversazione aperta in Gmail: premi Rispondi.')
+    const importoStr = conImporto ?? importoLocal
+    const importoVal = importoStr === '' || importoStr === null ? null : Number(importoStr)
+    if (importoVal === null && !salta && conImporto === null) {
+      setChiediImporto(true)
       return
     }
-    const oggetto = suggerisciOggetto(r, r.contatto)
-    window.open(urlGmailCompose({ to, oggetto, corpo }), '_blank', 'noopener,noreferrer')
+
+    const url = haThread
+      ? urlGmailThread({ threadId: r.email_origine_thread_id, messageId: r.email_origine_id })
+      : urlGmailCompose({ to, oggetto: suggerisciOggetto(r, r.contatto), corpo })
+    // Niente 'noopener' nel terzo argomento: farebbe tornare sempre null
+    // e non sapremmo se il popup e' stato bloccato. Lo azzeriamo a mano.
+    const win = window.open(url, '_blank')
+    if (!win) {
+      setErr('Il browser ha bloccato l’apertura di Gmail: consenti i popup per co.aschotel.com e riprova.')
+      return
+    }
+    try { win.opener = null } catch { /* ignora */ }
+    setChiediImporto(false)
+    setErr('')
+
+    if (haThread && corpo && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(corpo).then(
+        () => flashSalva('Bozza copiata negli appunti: in Gmail premi Rispondi e incolla.'),
+        () => flashSalva('Conversazione aperta in Gmail: premi Rispondi.'),
+      )
+    }
+
+    // Finestra aperta: ora stato, importo e bozza (un solo update).
+    ;(async () => {
+      const payload = {}
+      if (r.stato === 'ricevuta' || r.stato === 'scaduta') {
+        payload.stato = 'inviato'
+        payload.operatore_invio = (await supabase.auth.getUser()).data.user?.id ?? null
+        if (bozzaDirty) payload.bozza_risposta = bozza
+      }
+      if (importoVal !== null && Number.isFinite(importoVal) && importoVal !== Number(r.importo_preventivo)) {
+        payload.importo_preventivo = importoVal
+      }
+      if (Object.keys(payload).length > 0) await aggiorna(payload, 'Apertura Gmail')
+    })()
+  }
+
+  async function salvaImporto() {
+    const val = importoLocal === '' ? null : Number(importoLocal)
+    if (val !== null && !Number.isFinite(val)) return
+    const attuale = r.importo_preventivo === null || r.importo_preventivo === undefined ? null : Number(r.importo_preventivo)
+    if (val === attuale) return
+    await aggiorna({ importo_preventivo: val }, 'Importo')
   }
 
   // Forza il sync della conversazione (scenario Make "Sync conversazioni");
@@ -364,9 +397,39 @@ export default function SchedaRichiesta() {
       {err && <div style={styles.errorBar}>{err}</div>}
       {salva && <div style={styles.okBar}>{salva}</div>}
 
+      {/* Importo: accanto alle azioni, non sepolto nel form dati */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+        <label style={{ fontSize: 12.5, color: '#6B6B6B' }}>Importo preventivo (€)</label>
+        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="es. 1250"
+               value={importoLocal}
+               onChange={e => setImportoLocal(e.target.value)}
+               onBlur={salvaImporto}
+               style={{ ...styles.input, width: 140 }} />
+        <ImportoMancanteBadge richiesta={r} />
+      </div>
+
+      {chiediImporto && (
+        <div style={styles.promptBox}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Quanto hai preventivato? (€)</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="number" min="0" step="0.01" inputMode="decimal" autoFocus
+                   value={importoLocal}
+                   onChange={e => setImportoLocal(e.target.value)}
+                   onKeyDown={e => { if (e.key === 'Enter') apriInGmail({ conImporto: importoLocal }) }}
+                   style={{ ...styles.input, width: 140 }} />
+            <button className="btn-primary" onClick={() => apriInGmail({ conImporto: importoLocal })}>
+              Salva e apri Gmail
+            </button>
+            <button className="btn-ghost" onClick={() => apriInGmail({ salta: true })}>
+              Apri senza importo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Azioni rapide */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <button className="btn-primary" onClick={apriInGmail}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+        <button className="btn-primary" onClick={() => apriInGmail()}
                 disabled={busy || (!c.email && !r.email_origine_thread_id && !r.email_origine_id)}>
           {(r.email_origine_thread_id || r.email_origine_id) ? '✉ Rispondi in Gmail' : '✉ Apri in Gmail'}
         </button>
@@ -383,6 +446,11 @@ export default function SchedaRichiesta() {
             ← Torna a “Ricevuta”
           </button>
         )}
+      </div>
+      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 20 }}>
+        {(r.email_origine_thread_id || r.email_origine_id)
+          ? 'Si apre la conversazione in Gmail con la bozza copiata negli appunti. Premi Rispondi, incolla, inserisci i prezzi e invia.'
+          : 'Si apre Gmail con destinatario, oggetto e bozza già pronti. Controlla, inserisci i prezzi e invia.'}
       </div>
 
       {/* Dati richiesta */}
@@ -436,13 +504,6 @@ export default function SchedaRichiesta() {
                    value={edits.n_accompagnatori ?? r.n_accompagnatori ?? ''}
                    onChange={e => cambiaCampo('n_accompagnatori', e.target.value === '' ? null : Number(e.target.value))}
                    onBlur={() => salvaCampo('n_accompagnatori')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="Importo preventivo (€)">
-            <input type="number" min="0" step="0.01"
-                   value={edits.importo_preventivo ?? r.importo_preventivo ?? ''}
-                   onChange={e => cambiaCampo('importo_preventivo', e.target.value === '' ? null : Number(e.target.value))}
-                   onBlur={() => salvaCampo('importo_preventivo')}
                    style={styles.input} />
           </Campo>
           <Campo label="Servizi richiesti" full>
@@ -803,6 +864,10 @@ const styles = {
   okBar: {
     background: '#E6F6EF', color: '#1E8E3E', padding: '6px 12px',
     borderRadius: 6, fontSize: 13, marginBottom: 10, display: 'inline-block',
+  },
+  promptBox: {
+    padding: 12, marginBottom: 12,
+    background: '#FFF8E1', border: '0.5px solid #F5B301', borderRadius: 7,
   },
   modalBg: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',

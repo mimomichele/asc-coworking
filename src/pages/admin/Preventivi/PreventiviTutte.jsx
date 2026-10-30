@@ -19,6 +19,7 @@ import {
 } from '../../../lib/preventivi'
 import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
 import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
+import ImportoMancanteBadge from '../../../components/ImportoMancanteBadge.jsx'
 
 const SELECT = `
   id, tipologia, canale, data_arrivo, data_partenza, periodo_note,
@@ -152,6 +153,7 @@ export default function PreventiviTutte() {
               <span style={{ fontSize: 15, fontWeight: 600 }}>{etichettaContatto(r.contatto)}</span>
               <PreventivoStatoBadge stato={r.stato} compact />
               <PreventivoFaseChip richiesta={r} compact />
+              <ImportoMancanteBadge richiesta={r} compact />
               <span style={styles.chip}>{canaleLabel(r.canale)}</span>
               <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>
                 ricevuta {fmtData(r.data_ricevuta?.slice(0, 10))}

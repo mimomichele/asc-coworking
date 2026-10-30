@@ -20,6 +20,7 @@ import {
 } from '../../../lib/preventivi'
 import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
 import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
+import ImportoMancanteBadge from '../../../components/ImportoMancanteBadge.jsx'
 
 // Giorni passati tra ISO e now().
 function giorniDa(iso) {
@@ -272,6 +273,7 @@ function RigaRichiesta({ r, mostraInvio = false }) {
           </span>
           <PreventivoStatoBadge stato={r.stato} compact />
           <PreventivoFaseChip richiesta={r} compact />
+          <ImportoMancanteBadge richiesta={r} compact />
           <span style={{ fontSize: 12, color: '#6B6B6B' }}>{tipologiaLabel(r.tipologia)}</span>
           <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>
             {mostraInvio && r.data_invio
