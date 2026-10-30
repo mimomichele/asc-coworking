@@ -44,6 +44,8 @@ export default function PreventiviOggi() {
   const [data, setData] = useState({ nuove: [], ricontattare: [], inviateOggi: [], soglie: null })
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
 
   useEffect(() => { fetchAll() }, [])
 
@@ -110,6 +112,38 @@ export default function PreventiviOggi() {
     window.dispatchEvent(new Event(PREV_EVENTO_AGGIORNAMENTO))
   }, [data, loading])
 
+  // --- Bottone "Controlla Gmail adesso" -----------------------
+  // Chiama la Edge Function preventivi-importa-ora, che a sua volta
+  // fa partire lo scenario Make. Le righe arrivano in DB dopo pochi
+  // secondi (ciclo Gmail -> HTTP -> edge function -> insert).
+  async function importaOra() {
+    setImporting(true); setImportMsg(''); setErr('')
+    const { data: sess } = await supabase.auth.getSession()
+    const token = sess?.session?.access_token
+    if (!token) { setImporting(false); setErr('Sessione scaduta.'); return }
+    const url =
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-importa-ora`
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: '{}',
+      })
+      const payload = await resp.json().catch(() => ({}))
+      if (!resp.ok) throw new Error(payload?.error || `HTTP ${resp.status}`)
+      setImportMsg('Richiesta inviata a Make. Le nuove email arriveranno fra pochi secondi.')
+      // Refresh dopo 15 secondi: Make+edge function tipicamente in <10s.
+      setTimeout(() => { fetchAll(); setImportMsg('') }, 15000)
+    } catch (e) {
+      setErr(`Importa ora: ${e.message}`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
   const importoSospeso = useMemo(() => {
     return [...data.inviateOggi]  // non il totale globale, solo oggi
       .reduce((s, r) => s + Number(r.importo_preventivo || 0), 0)
@@ -126,9 +160,20 @@ export default function PreventiviOggi() {
   return (
     <div>
       <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Preventivi</h2>
-      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 12 }}>
         Richieste di preventivo per raduni, scuole, famiglie. Soglia follow-up:{' '}
         raduno {data.soglie.raduno}gg · scuola {data.soglie.scuola}gg · famiglia {data.soglie.famiglia}gg.
+      </div>
+
+      {/* Importa ora: forza il ciclo Make -> edge function -> DB.
+          L'importazione automatica da Gmail avviene ogni mattina alle 06:00. */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button className="btn-ghost" onClick={importaOra} disabled={importing}>
+          {importing ? 'Importazione in corso...' : '↓ Controlla Gmail adesso'}
+        </button>
+        {importMsg && (
+          <span style={{ fontSize: 12.5, color: '#1E8E3E' }}>{importMsg}</span>
+        )}
       </div>
 
       <Blocco
