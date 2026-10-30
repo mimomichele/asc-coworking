@@ -15,10 +15,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import {
-  fmtDataRange, fmtData, etichettaContatto,
-  tipologiaLabel, PREV_EVENTO_AGGIORNAMENTO,
+  fmtDataRange, fmtData, fmtDataOra, etichettaContatto,
+  tipologiaLabel, faseConversazione, PREV_EVENTO_AGGIORNAMENTO,
 } from '../../../lib/preventivi'
 import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
+import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
 
 // Giorni passati tra ISO e now().
 function giorniDa(iso) {
@@ -37,11 +38,12 @@ const SELECT_RICHIESTA = `
   id, tipologia, canale, data_arrivo, data_partenza, periodo_note,
   n_persone, stato, importo_preventivo, data_invio, data_ultimo_contatto,
   data_ricevuta, created_at,
+  ultimo_msg_direzione, ultimo_msg_at, n_msg_in, n_msg_out,
   contatto:contatti!inner(id, nome, cognome, societa_ente, email, telefono)
 `
 
 export default function PreventiviOggi() {
-  const [data, setData] = useState({ nuove: [], ricontattare: [], inviateOggi: [], soglie: null })
+  const [data, setData] = useState({ nuove: [], risposte: [], ricontattare: [], inviateOggi: [], soglie: null })
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState('')
   const [importing, setImporting] = useState(false)
@@ -75,12 +77,13 @@ export default function PreventiviOggi() {
       supabase.from('richieste_preventivo')
         .select(SELECT_RICHIESTA).in('stato', ['inviato', 'attesa'])
         .order('data_invio', { ascending: true }),
-      // "Inviate oggi": prendo tutte le inviate con data_invio nelle
-      // ultime 48h e filtro in JS per calendar date Europe/Rome. Evita
-      // scherzi di DST (il range in SQL non puo' usare "Europe/Rome").
+      // "Inviate oggi e ieri": prendo quelle con data_invio nelle ultime
+      // 72h (inviato o gia' passate in attesa dal cron) e filtro in JS per
+      // calendar date Europe/Rome. Evita scherzi di DST (il range in SQL
+      // non puo' usare "Europe/Rome").
       supabase.from('richieste_preventivo')
-        .select(SELECT_RICHIESTA).eq('stato', 'inviato')
-        .gte('data_invio', new Date(Date.now() - 48 * 3600 * 1000).toISOString()),
+        .select(SELECT_RICHIESTA).in('stato', ['inviato', 'attesa'])
+        .gte('data_invio', new Date(Date.now() - 72 * 3600 * 1000).toISOString()),
     ])
 
     if (nuoveRes.error) {
@@ -92,7 +95,16 @@ export default function PreventiviOggi() {
     }
 
     const soglie = sogliaRes.data?.value || { raduno: 7, scuola: 14, famiglia: 3 }
+
+    // "Risposte dei clienti": il cliente ha scritto dopo la nostra ultima
+    // risposta e non c'e' stato un contatto successivo. Hanno priorita'
+    // sul follow-up: una risposta da leggere non e' "da ricontattare".
+    const risposte = (pendentiRes.data || [])
+      .filter(r => faseConversazione(r)?.key === 'da_rispondere')
+    const idsRisposte = new Set(risposte.map(r => r.id))
+
     const ricontattare = (pendentiRes.data || []).filter(r => {
+      if (idsRisposte.has(r.id)) return false
       const rif = r.data_ultimo_contatto || r.data_invio
       const gg = giorniDa(rif)
       if (gg === null) return false
@@ -100,15 +112,18 @@ export default function PreventiviOggi() {
       return gg >= soglia
     })
 
-    // Filtro "oggi" sulla data del fuso Europe/Rome.
+    // Filtro "oggi"/"ieri" sulla data del fuso Europe/Rome.
     const giornoDi = (iso) => new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit',
     }).format(new Date(iso))
+    const ieri = giornoDi(new Date(Date.now() - 24 * 3600 * 1000))
     const inviateOggi = (inviateRes.data || [])
-      .filter(r => r.data_invio && giornoDi(r.data_invio) === oggi)
+      .filter(r => r.data_invio && [oggi, ieri].includes(giornoDi(r.data_invio)))
+      .sort((a, b) => (b.data_invio || '').localeCompare(a.data_invio || ''))
 
     setData({
       nuove: nuoveRes.data || [],
+      risposte,
       ricontattare,
       inviateOggi,
       soglie,
@@ -199,6 +214,14 @@ export default function PreventiviOggi() {
       />
 
       <Blocco
+        titolo="Risposte dei clienti"
+        descrizione="Il cliente ha risposto al preventivo: da leggere e rispondere."
+        richieste={data.risposte}
+        colore="#C5221F"
+        vuoto="Nessuna risposta in attesa."
+      />
+
+      <Blocco
         titolo="Da ricontattare"
         descrizione="Inviate o in attesa oltre la soglia follow-up."
         richieste={data.ricontattare}
@@ -207,19 +230,20 @@ export default function PreventiviOggi() {
       />
 
       <Blocco
-        titolo="Inviate oggi"
+        titolo="Inviate oggi e ieri"
         descrizione={importoSospeso > 0
-          ? `Totale importi inviati oggi: ${importoSospeso.toLocaleString('it-IT', { style:'currency', currency:'EUR' })}`
-          : 'Preventivi inviati oggi dal team.'}
+          ? `Totale importi inviati oggi e ieri: ${importoSospeso.toLocaleString('it-IT', { style:'currency', currency:'EUR' })}`
+          : 'Preventivi inviati dal team nelle ultime due giornate.'}
         richieste={data.inviateOggi}
         colore="#1E8E3E"
-        vuoto="Nessun preventivo inviato oggi."
+        vuoto="Nessun preventivo inviato oggi o ieri."
+        mostraInvio
       />
     </div>
   )
 }
 
-function Blocco({ titolo, descrizione, richieste, colore, vuoto }) {
+function Blocco({ titolo, descrizione, richieste, colore, vuoto, mostraInvio = false }) {
   return (
     <section style={{ marginBottom: 28 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 6 }}>
@@ -231,13 +255,13 @@ function Blocco({ titolo, descrizione, richieste, colore, vuoto }) {
       {richieste.length === 0 ? (
         <div className="card" style={{ padding: 14, fontSize: 13, color: '#6B6B6B' }}>{vuoto}</div>
       ) : richieste.map(r => (
-        <RigaRichiesta key={r.id} r={r} />
+        <RigaRichiesta key={r.id} r={r} mostraInvio={mostraInvio} />
       ))}
     </section>
   )
 }
 
-function RigaRichiesta({ r }) {
+function RigaRichiesta({ r, mostraInvio = false }) {
   return (
     <Link to={`/admin/preventivi/richiesta/${r.id}`}
           style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -247,9 +271,12 @@ function RigaRichiesta({ r }) {
             {etichettaContatto(r.contatto)}
           </span>
           <PreventivoStatoBadge stato={r.stato} compact />
+          <PreventivoFaseChip richiesta={r} compact />
           <span style={{ fontSize: 12, color: '#6B6B6B' }}>{tipologiaLabel(r.tipologia)}</span>
           <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>
-            arrivata {fmtData(r.data_ricevuta?.slice(0, 10)) || '—'}
+            {mostraInvio && r.data_invio
+              ? `inviata ${fmtDataOra(r.data_invio)}`
+              : `arrivata ${fmtData(r.data_ricevuta?.slice(0, 10)) || '—'}`}
           </span>
         </div>
         <div style={{ fontSize: 13, color: '#333' }}>
