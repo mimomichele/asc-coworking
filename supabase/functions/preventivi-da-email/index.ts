@@ -6,17 +6,21 @@
 // l'etichetta "Preventivo".
 //
 // Accetta body JSON OPPURE application/x-www-form-urlencoded.
-// Il secondo e' quello che manda Make (HTTP > Make a request
-// contentType=urlEncoded): evita escape issues con virgolette e
-// newline nel corpo email.
+// Il secondo e' quello che manda Make con HTTP > Make a request
+// contentType=urlEncoded (evita problemi di escape JSON con
+// virgolette e newline nel corpo email).
 //
-// Flusso:
-//   1. verifica x-webhook-secret contro PREVENTIVI_WEBHOOK_SECRET
-//   2. idempotenza su gmail_message_id (se gia' importato, no-op)
-//   3. estrazione campi via Claude Haiku 5.5
-//   4. dedup contatto per email (citext)
-//   5. generazione bozza via Claude Sonnet 5.5 col template della tipologia
-//   6. insert richiesta in stato 'ricevuta'
+// DEDUP:
+//   1. gmail_thread_id (primario): una conversazione = una richiesta,
+//      le reply alla stessa mail non duplicano
+//   2. gmail_message_id (fallback compat payload senza thread)
+//
+// Flusso quando NON e' duplicato:
+//   1. verifica x-webhook-secret
+//   2. estrazione campi via Claude Haiku 5.5
+//   3. dedup contatto per email (citext)
+//   4. generazione bozza via Claude Sonnet 5.5 col template della tipologia
+//   5. insert richiesta in stato 'ricevuta'
 //
 // Secret: ANTHROPIC_API_KEY, PREVENTIVI_WEBHOOK_SECRET
 // Opzionali: AI_MODEL_ESTRAZIONE (default claude-haiku-5-5),
@@ -183,7 +187,6 @@ Corpo:
 ${template.corpo_template}`
 }
 
-// Estrae il body in modo tollerante: JSON, form-urlencoded, o testo semplice.
 async function readBody(req: Request): Promise<Record<string, string>> {
   const ctype = (req.headers.get('content-type') ?? '').toLowerCase()
   const raw = await req.text()
@@ -200,7 +203,6 @@ async function readBody(req: Request): Promise<Record<string, string>> {
     for (const [k, v] of params) out[k] = v
     return out
   }
-  // tentativo opportunistico: prima JSON, poi urlencoded
   try {
     const j = JSON.parse(raw)
     if (j && typeof j === 'object') return j as Record<string, string>
@@ -238,10 +240,24 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
+  // DEDUP PRIMARIO: thread. Se il thread esiste gia' NON tocchiamo nulla
+  // (le reply vanno viste in Gmail; la scheda nostra tiene il primo msg).
+  const threadId = (body.gmail_thread_id ?? '').trim() || null
+  if (threadId) {
+    const { data: giaPresente } = await admin.from('richieste_preventivo')
+      .select('id').eq('email_origine_thread_id', threadId).maybeSingle()
+    if (giaPresente?.id) {
+      return json({ ok: true, richiesta_id: giaPresente.id, duplicate: true, reason: 'thread' })
+    }
+  }
+
+  // DEDUP SECONDARIO: message_id (compat con payload vecchi senza thread).
   if (body.gmail_message_id) {
     const { data: giaPresente } = await admin.from('richieste_preventivo')
       .select('id').eq('email_origine_id', body.gmail_message_id).maybeSingle()
-    if (giaPresente?.id) return json({ ok: true, richiesta_id: giaPresente.id, duplicate: true })
+    if (giaPresente?.id) {
+      return json({ ok: true, richiesta_id: giaPresente.id, duplicate: true, reason: 'message' })
+    }
   }
 
   let estratto: Estratto
@@ -299,6 +315,7 @@ Deno.serve(async (req: Request) => {
     n_accompagnatori: estratto.n_accompagnatori, servizi: estratto.servizi,
     note: estratto.note, stato: 'ricevuta',
     email_origine_id: body.gmail_message_id ?? null,
+    email_origine_thread_id: threadId,
     email_origine_testo: bodyText,
     email_origine_link: body.link ?? null,
     bozza_risposta: bozza || null,
@@ -308,7 +325,7 @@ Deno.serve(async (req: Request) => {
 
   await admin.from('richieste_eventi').insert({
     richiesta_id: richiesta.id, tipo: 'email_import',
-    testo: `Importata da Gmail (${body.gmail_message_id ?? 'senza id'})`,
+    testo: `Importata da Gmail thread ${threadId ?? '(senza)'}`,
   })
 
   return json({ ok: true, richiesta_id: richiesta.id })
