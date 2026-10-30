@@ -1,27 +1,30 @@
 // ============================================================
 // Preventivi > scheda richiesta
 //
-// Tutti i campi editabili con salvataggio inline, storico del
-// contatto (altre richieste con esito), log eventi, bozza di
-// risposta editabile + "Rigenera bozza" via edge function.
+// Ordine pensato per chi risponde ai preventivi, non per chi ha
+// costruito l'app:
+//   a) intestazione: nome, stato, riga riassuntiva in italiano
+//   b) conversazione email (se arrivata via Gmail), ultimi messaggi
+//   c) bozza di risposta
+//   d) importo + azioni: Apri/Rispondi in Gmail, Ricontattato,
+//      Confermata (chiede il numero Krossbooking), Persa (motivo),
+//      Torna a Ricevuta
+//   e) "Modifica dati richiesta": pannello chiuso, salvataggio esplicito
+//   f) contatto e storico
+//   g) log
+//   h) zona pericolosa (chiusa): riapri richiesta chiusa, elimina
 //
-// Pulsanti principali:
-//   - Apri in Gmail: imposta stato='inviato' PRIMA di aprire la
-//     finestra di compose. Se gia' inviato, apre solo la finestra.
-//   - Ricontattato: aggiorna data_ultimo_contatto + log follow_up.
-//   - Prenotato su Krossbooking: inserisce il numero di
-//     prenotazione (vincolo DB) e passa a 'confermata'.
-//   - Cambia stato: dropdown con conferma per 'persa' (richiede
-//     motivo) e per 'confermata' (richiede ref Krossbooking).
+// Gli stati 'attesa' e 'scaduta' li mette solo il job quotidiano.
+// Ogni cambio di stato finisce nel log via trigger DB.
 // ============================================================
 
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import {
-  STATI, TIPOLOGIE, CANALI, SERVIZI, MOTIVI_PERDITA,
-  statoDi, tipologiaLabel, canaleLabel, serviziLabel,
-  motivoLabel, fmtData, fmtDataOra, fmtEuro, fmtDataRange,
+  TIPOLOGIE, CANALI, SERVIZI, MOTIVI_PERDITA,
+  statoDi, tipologiaLabel, serviziLabel,
+  motivoLabel, fmtData, fmtDataOra, fmtDataRange,
   etichettaContatto, urlGmailCompose, urlGmailThread, suggerisciOggetto,
   PREV_EVENTO_AGGIORNAMENTO,
 } from '../../../lib/preventivi'
@@ -29,17 +32,6 @@ import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
 import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
 import ImportoMancanteBadge from '../../../components/ImportoMancanteBadge.jsx'
 
-const SELECT_FULL = `
-  *,
-  contatto:contatti!inner(*,
-    altre:richieste_preventivo(id, tipologia, stato, data_arrivo, data_partenza, data_ricevuta, importo_preventivo)
-  ),
-  eventi:richieste_eventi(id, tipo, da_stato, a_stato, testo, created_at,
-                          utente:profiles!richieste_eventi_utente_id_fkey(nome, cognome))
-`
-
-// Riuso selezionato senza profiles join (non sappiamo quale fk esista nel DB
-// del progetto). Fallback: carichiamo gli eventi senza utenti e stampiamo l'id.
 const SELECT_SAFE = `
   *,
   contatto:contatti!inner(*,
@@ -49,26 +41,56 @@ const SELECT_SAFE = `
   messaggi:richieste_messaggi(id, direzione, from_name, from_email, subject, testo, snippet, data)
 `
 
+const CAMPI_DETTAGLIO = [
+  'tipologia', 'canale', 'data_arrivo', 'data_partenza', 'periodo_note',
+  'n_persone', 'n_accompagnatori', 'servizi', 'note',
+]
+
+const STATI_CHIUSI = ['confermata', 'persa', 'scaduta']
+
+// "Famiglia o singolo, 4 persone, 5-7 dic 2026, pernottamento e pasti"
+function riassunto(r) {
+  const parti = [tipologiaLabel(r.tipologia)]
+  if (r.n_persone) {
+    parti.push(`${r.n_persone} persone${r.n_accompagnatori ? ` + ${r.n_accompagnatori} accompagnatori` : ''}`)
+  }
+  const date = fmtDataRange(r.data_arrivo, r.data_partenza) || r.periodo_note
+  if (date) parti.push(date)
+  if (r.servizi?.length) parti.push(serviziLabel(r.servizi).toLowerCase())
+  return parti.join(', ')
+}
+
+const EVENTO_LABEL = {
+  ricontattato: 'Follow-up effettuato',
+  rigenera_bozza: 'Bozza rigenerata',
+  email_import: 'Importata da Gmail',
+  nota: 'Nota',
+  follow_up: 'Follow-up',
+}
+
 export default function SchedaRichiesta() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [r, setR] = useState(null)
   const [err, setErr] = useState('')
-  const [salva, setSalva] = useState(null)   // messaggio "salvato" transitorio
+  const [salva, setSalva] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [edits, setEdits] = useState({})     // modifiche non salvate
+  const [edits, setEdits] = useState({})
+  const [dettagliAperti, setDettagliAperti] = useState(false)
   const [bozza, setBozza] = useState('')
   const [bozzaDirty, setBozzaDirty] = useState(false)
   const [rigenerando, setRigenerando] = useState(false)
-  const [modalConferma, setModalConferma] = useState(null) // {tipo, ...}
+  const [modalConferma, setModalConferma] = useState(null) // {tipo:'persa'|'confermata', ...}
   const [syncing, setSyncing] = useState(false)
-  const [importoLocal, setImportoLocal] = useState('')   // campo accanto alle azioni
-  const [chiediImporto, setChiediImporto] = useState(false) // prompt inline prima di Gmail
+  const [conversazioneTutta, setConversazioneTutta] = useState(false)
+  const [importoLocal, setImportoLocal] = useState('')
+  const [chiediImporto, setChiediImporto] = useState(false)
+  const [pericoloAperto, setPericoloAperto] = useState(false)
 
   useEffect(() => { fetchRichiesta() }, [id])
 
-  // Realtime: quando il sync Make aggiunge messaggi a questa richiesta
-  // (o aggiorna la riga), la scheda si ricarica da sola.
+  // Realtime: quando il sync Make aggiunge messaggi o aggiorna la riga,
+  // la scheda si ricarica da sola.
   useEffect(() => {
     const channel = supabase
       .channel(`preventivo-${id}-live`)
@@ -104,7 +126,7 @@ export default function SchedaRichiesta() {
 
   function flashSalva(txt = 'Salvato') {
     setSalva(txt)
-    setTimeout(() => setSalva(null), 2200)
+    setTimeout(() => setSalva(null), 2600)
   }
 
   async function aggiorna(payload, etichetta = 'Aggiornamento') {
@@ -130,38 +152,30 @@ export default function SchedaRichiesta() {
     return true
   }
 
+  // --- dettagli: modifiche in locale, salvataggio esplicito ----------
+  // (niente salvataggio al blur: con le checkbox faceva perdere la
+  // seconda spunta mentre la prima era ancora in volo)
   function cambiaCampo(k, v) {
     setEdits(e => ({ ...e, [k]: v }))
   }
-
-  async function salvaCampo(k) {
-    if (!(k in edits)) return
-    const v = edits[k]
-    const nuovo = { ...edits }; delete nuovo[k]
-    const ok = await aggiorna({ [k]: v }, `Salvataggio ${k}`)
-    if (ok) setEdits(nuovo)
-  }
-
-  async function salvaTutti() {
-    if (Object.keys(edits).length === 0) return
-    const ok = await aggiorna(edits, 'Salvataggio')
+  const dettagliDirty = Object.keys(edits).length > 0
+  async function salvaDettagli() {
+    if (!dettagliDirty) return
+    if (edits.data_arrivo && edits.data_partenza && edits.data_partenza < edits.data_arrivo) {
+      setErr('La data di partenza non può precedere l’arrivo.')
+      return
+    }
+    const ok = await aggiorna(edits, 'Salvataggio dati')
     if (ok) setEdits({})
   }
+  function annullaDettagli() { setEdits({}) }
+  const val = (k) => (k in edits ? edits[k] : r?.[k])
 
-  // --- apri in Gmail ------------------------------------------
-  // 1) se stato = 'ricevuta', aggiorna PRIMA stato=inviato +
-  //    operatore_invio (data_invio la mette il trigger)
-  // 2) poi apre https://mail.google.com/mail/?view=cm... in nuova tab
-  // Richiesta arrivata via email: apriamo la CONVERSAZIONE originale in
-  // Gmail (non un nuovo messaggio), cosi' la risposta resta nello stesso
-  // thread del cliente, con la bozza copiata negli appunti. Richiesta
-  // manuale: compose nuovo con tutto precompilato.
-  //
+  // --- Gmail -------------------------------------------------------
   // window.open deve avvenire in modo SINCRONO dentro il click: dopo un
-  // await il browser lo considera un popup non richiesto e lo blocca.
-  // Per questo lo stato passa a 'inviato' solo DOPO, e solo se la
-  // finestra si e' davvero aperta. Se manca l'importo, al primo click
-  // mostriamo il prompt inline: sara' il click sul prompt ad aprire Gmail.
+  // await il browser lo blocca come popup. Lo stato passa a 'inviato'
+  // solo DOPO, e solo se la finestra si e' aperta. Se manca l'importo,
+  // al primo click mostriamo il prompt: sara' quel click ad aprire Gmail.
   function apriInGmail({ conImporto = null, salta = false } = {}) {
     const to = r.contatto?.email
     const corpo = bozza || r.bozza_risposta || ''
@@ -199,7 +213,6 @@ export default function SchedaRichiesta() {
       )
     }
 
-    // Finestra aperta: ora stato, importo e bozza (un solo update).
     ;(async () => {
       const payload = {}
       if (r.stato === 'ricevuta' || r.stato === 'scaduta') {
@@ -215,15 +228,82 @@ export default function SchedaRichiesta() {
   }
 
   async function salvaImporto() {
-    const val = importoLocal === '' ? null : Number(importoLocal)
-    if (val !== null && !Number.isFinite(val)) return
+    const v = importoLocal === '' ? null : Number(importoLocal)
+    if (v !== null && !Number.isFinite(v)) return
     const attuale = r.importo_preventivo === null || r.importo_preventivo === undefined ? null : Number(r.importo_preventivo)
-    if (val === attuale) return
-    await aggiorna({ importo_preventivo: val }, 'Importo')
+    if (v === attuale) return
+    await aggiorna({ importo_preventivo: v }, 'Importo')
   }
 
-  // Forza il sync della conversazione (scenario Make "Sync conversazioni");
-  // i messaggi nuovi arrivano via realtime pochi secondi dopo.
+  // --- stati manuali ---------------------------------------------
+  async function tornaARicevuta() {
+    // operatore_invio e data_invio restano come storico.
+    await aggiorna({ stato: 'ricevuta' }, 'Torna a Ricevuta')
+  }
+
+  async function ricontattato() {
+    const ora = new Date().toISOString()
+    const ok = await aggiorna({ data_ultimo_contatto: ora }, 'Ricontattato')
+    if (ok) {
+      await supabase.from('richieste_eventi').insert({
+        richiesta_id: id, tipo: 'ricontattato', testo: 'Follow-up effettuato',
+      })
+      fetchRichiesta()
+    }
+  }
+
+  async function confermaPersa() {
+    const ok = await aggiorna({
+      stato: 'persa',
+      motivo_perdita: modalConferma.motivo,
+      motivo_perdita_note: modalConferma.note?.trim() || null,
+    }, 'Persa')
+    if (ok) setModalConferma(null)
+  }
+
+  async function confermaKrossbooking() {
+    if (!modalConferma.ref?.trim()) {
+      setErr('Inserisci il numero di prenotazione Krossbooking.')
+      return
+    }
+    const ok = await aggiorna({
+      stato: 'confermata',
+      krossbooking_ref: modalConferma.ref.trim(),
+    }, 'Confermata')
+    if (ok) setModalConferma(null)
+  }
+
+  // --- bozza -------------------------------------------------------
+  async function rigeneraBozza() {
+    setRigenerando(true); setErr('')
+    const { data: s } = await supabase.auth.getSession()
+    const token = s?.session?.access_token
+    if (!token) { setRigenerando(false); setErr('Sessione scaduta.'); return }
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-rigenera-bozza`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ richiesta_id: id }),
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`)
+      setBozza(data.bozza || '')
+      setBozzaDirty(false)
+      flashSalva('Bozza rigenerata')
+      fetchRichiesta()
+    } catch (e) {
+      setErr(`Rigenera bozza: ${e.message}`)
+    } finally {
+      setRigenerando(false)
+    }
+  }
+
+  async function salvaBozza() {
+    const ok = await aggiorna({ bozza_risposta: bozza }, 'Salvataggio bozza')
+    if (ok) setBozzaDirty(false)
+  }
+
+  // --- conversazione ------------------------------------------------
   async function aggiornaConversazione() {
     setSyncing(true); setErr('')
     const { data: s } = await supabase.auth.getSession()
@@ -245,111 +325,18 @@ export default function SchedaRichiesta() {
     }
   }
 
-  async function tornaIndietroRicevuta() {
-    if (r.stato !== 'inviato' && r.stato !== 'attesa') return
-    // operatore_invio e data_invio restano a riferimento storico,
-    // non li svuotiamo: la reception vuole poter rifare "Apri in
-    // Gmail" senza perdere chi aveva mandato (ipotesi: errore umano).
-    await aggiorna({ stato: 'ricevuta' }, 'Rollback stato')
-  }
-
-  async function ricontattato() {
-    const ora = new Date().toISOString()
-    const ok = await aggiorna({ data_ultimo_contatto: ora }, 'Ricontattato')
-    if (ok) {
-      await supabase.from('richieste_eventi').insert({
-        richiesta_id: id, tipo: 'ricontattato',
-        testo: 'Follow-up effettuato',
-      })
-      fetchRichiesta()
-    }
-  }
-
-  async function rigeneraBozza() {
-    setRigenerando(true); setErr('')
-    const { data: s } = await supabase.auth.getSession()
-    const token = s?.session?.access_token
-    if (!token) { setRigenerando(false); setErr('Sessione scaduta.'); return }
-    const url =
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-rigenera-bozza`
-    try {
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ richiesta_id: id }),
-      })
-      const data = await resp.json().catch(() => ({}))
-      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`)
-      setBozza(data.bozza || '')
-      setBozzaDirty(false)
-      flashSalva('Bozza rigenerata')
-      fetchRichiesta()
-    } catch (e) {
-      setErr(`Rigenera bozza: ${e.message}`)
-    } finally {
-      setRigenerando(false)
-    }
-  }
-
-  async function salvaBozza() {
-    const ok = await aggiorna({ bozza_risposta: bozza }, 'Salvataggio bozza')
-    if (ok) setBozzaDirty(false)
-  }
-
-  // --- Eliminazione definitiva (con conferma) ------------------
+  // --- zona pericolosa ---------------------------------------------
   async function eliminaRichiesta() {
     const ok = window.confirm(
-      'Eliminare definitivamente questa richiesta?\nL\'operazione non si puo\' annullare.'
+      'Eliminare definitivamente questa richiesta?\nL’operazione non si può annullare.'
     )
     if (!ok) return
     setBusy(true); setErr('')
-    const { error } = await supabase
-      .from('richieste_preventivo')
-      .delete()
-      .eq('id', id)
+    const { error } = await supabase.from('richieste_preventivo').delete().eq('id', id)
     setBusy(false)
-    if (error) {
-      setErr(`Eliminazione: ${error.message}`)
-      return
-    }
+    if (error) { setErr(`Eliminazione: ${error.message}`); return }
     window.dispatchEvent(new Event(PREV_EVENTO_AGGIORNAMENTO))
     navigate('/admin/preventivi')
-  }
-
-  // --- cambio stato con dialog ---------------------------------
-  function proponiCambioStato(nuovoStato) {
-    if (nuovoStato === r.stato) return
-    if (nuovoStato === 'persa') {
-      setModalConferma({ tipo: 'persa', motivo: 'nessuna_risposta', note: '' })
-    } else if (nuovoStato === 'confermata') {
-      setModalConferma({ tipo: 'confermata', ref: r.krossbooking_ref || '' })
-    } else {
-      aggiorna({ stato: nuovoStato }, 'Cambio stato')
-    }
-  }
-
-  async function confermaPersa() {
-    const ok = await aggiorna({
-      stato: 'persa',
-      motivo_perdita: modalConferma.motivo,
-      motivo_perdita_note: modalConferma.note || null,
-    }, 'Persa')
-    if (ok) setModalConferma(null)
-  }
-
-  async function confermaKrossbooking() {
-    if (!modalConferma.ref.trim()) {
-      setErr('Inserisci il numero di prenotazione Krossbooking.')
-      return
-    }
-    const ok = await aggiorna({
-      stato: 'confermata',
-      krossbooking_ref: modalConferma.ref.trim(),
-    }, 'Krossbooking')
-    if (ok) setModalConferma(null)
   }
 
   const altreRichieste = useMemo(() => {
@@ -357,6 +344,10 @@ export default function SchedaRichiesta() {
     return r.contatto.altre
       .filter(a => a.id !== r.id)
       .sort((a, b) => (b.data_ricevuta || '').localeCompare(a.data_ricevuta || ''))
+  }, [r])
+
+  const messaggiOrdinati = useMemo(() => {
+    return [...(r?.messaggi || [])].sort((a, b) => (a.data || '').localeCompare(b.data || ''))
   }, [r])
 
   if (err && !r) return (
@@ -370,208 +361,46 @@ export default function SchedaRichiesta() {
   if (!r) return <div style={{ padding: 20, color: '#6B6B6B' }}>Caricamento…</div>
 
   const c = r.contatto || {}
-  const st = statoDi(r.stato)
-  const dirty = Object.keys(edits).length > 0
+  const haThread = !!(r.email_origine_thread_id || r.email_origine_id)
+  const chiusa = STATI_CHIUSI.includes(r.stato)
+  const nascosti = conversazioneTutta ? [] : messaggiOrdinati.slice(0, Math.max(0, messaggiOrdinati.length - 2))
+  const visibili = conversazioneTutta ? messaggiOrdinati : messaggiOrdinati.slice(-2)
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ marginBottom: 16 }}>
+      {/* a) Intestazione */}
+      <div style={{ marginBottom: 14 }}>
         <Link to="/admin/preventivi" style={{ fontSize: 13, color: '#6B6B6B', textDecoration: 'none' }}>
           ← Preventivi
         </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginTop: 6 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>
-            {etichettaContatto(c)}
-          </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{etichettaContatto(c)}</h2>
           <PreventivoStatoBadge stato={r.stato} />
           <PreventivoFaseChip richiesta={r} />
+          <ImportoMancanteBadge richiesta={r} />
         </div>
+        <div style={{ fontSize: 14.5, color: '#333', marginTop: 6 }}>{riassunto(r)}</div>
         <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
           Ricevuta il {fmtDataOra(r.data_ricevuta)}
           {r.data_invio ? ` · inviata il ${fmtDataOra(r.data_invio)}` : ''}
           {r.data_chiusura ? ` · chiusa il ${fmtDataOra(r.data_chiusura)}` : ''}
+          {r.stato === 'confermata' && r.krossbooking_ref ? ` · Krossbooking ${r.krossbooking_ref}` : ''}
+          {r.stato === 'persa' && r.motivo_perdita
+            ? ` · motivo: ${motivoLabel(r.motivo_perdita)}${r.motivo_perdita_note ? ` (${r.motivo_perdita_note})` : ''}`
+            : ''}
         </div>
       </div>
 
       {err && <div style={styles.errorBar}>{err}</div>}
       {salva && <div style={styles.okBar}>{salva}</div>}
 
-      {/* Importo: accanto alle azioni, non sepolto nel form dati */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-        <label style={{ fontSize: 12.5, color: '#6B6B6B' }}>Importo preventivo (€)</label>
-        <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="es. 1250"
-               value={importoLocal}
-               onChange={e => setImportoLocal(e.target.value)}
-               onBlur={salvaImporto}
-               style={{ ...styles.input, width: 140 }} />
-        <ImportoMancanteBadge richiesta={r} />
-      </div>
-
-      {chiediImporto && (
-        <div style={styles.promptBox}>
-          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Quanto hai preventivato? (€)</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input type="number" min="0" step="0.01" inputMode="decimal" autoFocus
-                   value={importoLocal}
-                   onChange={e => setImportoLocal(e.target.value)}
-                   onKeyDown={e => { if (e.key === 'Enter') apriInGmail({ conImporto: importoLocal }) }}
-                   style={{ ...styles.input, width: 140 }} />
-            <button className="btn-primary" onClick={() => apriInGmail({ conImporto: importoLocal })}>
-              Salva e apri Gmail
-            </button>
-            <button className="btn-ghost" onClick={() => apriInGmail({ salta: true })}>
-              Apri senza importo
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Azioni rapide */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-        <button className="btn-primary" onClick={() => apriInGmail()}
-                disabled={busy || (!c.email && !r.email_origine_thread_id && !r.email_origine_id)}>
-          {(r.email_origine_thread_id || r.email_origine_id) ? '✉ Rispondi in Gmail' : '✉ Apri in Gmail'}
-        </button>
-        <button className="btn-ghost" onClick={ricontattato} disabled={busy}>
-          Ricontattato
-        </button>
-        <button className="btn-ghost"
-                onClick={() => setModalConferma({ tipo: 'confermata', ref: r.krossbooking_ref || '' })}
-                disabled={busy}>
-          Prenotato su Krossbooking
-        </button>
-        {(r.stato === 'inviato' || r.stato === 'attesa') && (
-          <button className="btn-ghost" onClick={tornaIndietroRicevuta} disabled={busy}>
-            ← Torna a “Ricevuta”
-          </button>
-        )}
-      </div>
-      <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: 20 }}>
-        {(r.email_origine_thread_id || r.email_origine_id)
-          ? 'Si apre la conversazione in Gmail con la bozza copiata negli appunti. Premi Rispondi, incolla, inserisci i prezzi e invia.'
-          : 'Si apre Gmail con destinatario, oggetto e bozza già pronti. Controlla, inserisci i prezzi e invia.'}
-      </div>
-
-      {/* Dati richiesta */}
-      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <h3 style={styles.sezione}>Richiesta</h3>
-        <div style={styles.grid2}>
-          <Campo label="Tipologia">
-            <select value={edits.tipologia ?? r.tipologia}
-                    onChange={e => cambiaCampo('tipologia', e.target.value)}
-                    onBlur={() => salvaCampo('tipologia')}
-                    style={styles.input}>
-              {TIPOLOGIE.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-            </select>
-          </Campo>
-          <Campo label="Canale">
-            <select value={edits.canale ?? r.canale}
-                    onChange={e => cambiaCampo('canale', e.target.value)}
-                    onBlur={() => salvaCampo('canale')}
-                    style={styles.input}>
-              {CANALI.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
-            </select>
-          </Campo>
-          <Campo label="Data arrivo">
-            <input type="date" value={edits.data_arrivo ?? r.data_arrivo ?? ''}
-                   onChange={e => cambiaCampo('data_arrivo', e.target.value || null)}
-                   onBlur={() => salvaCampo('data_arrivo')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="Data partenza">
-            <input type="date" value={edits.data_partenza ?? r.data_partenza ?? ''}
-                   onChange={e => cambiaCampo('data_partenza', e.target.value || null)}
-                   onBlur={() => salvaCampo('data_partenza')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="Periodo (se date non precise)" full>
-            <input type="text" placeholder="es. ultimo weekend di aprile"
-                   value={edits.periodo_note ?? r.periodo_note ?? ''}
-                   onChange={e => cambiaCampo('periodo_note', e.target.value || null)}
-                   onBlur={() => salvaCampo('periodo_note')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="N. persone">
-            <input type="number" min="0"
-                   value={edits.n_persone ?? r.n_persone ?? ''}
-                   onChange={e => cambiaCampo('n_persone', e.target.value === '' ? null : Number(e.target.value))}
-                   onBlur={() => salvaCampo('n_persone')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="N. accompagnatori">
-            <input type="number" min="0"
-                   value={edits.n_accompagnatori ?? r.n_accompagnatori ?? ''}
-                   onChange={e => cambiaCampo('n_accompagnatori', e.target.value === '' ? null : Number(e.target.value))}
-                   onBlur={() => salvaCampo('n_accompagnatori')}
-                   style={styles.input} />
-          </Campo>
-          <Campo label="Servizi richiesti" full>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-              {SERVIZI.map(s => {
-                const corr = edits.servizi ?? r.servizi ?? []
-                const attivo = corr.includes(s.key)
-                return (
-                  <label key={s.key} style={{ fontSize: 13 }}>
-                    <input type="checkbox" checked={attivo}
-                           onChange={() => {
-                             const next = attivo ? corr.filter(x => x !== s.key) : [...corr, s.key]
-                             cambiaCampo('servizi', next)
-                           }}
-                           onBlur={() => salvaCampo('servizi')} />{' '}
-                    {s.label}
-                  </label>
-                )
-              })}
-            </div>
-          </Campo>
-          <Campo label="Note interne" full>
-            <textarea rows={3}
-                      value={edits.note ?? r.note ?? ''}
-                      onChange={e => cambiaCampo('note', e.target.value || null)}
-                      onBlur={() => salvaCampo('note')}
-                      style={{ ...styles.input, resize: 'vertical' }} />
-          </Campo>
-        </div>
-
-        {dirty && (
-          <div style={{ marginTop: 10 }}>
-            <button className="btn-primary" onClick={salvaTutti} disabled={busy}>Salva modifiche</button>
-          </div>
-        )}
-      </section>
-
-      {/* Bozza di risposta */}
-      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <h3 style={{ ...styles.sezione, margin: 0 }}>Bozza di risposta</h3>
-          <button className="btn-ghost" onClick={rigeneraBozza} disabled={rigenerando}
-                  style={{ marginLeft: 'auto' }}>
-            {rigenerando ? 'Rigenerazione…' : '↻ Rigenera bozza'}
-          </button>
-        </div>
-        <textarea rows={10} value={bozza}
-                  onChange={e => { setBozza(e.target.value); setBozzaDirty(true) }}
-                  placeholder="La bozza viene generata automaticamente dalle email importate. Puoi scriverla a mano qui."
-                  style={{ ...styles.input, resize: 'vertical', fontFamily: 'inherit' }} />
-        {bozzaDirty && (
-          <div style={{ marginTop: 8 }}>
-            <button className="btn-primary" onClick={salvaBozza} disabled={busy}>Salva bozza</button>
-            <button className="btn-ghost" onClick={() => { setBozza(r.bozza_risposta || ''); setBozzaDirty(false) }}
-                    style={{ marginLeft: 6 }}>
-              Annulla
-            </button>
-          </div>
-        )}
-      </section>
-
-      {/* Conversazione (messaggi del thread Gmail, in e out) */}
-      {(r.email_origine_thread_id || (r.messaggi || []).length > 0) && (
+      {/* b) Conversazione email */}
+      {(haThread || messaggiOrdinati.length > 0) && (
         <section className="card" style={{ padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
             <h3 style={{ ...styles.sezione, margin: 0 }}>
               Conversazione
-              {(r.messaggi || []).length > 0 && (
+              {messaggiOrdinati.length > 0 && (
                 <span style={{ fontSize: 12, color: '#6B6B6B', fontWeight: 400, marginLeft: 8 }}>
                   {r.n_msg_in || 0} dal cliente · {r.n_msg_out || 0} nostre
                 </span>
@@ -582,27 +411,199 @@ export default function SchedaRichiesta() {
               {syncing ? 'Sincronizzo…' : '↻ Aggiorna conversazione'}
             </button>
           </div>
-          {(r.messaggi || []).length === 0 ? (
-            <div style={{ fontSize: 13, color: '#6B6B6B' }}>
-              Nessun messaggio sincronizzato ancora: premi “Aggiorna conversazione”
-              oppure aspetta il giro automatico delle 06:15.
+          {messaggiOrdinati.length === 0 ? (
+            r.email_origine_testo
+              ? <pre style={styles.pre}>{r.email_origine_testo}</pre>
+              : <div style={{ fontSize: 13, color: '#6B6B6B' }}>
+                  Nessun messaggio ancora: premi “Aggiorna conversazione” o aspetta il giro delle 06:15.
+                </div>
+          ) : (
+            <>
+              {nascosti.length > 0 && (
+                <button onClick={() => setConversazioneTutta(true)}
+                        style={styles.linkBtn}>
+                  Mostra {nascosti.length === 1 ? 'il messaggio precedente' : `i ${nascosti.length} messaggi precedenti`}
+                </button>
+              )}
+              {visibili.map(m => <Messaggio key={m.id} m={m} />)}
+              {conversazioneTutta && messaggiOrdinati.length > 2 && (
+                <button onClick={() => setConversazioneTutta(false)} style={styles.linkBtn}>
+                  Mostra solo gli ultimi
+                </button>
+              )}
+            </>
+          )}
+        </section>
+      )}
+
+      {/* c) Bozza di risposta */}
+      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <h3 style={{ ...styles.sezione, margin: 0 }}>Bozza di risposta</h3>
+          <button className="btn-ghost" onClick={rigeneraBozza} disabled={rigenerando}
+                  style={{ marginLeft: 'auto' }}>
+            {rigenerando ? 'Rigenerazione…' : '↻ Rigenera bozza'}
+          </button>
+        </div>
+        <textarea rows={10} value={bozza}
+                  onChange={e => { setBozza(e.target.value); setBozzaDirty(true) }}
+                  placeholder="Nessuna bozza ancora. Clicca Rigenera bozza per prepararla dai dati della richiesta, oppure scrivila qui."
+                  style={{ ...styles.input, resize: 'vertical', fontFamily: 'inherit' }} />
+        {bozzaDirty && (
+          <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
+            <button className="btn-primary" onClick={salvaBozza} disabled={busy}>Salva bozza</button>
+            <button className="btn-ghost" onClick={() => { setBozza(r.bozza_risposta || ''); setBozzaDirty(false) }}>
+              Annulla
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* d) Importo + azioni */}
+      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+          <label style={{ fontSize: 12.5, color: '#6B6B6B' }}>Importo preventivo (€)</label>
+          <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="es. 1250"
+                 value={importoLocal}
+                 onChange={e => setImportoLocal(e.target.value)}
+                 onBlur={salvaImporto}
+                 style={{ ...styles.input, width: 140 }} />
+        </div>
+
+        {chiediImporto && (
+          <div style={styles.promptBox}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Quanto hai preventivato? (€)</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="number" min="0" step="0.01" inputMode="decimal" autoFocus
+                     value={importoLocal}
+                     onChange={e => setImportoLocal(e.target.value)}
+                     onKeyDown={e => { if (e.key === 'Enter') apriInGmail({ conImporto: importoLocal }) }}
+                     style={{ ...styles.input, width: 140 }} />
+              <button className="btn-primary" onClick={() => apriInGmail({ conImporto: importoLocal })}>
+                Salva e apri Gmail
+              </button>
+              <button className="btn-ghost" onClick={() => apriInGmail({ salta: true })}>
+                Apri senza importo
+              </button>
             </div>
-          ) : [...r.messaggi]
-              .sort((a, b) => (a.data || '').localeCompare(b.data || ''))
-              .map(m => <Messaggio key={m.id} m={m} />)
-          }
-        </section>
-      )}
+          </div>
+        )}
 
-      {/* Email origine: solo quando non abbiamo ancora la conversazione */}
-      {r.email_origine_testo && (r.messaggi || []).length === 0 && (
-        <section className="card" style={{ padding: 16, marginBottom: 16 }}>
-          <h3 style={styles.sezione}>Email originale</h3>
-          <pre style={styles.pre}>{r.email_origine_testo}</pre>
-        </section>
-      )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+          <button className="btn-primary" onClick={() => apriInGmail()}
+                  disabled={busy || (!c.email && !haThread)}>
+            {haThread ? '✉ Rispondi in Gmail' : '✉ Apri in Gmail'}
+          </button>
+          <button className="btn-ghost" onClick={ricontattato} disabled={busy}>
+            Ricontattato
+          </button>
+          {r.stato !== 'confermata' && (
+            <button className="btn-ghost"
+                    onClick={() => setModalConferma({ tipo: 'confermata', ref: r.krossbooking_ref || '' })}
+                    disabled={busy}>
+              ✓ Confermata
+            </button>
+          )}
+          {r.stato !== 'persa' && (
+            <button className="btn-ghost"
+                    onClick={() => setModalConferma({ tipo: 'persa', motivo: 'nessuna_risposta', note: '' })}
+                    disabled={busy}>
+              Persa
+            </button>
+          )}
+          {(r.stato === 'inviato' || r.stato === 'attesa') && (
+            <button className="btn-ghost" onClick={tornaARicevuta} disabled={busy}>
+              ← Torna a Ricevuta
+            </button>
+          )}
+        </div>
+        <div style={{ fontSize: 12, color: '#6B6B6B' }}>
+          {haThread
+            ? 'Si apre la conversazione in Gmail con la bozza copiata negli appunti. Premi Rispondi, incolla, inserisci i prezzi e invia.'
+            : 'Si apre Gmail con destinatario, oggetto e bozza già pronti. Controlla, inserisci i prezzi e invia.'}
+        </div>
+      </section>
 
-      {/* Contatto */}
+      {/* e) Dettagli modificabili (pannello chiuso) */}
+      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <button onClick={() => setDettagliAperti(a => !a)} style={styles.toggleRow}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#111' }}>Modifica dati richiesta</span>
+          <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>
+            {dettagliAperti ? 'chiudi ▴' : 'apri ▾'}
+          </span>
+        </button>
+
+        {dettagliAperti && (
+          <div style={{ marginTop: 12 }}>
+            <div style={styles.grid2}>
+              <Campo label="Tipologia">
+                <select value={val('tipologia')} onChange={e => cambiaCampo('tipologia', e.target.value)} style={styles.input}>
+                  {TIPOLOGIE.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </Campo>
+              <Campo label="Canale">
+                <select value={val('canale')} onChange={e => cambiaCampo('canale', e.target.value)} style={styles.input}>
+                  {CANALI.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </select>
+              </Campo>
+              <Campo label="Data arrivo">
+                <input type="date" value={val('data_arrivo') ?? ''}
+                       onChange={e => cambiaCampo('data_arrivo', e.target.value || null)} style={styles.input} />
+              </Campo>
+              <Campo label="Data partenza">
+                <input type="date" value={val('data_partenza') ?? ''}
+                       onChange={e => cambiaCampo('data_partenza', e.target.value || null)} style={styles.input} />
+              </Campo>
+              <Campo label="Periodo (se date non precise)" full>
+                <input type="text" placeholder="es. ultimo weekend di aprile"
+                       value={val('periodo_note') ?? ''}
+                       onChange={e => cambiaCampo('periodo_note', e.target.value || null)} style={styles.input} />
+              </Campo>
+              <Campo label="N. persone">
+                <input type="number" min="0" value={val('n_persone') ?? ''}
+                       onChange={e => cambiaCampo('n_persone', e.target.value === '' ? null : Number(e.target.value))}
+                       style={styles.input} />
+              </Campo>
+              <Campo label="N. accompagnatori">
+                <input type="number" min="0" value={val('n_accompagnatori') ?? ''}
+                       onChange={e => cambiaCampo('n_accompagnatori', e.target.value === '' ? null : Number(e.target.value))}
+                       style={styles.input} />
+              </Campo>
+              <Campo label="Servizi richiesti" full>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  {SERVIZI.map(s => {
+                    const corr = val('servizi') || []
+                    const attivo = corr.includes(s.key)
+                    return (
+                      <label key={s.key} style={{ fontSize: 13 }}>
+                        <input type="checkbox" checked={attivo}
+                               onChange={() => cambiaCampo('servizi',
+                                 attivo ? corr.filter(x => x !== s.key) : [...corr, s.key])} />{' '}
+                        {s.label}
+                      </label>
+                    )
+                  })}
+                </div>
+              </Campo>
+              <Campo label="Note interne" full>
+                <textarea rows={3} value={val('note') ?? ''}
+                          onChange={e => cambiaCampo('note', e.target.value || null)}
+                          style={{ ...styles.input, resize: 'vertical' }} />
+              </Campo>
+            </div>
+            <div style={{ marginTop: 12, display: 'flex', gap: 6 }}>
+              <button className="btn-primary" onClick={salvaDettagli} disabled={busy || !dettagliDirty}>
+                Salva modifiche
+              </button>
+              {dettagliDirty && (
+                <button className="btn-ghost" onClick={annullaDettagli}>Annulla</button>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* f) Contatto */}
       <section className="card" style={{ padding: 16, marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 10 }}>
           <h3 style={{ ...styles.sezione, margin: 0 }}>Contatto</h3>
@@ -615,9 +616,7 @@ export default function SchedaRichiesta() {
           <Dato label="Nome">{[c.nome, c.cognome].filter(Boolean).join(' ') || '—'}</Dato>
           <Dato label="Società/ente">{c.societa_ente || '—'}</Dato>
           <Dato label="Email">
-            {c.email
-              ? <a href={`mailto:${c.email}`} style={{ color: '#185FA5' }}>{c.email}</a>
-              : '—'}
+            {c.email ? <a href={`mailto:${c.email}`} style={{ color: '#185FA5' }}>{c.email}</a> : '—'}
           </Dato>
           <Dato label="Telefono">
             {c.telefono
@@ -653,51 +652,7 @@ export default function SchedaRichiesta() {
         )}
       </section>
 
-      {/* Cambio stato */}
-      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <h3 style={styles.sezione}>Cambio stato</h3>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {STATI.map(s => (
-            <button key={s.key}
-                    disabled={busy || r.stato === s.key}
-                    onClick={() => proponiCambioStato(s.key)}
-                    style={{
-                      ...styles.statoBtn,
-                      ...(r.stato === s.key
-                        ? { background: s.bg, color: s.fg, borderColor: s.fg, cursor: 'default', opacity: 1 }
-                        : { background: '#fff', color: '#333', borderColor: '#ccc' }),
-                    }}>
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        {r.stato === 'persa' && r.motivo_perdita && (
-          <div style={{ marginTop: 10, fontSize: 13 }}>
-            <b>Motivo:</b> {motivoLabel(r.motivo_perdita)}
-            {r.motivo_perdita_note ? ` — ${r.motivo_perdita_note}` : ''}
-          </div>
-        )}
-        {r.stato === 'confermata' && r.krossbooking_ref && (
-          <div style={{ marginTop: 10, fontSize: 13 }}>
-            <b>Krossbooking:</b> {r.krossbooking_ref}
-          </div>
-        )}
-      </section>
-
-      {/* Elimina */}
-      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <h3 style={styles.sezione}>Zona pericolosa</h3>
-        <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 8 }}>
-          Elimina definitivamente la richiesta (e il suo log). Il contatto
-          resta in rubrica. Non si puo' annullare.
-        </div>
-        <button className="btn-danger" onClick={eliminaRichiesta} disabled={busy}>
-          Elimina preventivo
-        </button>
-      </section>
-
-      {/* Log eventi */}
+      {/* g) Log */}
       <section className="card" style={{ padding: 16, marginBottom: 16 }}>
         <h3 style={styles.sezione}>Log</h3>
         {(r.eventi || []).length === 0 && (
@@ -707,37 +662,58 @@ export default function SchedaRichiesta() {
           .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
           .map(ev => (
           <div key={ev.id} style={styles.rigaCompatta}>
-            <span style={{ fontSize: 12, color: '#6B6B6B', minWidth: 110 }}>
-              {fmtDataOra(ev.created_at)}
-            </span>
+            <span style={{ fontSize: 12, color: '#6B6B6B', minWidth: 110 }}>{fmtDataOra(ev.created_at)}</span>
             <span style={{ fontSize: 12.5 }}>
               {ev.tipo === 'cambio_stato'
                 ? `${statoDi(ev.da_stato).label} → ${statoDi(ev.a_stato).label}`
-                : ev.tipo === 'ricontattato'
-                ? 'Follow-up effettuato'
-                : ev.tipo === 'rigenera_bozza'
-                ? 'Bozza rigenerata'
-                : ev.tipo === 'email_import'
-                ? 'Importata da Gmail'
-                : ev.tipo}
+                : (EVENTO_LABEL[ev.tipo] || ev.tipo)}
             </span>
-            {ev.testo && (
+            {ev.testo && ev.tipo !== 'ricontattato' && ev.tipo !== 'rigenera_bozza' && (
               <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>{ev.testo}</span>
             )}
           </div>
         ))}
       </section>
 
+      {/* h) Zona pericolosa (chiusa) */}
+      <section className="card" style={{ padding: 16, marginBottom: 16, borderColor: '#F09595' }}>
+        <button onClick={() => setPericoloAperto(a => !a)} style={styles.toggleRow}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: '#C5221F' }}>Zona pericolosa</span>
+          <span style={{ fontSize: 12, color: '#6B6B6B', marginLeft: 'auto' }}>
+            {pericoloAperto ? 'chiudi ▴' : 'apri ▾'}
+          </span>
+        </button>
+        {pericoloAperto && (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {chiusa && (
+              <div>
+                <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 6 }}>
+                  Richiesta chiusa come “{statoDi(r.stato).label}”. Se è stato un errore, riaprila: torna a Ricevuta.
+                </div>
+                <button className="btn-ghost" onClick={tornaARicevuta} disabled={busy}>Riapri richiesta</button>
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 6 }}>
+                Elimina definitivamente la richiesta (e il suo log). Il contatto resta in rubrica. Non si può annullare.
+              </div>
+              <button className="btn-danger" onClick={eliminaRichiesta} disabled={busy}>Elimina preventivo</button>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Modal: persa */}
       {modalConferma?.tipo === 'persa' && (
         <ModalConferma onClose={() => setModalConferma(null)}>
-          <h3 style={styles.sezione}>Perché è stata persa?</h3>
+          <h3 style={styles.sezione}>Segna come persa</h3>
+          <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 8 }}>Il motivo è obbligatorio.</div>
           <select value={modalConferma.motivo}
                   onChange={e => setModalConferma(m => ({ ...m, motivo: e.target.value }))}
                   style={{ ...styles.input, marginBottom: 10 }}>
             {MOTIVI_PERDITA.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
           </select>
-          <textarea rows={3} placeholder="Note facoltative"
+          <textarea rows={3} placeholder="Nota facoltativa"
                     value={modalConferma.note}
                     onChange={e => setModalConferma(m => ({ ...m, note: e.target.value }))}
                     style={{ ...styles.input, resize: 'vertical', marginBottom: 10 }} />
@@ -748,21 +724,20 @@ export default function SchedaRichiesta() {
         </ModalConferma>
       )}
 
-      {/* Modal: krossbooking / confermata */}
+      {/* Modal: confermata (numero Krossbooking) */}
       {modalConferma?.tipo === 'confermata' && (
         <ModalConferma onClose={() => setModalConferma(null)}>
-          <h3 style={styles.sezione}>Numero prenotazione Krossbooking</h3>
-          <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 10 }}>
-            Nessuna integrazione automatica: inserisci il riferimento a mano.
+          <h3 style={styles.sezione}>Segna come confermata</h3>
+          <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 8 }}>
+            Inserisci il numero della prenotazione fatta su Krossbooking (nessun collegamento automatico).
           </div>
-          <input type="text" placeholder="es. 123456"
+          <input type="text" placeholder="es. 123456" autoFocus
                  value={modalConferma.ref}
                  onChange={e => setModalConferma(m => ({ ...m, ref: e.target.value }))}
+                 onKeyDown={e => { if (e.key === 'Enter') confermaKrossbooking() }}
                  style={{ ...styles.input, marginBottom: 10 }} />
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-primary" onClick={confermaKrossbooking} disabled={busy}>
-              Conferma
-            </button>
+            <button className="btn-primary" onClick={confermaKrossbooking} disabled={busy}>Conferma</button>
             <button className="btn-ghost" onClick={() => setModalConferma(null)}>Annulla</button>
           </div>
         </ModalConferma>
@@ -799,9 +774,7 @@ function Messaggio({ m }) {
   const lungo = testo.length > 600
   const mostrato = tutto || !lungo ? testo : testo.slice(0, 600) + '…'
   return (
-    <div style={{
-      display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start', marginBottom: 8,
-    }}>
+    <div style={{ display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
       <div style={{
         maxWidth: '88%', padding: '10px 12px', borderRadius: 10,
         background: out ? '#FFF8E1' : '#F6F5F1',
@@ -814,8 +787,7 @@ function Messaggio({ m }) {
         </div>
         <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{mostrato}</div>
         {lungo && (
-          <button onClick={() => setTutto(t => !t)}
-                  style={{ background: 'none', border: 'none', color: '#185FA5', fontSize: 12, padding: 0, marginTop: 4, cursor: 'pointer' }}>
+          <button onClick={() => setTutto(t => !t)} style={styles.linkBtn}>
             {tutto ? 'mostra meno' : 'mostra tutto'}
           </button>
         )}
@@ -845,9 +817,13 @@ const styles = {
     border: '0.5px solid #ccc', borderRadius: 7, background: '#fff',
     boxSizing: 'border-box',
   },
-  statoBtn: {
-    padding: '6px 12px', borderRadius: 7, fontSize: 12.5,
-    border: '0.5px solid', cursor: 'pointer', fontWeight: 500,
+  toggleRow: {
+    display: 'flex', alignItems: 'center', width: '100%',
+    background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left',
+  },
+  linkBtn: {
+    background: 'none', border: 'none', color: '#185FA5', fontSize: 12,
+    padding: 0, marginTop: 4, marginBottom: 6, cursor: 'pointer',
   },
   rigaCompatta: {
     display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap',
@@ -857,6 +833,10 @@ const styles = {
     fontSize: 12, background: '#F6F5F1', padding: 10, borderRadius: 6,
     whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: 8,
   },
+  promptBox: {
+    padding: 12, marginBottom: 12,
+    background: '#FFF8E1', border: '0.5px solid #F5B301', borderRadius: 7,
+  },
   errorBar: {
     background: '#FCEBEB', color: '#C5221F', padding: '8px 12px',
     borderRadius: 6, fontSize: 13, marginBottom: 10,
@@ -864,10 +844,6 @@ const styles = {
   okBar: {
     background: '#E6F6EF', color: '#1E8E3E', padding: '6px 12px',
     borderRadius: 6, fontSize: 13, marginBottom: 10, display: 'inline-block',
-  },
-  promptBox: {
-    padding: 12, marginBottom: 12,
-    background: '#FFF8E1', border: '0.5px solid #F5B301', borderRadius: 7,
   },
   modalBg: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
