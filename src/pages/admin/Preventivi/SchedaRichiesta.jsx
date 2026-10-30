@@ -204,6 +204,26 @@ export default function SchedaRichiesta() {
     if (ok) setBozzaDirty(false)
   }
 
+  // --- Eliminazione definitiva (con conferma) ------------------
+  async function eliminaRichiesta() {
+    const ok = window.confirm(
+      'Eliminare definitivamente questa richiesta?\nL\'operazione non si puo\' annullare.'
+    )
+    if (!ok) return
+    setBusy(true); setErr('')
+    const { error } = await supabase
+      .from('richieste_preventivo')
+      .delete()
+      .eq('id', id)
+    setBusy(false)
+    if (error) {
+      setErr(`Eliminazione: ${error.message}`)
+      return
+    }
+    window.dispatchEvent(new Event(PREV_EVENTO_AGGIORNAMENTO))
+    navigate('/admin/preventivi')
+  }
+
   // --- cambio stato con dialog ---------------------------------
   function proponiCambioStato(nuovoStato) {
     if (nuovoStato === r.stato) return
@@ -515,6 +535,18 @@ export default function SchedaRichiesta() {
             <b>Krossbooking:</b> {r.krossbooking_ref}
           </div>
         )}
+      </section>
+
+      {/* Elimina */}
+      <section className="card" style={{ padding: 16, marginBottom: 16 }}>
+        <h3 style={styles.sezione}>Zona pericolosa</h3>
+        <div style={{ fontSize: 12.5, color: '#6B6B6B', marginBottom: 8 }}>
+          Elimina definitivamente la richiesta (e il suo log). Il contatto
+          resta in rubrica. Non si puo' annullare.
+        </div>
+        <button className="btn-danger" onClick={eliminaRichiesta} disabled={busy}>
+          Elimina preventivo
+        </button>
       </section>
 
       {/* Log eventi */}

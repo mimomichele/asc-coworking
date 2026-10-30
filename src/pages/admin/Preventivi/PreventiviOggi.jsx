@@ -49,6 +49,19 @@ export default function PreventiviOggi() {
 
   useEffect(() => { fetchAll() }, [])
 
+  // Realtime: appena una riga viene INSERT o UPDATE in richieste_preventivo,
+  // rifetch della lista. Niente polling, niente "quando aggiorno?":
+  // la pagina si aggiorna da sola mentre Make/edge function importa.
+  useEffect(() => {
+    const channel = supabase
+      .channel('preventivi-oggi-live')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'richieste_preventivo' },
+        () => { fetchAll() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
   async function fetchAll() {
     setErr('')
     const oggi = oggiRoma()
@@ -134,9 +147,10 @@ export default function PreventiviOggi() {
       })
       const payload = await resp.json().catch(() => ({}))
       if (!resp.ok) throw new Error(payload?.error || `HTTP ${resp.status}`)
-      setImportMsg('Richiesta inviata a Make. Le nuove email arriveranno fra pochi secondi.')
-      // Refresh dopo 15 secondi: Make+edge function tipicamente in <10s.
-      setTimeout(() => { fetchAll(); setImportMsg('') }, 15000)
+      setImportMsg('Richiesta inviata a Make. Le nuove email appariranno fra pochi secondi (anche automaticamente).')
+      // La subscription realtime aggiornera' la lista non appena arrivano
+      // le righe. Dopo 60 sec puliamo il messaggio di avviso.
+      setTimeout(() => { setImportMsg('') }, 60000)
     } catch (e) {
       setErr(`Importa ora: ${e.message}`)
     } finally {
