@@ -10,7 +10,7 @@
 // Richiede autenticazione admin.
 //
 // Secret: ANTHROPIC_API_KEY
-// verify_jwt = true  (chiamato da utente loggato)
+// verify_jwt = true (chiamato da utente loggato)
 // ============================================================
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
@@ -26,15 +26,21 @@ const MODEL_BOZZA = Deno.env.get('AI_MODEL_BOZZA') ?? 'claude-sonnet-5-5'
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
-function systemBozza(template: {
-  oggetto_template: string
-  corpo_template: string
-}): string {
+// Estrae il primo blocco di tipo text dalla content[] di Anthropic
+// (i modelli recenti antepongono blocchi 'thinking' con signature).
+function extractText(data: any): string | null {
+  const content = Array.isArray(data?.content) ? data.content : []
+  for (const b of content) {
+    if (b && b.type === 'text' && typeof b.text === 'string') return b.text
+  }
+  return null
+}
+
+function systemBozza(template: { oggetto_template: string; corpo_template: string }): string {
   return `Sei la reception di ASC Hotel. Scrivi la BOZZA della risposta al cliente usando il template fornito, personalizzando saluto, riferimento alle date/al gruppo/ai servizi richiesti e tono.
 
 REGOLE RIGIDE:
@@ -51,9 +57,7 @@ Corpo:
 ${template.corpo_template}`
 }
 
-async function callAnthropic(
-  apiKey: string, model: string, system: string, user: string,
-): Promise<string> {
+async function callAnthropic(apiKey: string, model: string, system: string, user: string): Promise<string> {
   const resp = await fetch(ANTHROPIC_API, {
     method: 'POST',
     headers: {
@@ -62,17 +66,15 @@ async function callAnthropic(
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model, max_tokens: 1500, system,
+      model, max_tokens: 2500, system,
       messages: [{ role: 'user', content: user }],
     }),
   })
-  if (!resp.ok) {
-    const t = await resp.text()
-    throw new Error(`Anthropic ${resp.status}: ${t.slice(0, 400)}`)
-  }
-  const data = await resp.json()
-  const txt = data?.content?.[0]?.text
-  if (typeof txt !== 'string') throw new Error('risposta Anthropic vuota')
+  const raw = await resp.text()
+  if (!resp.ok) throw new Error(`Anthropic HTTP ${resp.status}: ${raw.slice(0, 400)}`)
+  const data = (() => { try { return JSON.parse(raw) } catch { return null } })()
+  const txt = extractText(data)
+  if (!txt) throw new Error(`Anthropic risposta senza text block: ${raw.slice(0, 400)}`)
   return txt
 }
 
@@ -85,11 +87,8 @@ Deno.serve(async (req: Request) => {
   const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
   const ANTHROPIC_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
 
-  if (!ANTHROPIC_KEY) {
-    return json({ error: 'ANTHROPIC_API_KEY non configurata' }, 500)
-  }
+  if (!ANTHROPIC_KEY) return json({ error: 'ANTHROPIC_API_KEY non configurata' }, 500)
 
-  // --- auth: solo admin ----------------------------------------
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return json({ error: 'auth mancante' }, 401)
 
@@ -103,18 +102,14 @@ Deno.serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data: profile } = await admin
-    .from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return json({ error: 'solo admin' }, 403)
 
-  // --- body ----------------------------------------------------
-  const body = await req.json().catch(() => null) as
-    { richiesta_id?: string } | null
+  const body = await req.json().catch(() => null) as { richiesta_id?: string } | null
   const rid = body?.richiesta_id
   if (!rid) return json({ error: 'richiesta_id obbligatorio' }, 400)
 
-  const { data: r } = await admin
-    .from('richieste_preventivo')
+  const { data: r } = await admin.from('richieste_preventivo')
     .select(`id, tipologia, data_arrivo, data_partenza, periodo_note,
              n_persone, n_accompagnatori, servizi, note,
              email_origine_testo,
@@ -122,52 +117,36 @@ Deno.serve(async (req: Request) => {
     .eq('id', rid).maybeSingle()
   if (!r) return json({ error: 'richiesta non trovata' }, 404)
 
-  const { data: template } = await admin
-    .from('template_risposta')
-    .select('oggetto_template, corpo_template')
-    .eq('tipologia', r.tipologia).maybeSingle()
+  const { data: template } = await admin.from('template_risposta')
+    .select('oggetto_template, corpo_template').eq('tipologia', r.tipologia).maybeSingle()
   if (!template) return json({ error: 'template mancante per questa tipologia' }, 500)
 
   const datiEstratti = {
     tipologia: r.tipologia,
-    data_arrivo: r.data_arrivo,
-    data_partenza: r.data_partenza,
+    data_arrivo: r.data_arrivo, data_partenza: r.data_partenza,
     periodo_note: r.periodo_note,
-    n_persone: r.n_persone,
-    n_accompagnatori: r.n_accompagnatori,
-    servizi: r.servizi,
-    note: r.note,
-    nome: r.contatto?.nome ?? null,
-    cognome: r.contatto?.cognome ?? null,
+    n_persone: r.n_persone, n_accompagnatori: r.n_accompagnatori,
+    servizi: r.servizi, note: r.note,
+    nome: r.contatto?.nome ?? null, cognome: r.contatto?.cognome ?? null,
     societa_ente: r.contatto?.societa_ente ?? null,
   }
 
-  const prompt = `Dati gia' noti della richiesta:
-${JSON.stringify(datiEstratti, null, 2)}
-${r.email_origine_testo
-  ? `\nEmail originale del cliente:\n${r.email_origine_testo}`
-  : ''}
-
-Scrivi la bozza del corpo dell'email di risposta.`
+  const prompt = `Dati gia' noti della richiesta:\n${JSON.stringify(datiEstratti, null, 2)}${r.email_origine_testo ? `\n\nEmail originale del cliente:\n${r.email_origine_testo}` : ''}\n\nScrivi la bozza del corpo dell'email di risposta.`
 
   let bozza = ''
   try {
     bozza = await callAnthropic(ANTHROPIC_KEY, MODEL_BOZZA, systemBozza(template), prompt)
   } catch (e) {
-    return json({ error: `Anthropic: ${(e as Error).message}` }, 502)
+    return json({ error: (e as Error).message }, 502)
   }
 
-  const { error: errUpd } = await admin
-    .from('richieste_preventivo')
-    .update({ bozza_risposta: bozza })
-    .eq('id', rid)
+  const { error: errUpd } = await admin.from('richieste_preventivo')
+    .update({ bozza_risposta: bozza }).eq('id', rid)
   if (errUpd) return json({ error: errUpd.message }, 500)
 
   await admin.from('richieste_eventi').insert({
-    richiesta_id: rid,
-    utente_id: user.id,
-    tipo: 'rigenera_bozza',
-    testo: 'Bozza di risposta rigenerata',
+    richiesta_id: rid, utente_id: user.id,
+    tipo: 'rigenera_bozza', testo: 'Bozza di risposta rigenerata',
   })
 
   return json({ ok: true, bozza })
