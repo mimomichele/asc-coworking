@@ -12,6 +12,8 @@ import Esauriti from './Esauriti.jsx'
 import LeMieApp from './LeMieApp.jsx'
 import Staffetta from './Staffetta.jsx'
 import PassaLacquaRichieste from './PassaLacquaRichieste.jsx'
+import PreventiviLayout from './Preventivi/PreventiviLayout.jsx'
+import { PREV_EVENTO_AGGIORNAMENTO } from '../../lib/preventivi'
 import RosticceriaPannello from './Rosticceria/RosticceriaPannello.jsx'
 import PlannerTurni from './Turni/PlannerTurni.jsx'
 import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
@@ -31,6 +33,38 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  // Preventivi "nuove da gestire" (stato=ricevuta), badge rosso.
+  // Il badge "da ricontattare" lo si vede dentro la tab Oggi, qui
+  // teniamo solo il contatore principale per non affollare la barra.
+  const [prevNuove, setPrevNuove] = useState(0)
+
+  useEffect(() => {
+    let alive = true
+    async function conta() {
+      const { count, error } = await supabase
+        .from('richieste_preventivo')
+        .select('id', { count: 'exact', head: true })
+        .eq('stato', 'ricevuta')
+      // 42P01 = tabella non esiste (migrazione non ancora applicata):
+      // nessun badge, nessun errore in console per non spammare.
+      if (!alive) return
+      if (error) {
+        if (error.code !== '42P01') console.error('[prev count]', error)
+        setPrevNuove(0)
+        return
+      }
+      setPrevNuove(count || 0)
+    }
+    conta()
+    const t = setInterval(conta, 60000)
+    window.addEventListener(PREV_EVENTO_AGGIORNAMENTO, conta)
+    return () => {
+      alive = false
+      clearInterval(t)
+      window.removeEventListener(PREV_EVENTO_AGGIORNAMENTO, conta)
+    }
+  }, [])
+
   async function logout() {
     await supabase.auth.signOut()
     navigate('/')
@@ -45,7 +79,15 @@ export default function AdminLayout() {
   const isLeMieApp = path.startsWith('/admin/le-mie-app')
   const isStaffetta = path.startsWith('/admin/staffetta')
   const isPassaLacqua = path.startsWith('/admin/passa-lacqua')
+  const isPreventivi = path.startsWith('/admin/preventivi')
   const isDash = path === '/admin'
+
+  const etichettaPrev = (
+    <>
+      Preventivi
+      {prevNuove > 0 && <span style={styles.redBadge}>{prevNuove}</span>}
+    </>
+  )
 
   return (
     <div style={styles.shell}>
@@ -61,6 +103,7 @@ export default function AdminLayout() {
           <NavLink to="/admin" end style={topStyle(isDash)}>Dashboard</NavLink>
           <NavLink to="/admin/turni" style={topStyle(isTurni)}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)}>Rosticceria</NavLink>
+          <NavLink to="/admin/preventivi" style={topStyle(isPreventivi)}>{etichettaPrev}</NavLink>
           {/* Coworking, Staffetta e Passa l'Acqua sono fuori dalla barra
               per l'inverno: route attive, si raggiungono dalla dashboard
               (blocco "In pausa") o dai vecchi link diretti */}
@@ -106,7 +149,8 @@ export default function AdminLayout() {
           <NavLink to="/admin/turni" style={topStyle(isTurni)} onClick={closeMenu}>Turni</NavLink>
           <NavLink to="/admin/rosticceria" style={topStyle(isRosticceria)} onClick={closeMenu}>Rosticceria</NavLink>
           <NavLink to="/admin/staffetta" style={topStyle(isStaffetta)} onClick={closeMenu}>Staffetta</NavLink>
-          <NavLink to="/admin/passa-lacqua" style={topStyle(isPassaLacqua)} onClick={closeMenu}>{etichettaPL}</NavLink>
+          <NavLink to="/admin/passa-lacqua" style={topStyle(isPassaLacqua)} onClick={closeMenu}>Passa l'Acqua</NavLink>
+          <NavLink to="/admin/preventivi" style={topStyle(isPreventivi)} onClick={closeMenu}>{etichettaPrev}</NavLink>
           <NavLink to="/admin/le-mie-app" style={topStyle(isLeMieApp)} onClick={closeMenu}>Le mie app</NavLink>
 
           <button onClick={logout} style={styles.logoutBtn}>Esci</button>
@@ -127,6 +171,7 @@ export default function AdminLayout() {
           <Route path="le-mie-app" element={<LeMieApp />} />
           <Route path="staffetta" element={<Staffetta />} />
           <Route path="passa-lacqua" element={<PassaLacquaRichieste />} />
+          <Route path="preventivi/*" element={<PreventiviLayout />} />
           <Route path="turni" element={<PlannerTurni />} />
           <Route path="turni/predefiniti" element={<TurniPredefiniti />} />
           <Route path="turni/dipendenti" element={<Dipendenti />} />
