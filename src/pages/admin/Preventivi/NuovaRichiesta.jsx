@@ -138,9 +138,16 @@ export default function NuovaRichiesta() {
   return (
     <div>
       <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Nuova richiesta</h2>
-      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 16 }}>
-        Compila i dati del contatto e della richiesta. Le date possono
+      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 10 }}>
+        Per richieste arrivate al telefono o di persona. Le date possono
         essere lasciate vuote se non ancora precise.
+      </div>
+      <div style={{
+        fontSize: 13, padding: '10px 12px', marginBottom: 16, borderRadius: 7,
+        background: '#FFF8E1', border: '0.5px solid #F5B301',
+      }}>
+        Se la richiesta è arrivata via email, non inserirla qui: metti l’etichetta
+        <b> Preventivo</b> in Gmail e usa <b>Importa</b> dalla tab Oggi.
       </div>
 
       {err && <div style={styles.errorBar}>{err}</div>}

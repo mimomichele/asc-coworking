@@ -4,8 +4,14 @@
 // Fa partire via Make API due scenari in sequenza:
 //   1. import Gmail (label Preventivo)         -> MAKE_SCENARIO_ID_GMAIL
 //   2. sync conversazioni dei thread aperti    -> MAKE_SCENARIO_ID_SYNC
-// Usata dal bottone "Controlla Gmail adesso" (tab Oggi) e da
-// "Aggiorna conversazione" nella scheda richiesta (body {solo:'sync'}).
+// Usata dal bottone "Importa email etichettate Preventivo" (tab Oggi)
+// e da "Aggiorna conversazione" nella scheda (body {solo:'sync'}).
+//
+// L'import viene lanciato prima in modalita' "responsive": Make tiene
+// aperta la chiamata fino alla fine dello scenario, cosi' il frontend
+// sa che puo' contare subito le righe nuove ("Importate N richieste").
+// Se l'API rifiuta quella modalita' (422) si ripiega sul lancio normale
+// e il frontend aspetta qualche secondo prima di contare.
 //
 // Il polling automatico quotidiano Make lo fa alle 06:00 (import) e
 // 06:15 (sync); questa funzione serve quando la reception vuole
@@ -30,14 +36,12 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
-// Make REST vuole body vuoto: il parametro "responsive" esiste solo nel
-// tool MCP, via REST da' 422.
-async function runScenario(zone: string, token: string, id: string): Promise<{ ok: boolean; status: number; raw: string }> {
+async function runScenario(zone: string, token: string, id: string, responsive: boolean): Promise<{ ok: boolean; status: number; raw: string }> {
   try {
     const resp = await fetch(`https://${zone}.make.com/api/v2/scenarios/${id}/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
-      body: '{}',
+      body: responsive ? JSON.stringify({ data: {}, responsive: true }) : '{}',
     })
     const raw = await resp.text()
     return { ok: resp.ok, status: resp.status, raw }
@@ -74,15 +78,30 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({})) as { solo?: 'gmail' | 'sync' }
 
   const esiti: Record<string, unknown> = {}
+  let finished = false
   if (body.solo !== 'sync') {
-    const r = await runScenario(ZONE, MAKE_TOKEN, ID_GMAIL)
-    esiti.gmail = { ok: r.ok, status: r.status }
-    if (!r.ok) return json({ error: `Make import Gmail HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
+    let r = await runScenario(ZONE, MAKE_TOKEN, ID_GMAIL, true)
+    if (r.ok) {
+      finished = true
+    } else if (r.status === 422) {
+      // modalita' responsive non accettata: lancio normale
+      r = await runScenario(ZONE, MAKE_TOKEN, ID_GMAIL, false)
+      if (!r.ok) return json({ error: `Make import Gmail HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
+    } else if (r.status === 0 || r.status >= 500 || r.status === 408) {
+      // Make ha chiuso la chiamata prima della fine (scenario lungo):
+      // lo scenario e' comunque partito, non lo rilanciamo.
+      finished = false
+    } else {
+      return json({ error: `Make import Gmail HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
+    }
+    esiti.gmail = { ok: true, status: r.status, finished }
   }
   if (body.solo !== 'gmail') {
-    const r = await runScenario(ZONE, MAKE_TOKEN, ID_SYNC)
+    const r = await runScenario(ZONE, MAKE_TOKEN, ID_SYNC, false)
     esiti.sync = { ok: r.ok, status: r.status }
-    if (!r.ok) return json({ error: `Make sync HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
+    if (!r.ok && !/already/i.test(r.raw)) {
+      return json({ error: `Make sync HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
+    }
   }
-  return json({ ok: true, esiti })
+  return json({ ok: true, finished, esiti })
 })

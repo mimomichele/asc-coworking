@@ -37,6 +37,10 @@ export default function PreventiviTutte() {
   const [periodo, setPeriodo] = useState({ da: '', a: '' })
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('ricevuta_desc')
+  const [altriFiltri, setAltriFiltri] = useState(false)
+  const filtriExtraAttivi =
+    (tipologia ? 1 : 0) + (canale ? 1 : 0) + (periodo.da || periodo.a ? 1 : 0) +
+    (sortBy !== 'ricevuta_desc' ? 1 : 0)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -107,38 +111,51 @@ export default function PreventiviTutte() {
 
       {/* Filtri */}
       <div className="card" style={{ padding: 12, marginBottom: 16 }}>
-        <div style={styles.filterRow}>
+        <div style={{ ...styles.filterRow, marginBottom: altriFiltri ? 8 : 0 }}>
           <input
             type="text" placeholder="Cerca nome, società, email, telefono…"
             value={search} onChange={e => setSearch(e.target.value)}
             style={styles.input}
           />
-          <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={styles.select}>
-            <option value="ricevuta_desc">Arrivo più recente</option>
-            <option value="ricevuta_asc">Arrivo più vecchio</option>
-            <option value="arrivo_asc">Prossimi soggiorni</option>
-            <option value="importo_desc">Importo decrescente</option>
-          </select>
-        </div>
-
-        <div style={styles.filterRow}>
           <SelectMini label="Stato" value={stato} onChange={setStato}
                       options={[{ key: '', label: 'Tutti' }, ...STATI]} />
-          <SelectMini label="Tipologia" value={tipologia} onChange={setTipologia}
-                      options={[{ key: '', label: 'Tutte' }, ...TIPOLOGIE]} />
-          <SelectMini label="Canale" value={canale} onChange={setCanale}
-                      options={[{ key: '', label: 'Tutti' }, ...CANALI]} />
-          <div style={styles.datoRange}>
-            <span style={styles.labelSmall}>Dal</span>
-            <input type="date" value={periodo.da}
-                   onChange={e => setPeriodo(p => ({ ...p, da: e.target.value }))}
-                   style={styles.inputDate} />
-            <span style={styles.labelSmall}>Al</span>
-            <input type="date" value={periodo.a}
-                   onChange={e => setPeriodo(p => ({ ...p, a: e.target.value }))}
-                   style={styles.inputDate} />
-          </div>
+          <button className="btn-ghost" onClick={() => setAltriFiltri(a => !a)}
+                  style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+            Altri filtri{filtriExtraAttivi > 0 ? ` (${filtriExtraAttivi})` : ''} {altriFiltri ? '▴' : '▾'}
+          </button>
         </div>
+
+        {altriFiltri && (
+          <div style={{ ...styles.filterRow, marginBottom: 0, paddingTop: 8, borderTop: '0.5px solid #eee' }}>
+            <SelectMini label="Ordina" value={sortBy} onChange={setSortBy}
+                        options={[
+                          { key: 'ricevuta_desc', label: 'Arrivo più recente' },
+                          { key: 'ricevuta_asc', label: 'Arrivo più vecchio' },
+                          { key: 'arrivo_asc', label: 'Prossimi soggiorni' },
+                          { key: 'importo_desc', label: 'Importo decrescente' },
+                        ]} />
+            <SelectMini label="Tipologia" value={tipologia} onChange={setTipologia}
+                        options={[{ key: '', label: 'Tutte' }, ...TIPOLOGIE]} />
+            <SelectMini label="Canale" value={canale} onChange={setCanale}
+                        options={[{ key: '', label: 'Tutti' }, ...CANALI]} />
+            <div style={styles.datoRange}>
+              <span style={styles.labelSmall}>Dal</span>
+              <input type="date" value={periodo.da}
+                     onChange={e => setPeriodo(p => ({ ...p, da: e.target.value }))}
+                     style={styles.inputDate} />
+              <span style={styles.labelSmall}>Al</span>
+              <input type="date" value={periodo.a}
+                     onChange={e => setPeriodo(p => ({ ...p, a: e.target.value }))}
+                     style={styles.inputDate} />
+            </div>
+            {filtriExtraAttivi > 0 && (
+              <button className="btn-ghost" style={{ fontSize: 12 }}
+                      onClick={() => { setTipologia(''); setCanale(''); setPeriodo({ da: '', a: '' }); setSortBy('ricevuta_desc') }}>
+                Azzera
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {visibili.length === 0 ? (

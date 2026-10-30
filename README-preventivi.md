@@ -74,10 +74,12 @@ Schedulata su **Make**, cron alle **09:00 Europe/Rome**.
 
 ### `preventivi-importa-ora`
 
-Chiamata dal bottone "Controlla Gmail adesso" (tab Oggi) e da "Aggiorna
-conversazione" (scheda). Fa partire via Make API lo scenario di import
-Gmail e poi quello di sync conversazioni. Body `{ "solo": "sync" }` per
-lanciare solo il secondo.
+Chiamata dal bottone "Importa email etichettate Preventivo" (tab Oggi) e
+da "Aggiorna conversazione" (scheda). Fa partire via Make API lo scenario
+di import Gmail (in modalità responsive quando Make la accetta, così il
+frontend può contare subito le righe nuove e dire "Importate N
+richieste") e poi quello di sync conversazioni. Body `{ "solo": "sync" }`
+per lanciare solo il secondo.
 
 - **Secret:** `MAKE_API_TOKEN` (scope `scenarios:run`), `MAKE_SCENARIO_ID_GMAIL`,
   `MAKE_SCENARIO_ID_SYNC`, `MAKE_ZONE` (default `eu1`).

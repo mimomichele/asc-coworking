@@ -49,6 +49,19 @@ export default function PreventiviOggi() {
   const [err, setErr] = useState('')
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
+  // Riquadro "Come funziona": chiuso resta chiuso (localStorage), il "?"
+  // in alto a destra lo riapre.
+  const [guidaAperta, setGuidaAperta] = useState(() => {
+    try { return localStorage.getItem('preventivi_guida_chiusa') !== '1' } catch { return true }
+  })
+  function chiudiGuida() {
+    setGuidaAperta(false)
+    try { localStorage.setItem('preventivi_guida_chiusa', '1') } catch { /* ignora */ }
+  }
+  function apriGuida() {
+    setGuidaAperta(true)
+    try { localStorage.removeItem('preventivi_guida_chiusa') } catch { /* ignora */ }
+  }
 
   useEffect(() => { fetchAll() }, [])
 
@@ -145,30 +158,43 @@ export default function PreventiviOggi() {
   // Chiama la Edge Function preventivi-importa-ora, che a sua volta
   // fa partire lo scenario Make. Le righe arrivano in DB dopo pochi
   // secondi (ciclo Gmail -> HTTP -> edge function -> insert).
+  async function contaDaEmail() {
+    const { count } = await supabase
+      .from('richieste_preventivo')
+      .select('id', { count: 'exact', head: true })
+      .eq('canale', 'email')
+    return count || 0
+  }
+
   async function importaOra() {
     setImporting(true); setImportMsg(''); setErr('')
     const { data: sess } = await supabase.auth.getSession()
     const token = sess?.session?.access_token
     if (!token) { setImporting(false); setErr('Sessione scaduta.'); return }
-    const url =
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-importa-ora`
     try {
-      const resp = await fetch(url, {
+      const prima = await contaDaEmail()
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-importa-ora`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: '{}',
       })
       const payload = await resp.json().catch(() => ({}))
       if (!resp.ok) throw new Error(payload?.error || `HTTP ${resp.status}`)
-      setImportMsg('Richiesta inviata a Make. Le nuove email appariranno fra pochi secondi (anche automaticamente).')
-      // La subscription realtime aggiornera' la lista non appena arrivano
-      // le righe. Dopo 60 sec puliamo il messaggio di avviso.
-      setTimeout(() => { setImportMsg('') }, 60000)
+      // Se Make ha aspettato la fine dello scenario possiamo contare subito;
+      // altrimenti diamo 25 secondi al giro Gmail -> AI -> database.
+      if (!payload.finished) {
+        setImportMsg('Importazione in corso…')
+        await new Promise(res => setTimeout(res, 25000))
+      }
+      const dopo = await contaDaEmail()
+      const n = Math.max(0, dopo - prima)
+      setImportMsg(n > 0
+        ? `Importate ${n} richiest${n === 1 ? 'a' : 'e'}`
+        : 'Nessuna email nuova con etichetta Preventivo')
+      fetchAll()
+      setTimeout(() => setImportMsg(''), 20000)
     } catch (e) {
-      setErr(`Importa ora: ${e.message}`)
+      setErr(`Importa: ${e.message}`)
     } finally {
       setImporting(false)
     }
@@ -189,17 +215,41 @@ export default function PreventiviOggi() {
 
   return (
     <div>
-      <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Preventivi</h2>
-      <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 12 }}>
-        Richieste di preventivo per raduni, scuole, famiglie. Soglia follow-up:{' '}
-        raduno {data.soglie.raduno}gg · scuola {data.soglie.scuola}gg · famiglia {data.soglie.famiglia}gg.
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Preventivi</h2>
+        <button onClick={apriGuida} title="Come funziona" aria-label="Come funziona"
+                style={{
+                  marginLeft: 'auto', width: 28, height: 28, borderRadius: 999,
+                  border: '0.5px solid #ccc', background: '#fff', color: '#6B6B6B',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}>
+          ?
+        </button>
       </div>
 
-      {/* Importa ora: forza il ciclo Make -> edge function -> DB.
+      {guidaAperta && (
+        <div className="card" style={{ padding: 14, marginBottom: 16, background: '#FFF8E1', borderColor: '#F5B301' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+            <b style={{ fontSize: 14 }}>Come funziona</b>
+            <button onClick={chiudiGuida}
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#6B6B6B', fontSize: 12, cursor: 'pointer' }}>
+              chiudi ✕
+            </button>
+          </div>
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13, lineHeight: 1.55 }}>
+            <li>Email di preventivo su info@: applica l’etichetta <b>Preventivo</b> in Gmail e clicca <b>Importa</b>. Richiesta al telefono o di persona: usa <b>+ Nuova</b>.</li>
+            <li>La richiesta compare in <b>Nuove da gestire</b>.</li>
+            <li>Apri la scheda, controlla la bozza, clicca <b>Apri in Gmail</b>, inserisci i prezzi e invia.</li>
+            <li>Quando il cliente prenota su Krossbooking, clicca <b>Confermata</b>; se rinuncia, <b>Persa</b>.</li>
+          </ol>
+        </div>
+      )}
+
+      {/* Importa: forza il ciclo Make -> edge function -> DB.
           L'importazione automatica da Gmail avviene ogni mattina alle 06:00. */}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className="btn-ghost" onClick={importaOra} disabled={importing}>
-          {importing ? 'Importazione in corso...' : '↓ Controlla Gmail adesso'}
+          {importing ? 'Importazione in corso…' : '↓ Importa email etichettate Preventivo'}
         </button>
         {importMsg && (
           <span style={{ fontSize: 12.5, color: '#1E8E3E' }}>{importMsg}</span>
