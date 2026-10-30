@@ -122,17 +122,65 @@ export function etichettaContatto(c) {
   return nome || c.email || c.telefono || '—'
 }
 
+// Casella Gmail della reception: i preventivi arrivano su
+// info@aschotel.com, che e' un alias "Invia come" di questo account.
+// authuser forza Gmail web ad aprire questa casella anche se nel
+// browser sono loggati altri account.
+export const GMAIL_ACCOUNT_HOTEL = 'arezzo.sport.college@gmail.com'
+
 // URL per aprire Gmail web col destinatario, oggetto e corpo
 // precompilati. Non e' mailto:. "fs=1" apre il compose in full
-// screen. "to=" accetta un singolo indirizzo.
+// screen. "to=" accetta un singolo indirizzo. Usato per le richieste
+// manuali (telefono/reception), che non hanno un thread da riprendere.
 export function urlGmailCompose({ to, oggetto, corpo }) {
   const params = new URLSearchParams()
+  params.set('authuser', GMAIL_ACCOUNT_HOTEL)
   params.set('view', 'cm')
   params.set('fs', '1')
   if (to) params.set('to', to)
   if (oggetto) params.set('su', oggetto)
   if (corpo) params.set('body', corpo)
   return 'https://mail.google.com/mail/?' + params.toString()
+}
+
+// URL che apre in Gmail web la conversazione originale di una
+// richiesta arrivata via email: da li' la reception preme "Rispondi"
+// e la risposta resta nello stesso thread del cliente.
+export function urlGmailThread({ threadId, messageId }) {
+  const base = `https://mail.google.com/mail/?authuser=${encodeURIComponent(GMAIL_ACCOUNT_HOTEL)}`
+  const id = threadId || messageId
+  return id ? `${base}#all/${id}` : base
+}
+
+// Fase dello scambio email, dai contatori aggiornati dal sync dei thread:
+//   - da_rispondere: l'ultimo messaggio e' del cliente, dopo una nostra
+//     risposta, e non c'e' stato un contatto successivo (Ricontattato)
+//   - conversazione: abbiamo risposto piu' di una volta
+//   - prima: abbiamo mandato la prima risposta
+//   - null: nessun messaggio tracciato (richiesta manuale, o non ancora
+//     sincronizzata)
+export function faseConversazione(r) {
+  if (!r || (!r.n_msg_out && !r.n_msg_in)) return null
+  const clienteDopoDiNoi =
+    r.ultimo_msg_direzione === 'in' && (r.n_msg_out || 0) > 0 &&
+    (!r.data_ultimo_contatto || (r.ultimo_msg_at || '') > r.data_ultimo_contatto)
+  if (clienteDopoDiNoi) {
+    return { key: 'da_rispondere', label: 'Il cliente ha risposto', fg: '#C5221F', bg: '#FCEBEB' }
+  }
+  if ((r.n_msg_out || 0) > 1) {
+    return {
+      key: 'conversazione',
+      label: `Conversazione · ${r.n_msg_out} inviate, ${r.n_msg_in || 0} ricevute`,
+      fg: '#185FA5', bg: '#E6F1FB',
+    }
+  }
+  if ((r.n_msg_out || 0) === 1) {
+    return { key: 'prima', label: 'Prima risposta inviata', fg: '#1E8E3E', bg: '#E6F6EF' }
+  }
+  if ((r.n_msg_in || 0) > 1) {
+    return { key: 'solleciti', label: `${r.n_msg_in} email dal cliente`, fg: '#854F0B', bg: '#FAEEDA' }
+  }
+  return null
 }
 
 // Oggetto suggerito: coerente coi template di DB.

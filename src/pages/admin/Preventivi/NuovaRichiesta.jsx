@@ -188,13 +188,6 @@ export default function NuovaRichiesta() {
                    onBlur={cercaContatto}
                    disabled={!!contatto.id} style={styles.input} />
           </Campo>
-          <Campo label="Consenso marketing" full>
-            <label style={{ fontSize: 13 }}>
-              <input type="checkbox" checked={contatto.consenso_marketing}
-                     onChange={e => setContatto(c => ({ ...c, consenso_marketing: e.target.checked }))} />{' '}
-              Autorizza l'invio di comunicazioni (promozioni, newsletter)
-            </label>
-          </Campo>
         </div>
 
         {matchContatto && !contatto.id && (

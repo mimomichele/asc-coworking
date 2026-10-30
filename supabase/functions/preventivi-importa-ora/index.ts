@@ -1,18 +1,18 @@
 // ============================================================
 // Edge Function: preventivi-importa-ora
 //
-// Fa partire a mano lo scenario Make che importa i preventivi dalla
-// Gmail etichettata. Usata dal bottone "Controlla Gmail adesso" nella
-// pagina admin Preventivi > Oggi.
+// Fa partire via Make API due scenari in sequenza:
+//   1. import Gmail (label Preventivo)         -> MAKE_SCENARIO_ID_GMAIL
+//   2. sync conversazioni dei thread aperti    -> MAKE_SCENARIO_ID_SYNC
+// Usata dal bottone "Controlla Gmail adesso" (tab Oggi) e da
+// "Aggiorna conversazione" nella scheda richiesta (body {solo:'sync'}).
 //
-// Il polling automatico quotidiano Make lo fa alle 06:00; questa
-// funzione serve quando la reception vuole importare subito senza
-// aspettare il prossimo giro.
+// Il polling automatico quotidiano Make lo fa alle 06:00 (import) e
+// 06:15 (sync); questa funzione serve quando la reception vuole
+// vedere subito senza aspettare il prossimo giro.
 //
-// Secret:
-//   MAKE_API_TOKEN         token Make con scope scenarios:run
-//   MAKE_SCENARIO_ID_GMAIL id numerico dello scenario (es. 8277056)
-//   MAKE_ZONE              zona Make (default eu1)
+// Secret: MAKE_API_TOKEN (scope scenarios:run), MAKE_SCENARIO_ID_GMAIL,
+//         MAKE_SCENARIO_ID_SYNC (opz.), MAKE_ZONE (opz., default eu1)
 // verify_jwt = true (chiamato da utente admin loggato)
 // ============================================================
 
@@ -30,6 +30,22 @@ function json(body: unknown, status = 200): Response {
   })
 }
 
+// Make REST vuole body vuoto: il parametro "responsive" esiste solo nel
+// tool MCP, via REST da' 422.
+async function runScenario(zone: string, token: string, id: string): Promise<{ ok: boolean; status: number; raw: string }> {
+  try {
+    const resp = await fetch(`https://${zone}.make.com/api/v2/scenarios/${id}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Token ${token}` },
+      body: '{}',
+    })
+    const raw = await resp.text()
+    return { ok: resp.ok, status: resp.status, raw }
+  } catch (e) {
+    return { ok: false, status: 0, raw: (e as Error).message }
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method not allowed' }, 405)
@@ -38,59 +54,35 @@ Deno.serve(async (req: Request) => {
   const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
   const MAKE_TOKEN = Deno.env.get('MAKE_API_TOKEN') ?? ''
-  const SCENARIO_ID = Deno.env.get('MAKE_SCENARIO_ID_GMAIL') ?? ''
+  const ID_GMAIL = Deno.env.get('MAKE_SCENARIO_ID_GMAIL') ?? '8277056'
+  const ID_SYNC = Deno.env.get('MAKE_SCENARIO_ID_SYNC') ?? '8279557'
   const ZONE = Deno.env.get('MAKE_ZONE') ?? 'eu1'
 
   if (!MAKE_TOKEN) return json({ error: 'MAKE_API_TOKEN non configurato' }, 500)
-  if (!SCENARIO_ID) return json({ error: 'MAKE_SCENARIO_ID_GMAIL non configurato' }, 500)
 
   // --- auth: solo admin ----------------------------------------
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) return json({ error: 'auth mancante' }, 401)
-
-  const caller = createClient(SUPABASE_URL, ANON_KEY, {
-    global: { headers: { Authorization: authHeader } },
-  })
+  const caller = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } })
   const { data: { user } } = await caller.auth.getUser()
   if (!user) return json({ error: 'sessione non valida' }, 401)
 
-  const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { autoRefreshToken: false, persistSession: false } })
   const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
   if (profile?.role !== 'admin') return json({ error: 'solo admin' }, 403)
 
-  // --- Make API: /api/v2/scenarios/{id}/run --------------------
-  // Il token Make va come Authorization: Token <TOKEN>
-  const url = `https://${ZONE}.make.com/api/v2/scenarios/${SCENARIO_ID}/run`
-  let resp: Response
-  try {
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Token ${MAKE_TOKEN}`,
-      },
-      body: JSON.stringify({ responsive: true }),
-    })
-  } catch (e) {
-    return json({ error: `Make unreachable: ${(e as Error).message}` }, 502)
+  const body = await req.json().catch(() => ({})) as { solo?: 'gmail' | 'sync' }
+
+  const esiti: Record<string, unknown> = {}
+  if (body.solo !== 'sync') {
+    const r = await runScenario(ZONE, MAKE_TOKEN, ID_GMAIL)
+    esiti.gmail = { ok: r.ok, status: r.status }
+    if (!r.ok) return json({ error: `Make import Gmail HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
   }
-
-  const raw = await resp.text()
-  if (!resp.ok) {
-    return json({
-      error: `Make HTTP ${resp.status}`,
-      details: raw.slice(0, 500),
-    }, 502)
+  if (body.solo !== 'gmail') {
+    const r = await runScenario(ZONE, MAKE_TOKEN, ID_SYNC)
+    esiti.sync = { ok: r.ok, status: r.status }
+    if (!r.ok) return json({ error: `Make sync HTTP ${r.status}: ${r.raw.slice(0, 300)}`, esiti }, 502)
   }
-
-  let data: any = null
-  try { data = JSON.parse(raw) } catch { /* ignore */ }
-
-  return json({
-    ok: true,
-    execution_id: data?.result?.executionId ?? null,
-    status: data?.result?.status ?? null,
-  })
+  return json({ ok: true, esiti })
 })

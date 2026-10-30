@@ -22,10 +22,11 @@ import {
   STATI, TIPOLOGIE, CANALI, SERVIZI, MOTIVI_PERDITA,
   statoDi, tipologiaLabel, canaleLabel, serviziLabel,
   motivoLabel, fmtData, fmtDataOra, fmtEuro, fmtDataRange,
-  etichettaContatto, urlGmailCompose, suggerisciOggetto,
+  etichettaContatto, urlGmailCompose, urlGmailThread, suggerisciOggetto,
   PREV_EVENTO_AGGIORNAMENTO,
 } from '../../../lib/preventivi'
 import PreventivoStatoBadge from '../../../components/PreventivoStatoBadge.jsx'
+import PreventivoFaseChip from '../../../components/PreventivoFaseChip.jsx'
 
 const SELECT_FULL = `
   *,
@@ -43,7 +44,8 @@ const SELECT_SAFE = `
   contatto:contatti!inner(*,
     altre:richieste_preventivo(id, tipologia, stato, data_arrivo, data_partenza, data_ricevuta, importo_preventivo)
   ),
-  eventi:richieste_eventi(id, utente_id, tipo, da_stato, a_stato, testo, created_at)
+  eventi:richieste_eventi(id, utente_id, tipo, da_stato, a_stato, testo, created_at),
+  messaggi:richieste_messaggi(id, direzione, from_name, from_email, subject, testo, snippet, data)
 `
 
 export default function SchedaRichiesta() {
@@ -58,8 +60,24 @@ export default function SchedaRichiesta() {
   const [bozzaDirty, setBozzaDirty] = useState(false)
   const [rigenerando, setRigenerando] = useState(false)
   const [modalConferma, setModalConferma] = useState(null) // {tipo, ...}
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => { fetchRichiesta() }, [id])
+
+  // Realtime: quando il sync Make aggiunge messaggi a questa richiesta
+  // (o aggiorna la riga), la scheda si ricarica da sola.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`preventivo-${id}-live`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'richieste_messaggi', filter: `richiesta_id=eq.${id}` },
+        () => { fetchRichiesta() })
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'richieste_preventivo', filter: `id=eq.${id}` },
+        () => { fetchRichiesta() })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [id])
 
   async function fetchRichiesta() {
     setErr('')
@@ -130,14 +148,25 @@ export default function SchedaRichiesta() {
   // 1) se stato = 'ricevuta', aggiorna PRIMA stato=inviato +
   //    operatore_invio (data_invio la mette il trigger)
   // 2) poi apre https://mail.google.com/mail/?view=cm... in nuova tab
+  // Richiesta arrivata via email: apriamo la CONVERSAZIONE originale in
+  // Gmail (non un nuovo messaggio), cosi' la risposta resta nello stesso
+  // thread del cliente. La bozza viene copiata negli appunti: Rispondi +
+  // incolla. Richiesta manuale: compose nuovo con tutto precompilato.
   async function apriInGmail() {
     const to = r.contatto?.email
-    if (!to) {
+    const corpo = bozza || r.bozza_risposta || ''
+    const haThread = !!(r.email_origine_thread_id || r.email_origine_id)
+    if (!to && !haThread) {
       setErr('Il contatto non ha email, non posso aprire Gmail.')
       return
     }
-    const oggetto = suggerisciOggetto(r, r.contatto)
-    const corpo = bozza || r.bozza_risposta || ''
+
+    // Clipboard PRIMA di qualsiasi await: alcuni browser perdono il
+    // permesso di scrittura se passa troppo tempo dal click.
+    let copiata = false
+    if (haThread && corpo) {
+      try { await navigator.clipboard.writeText(corpo); copiata = true } catch { /* ignora */ }
+    }
 
     if (r.stato === 'ricevuta' || r.stato === 'scaduta') {
       // Salva prima la bozza se modificata, cosi' il "torna indietro"
@@ -147,7 +176,40 @@ export default function SchedaRichiesta() {
       const ok = await aggiorna(payload, 'Apertura Gmail')
       if (!ok) return
     }
+
+    if (haThread) {
+      const url = urlGmailThread({ threadId: r.email_origine_thread_id, messageId: r.email_origine_id })
+      window.open(url, '_blank', 'noopener,noreferrer')
+      flashSalva(copiata
+        ? 'Bozza copiata negli appunti: in Gmail premi Rispondi e incolla.'
+        : 'Conversazione aperta in Gmail: premi Rispondi.')
+      return
+    }
+    const oggetto = suggerisciOggetto(r, r.contatto)
     window.open(urlGmailCompose({ to, oggetto, corpo }), '_blank', 'noopener,noreferrer')
+  }
+
+  // Forza il sync della conversazione (scenario Make "Sync conversazioni");
+  // i messaggi nuovi arrivano via realtime pochi secondi dopo.
+  async function aggiornaConversazione() {
+    setSyncing(true); setErr('')
+    const { data: s } = await supabase.auth.getSession()
+    const token = s?.session?.access_token
+    if (!token) { setSyncing(false); setErr('Sessione scaduta.'); return }
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/preventivi-importa-ora`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ solo: 'sync' }),
+      })
+      const data = await resp.json().catch(() => ({}))
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`)
+      flashSalva('Sincronizzazione avviata: i nuovi messaggi compaiono fra pochi secondi.')
+    } catch (e) {
+      setErr(`Aggiorna conversazione: ${e.message}`)
+    } finally {
+      setSyncing(false)
+    }
   }
 
   async function tornaIndietroRicevuta() {
@@ -290,6 +352,7 @@ export default function SchedaRichiesta() {
             {etichettaContatto(c)}
           </h2>
           <PreventivoStatoBadge stato={r.stato} />
+          <PreventivoFaseChip richiesta={r} />
         </div>
         <div style={{ fontSize: 12, color: '#6B6B6B', marginTop: 4 }}>
           Ricevuta il {fmtDataOra(r.data_ricevuta)}
@@ -303,8 +366,9 @@ export default function SchedaRichiesta() {
 
       {/* Azioni rapide */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
-        <button className="btn-primary" onClick={apriInGmail} disabled={busy || !c.email}>
-          ✉ Apri in Gmail
+        <button className="btn-primary" onClick={apriInGmail}
+                disabled={busy || (!c.email && !r.email_origine_thread_id && !r.email_origine_id)}>
+          {(r.email_origine_thread_id || r.email_origine_id) ? '✉ Rispondi in Gmail' : '✉ Apri in Gmail'}
         </button>
         <button className="btn-ghost" onClick={ricontattato} disabled={busy}>
           Ricontattato
@@ -440,16 +504,39 @@ export default function SchedaRichiesta() {
         )}
       </section>
 
-      {/* Email origine */}
-      {r.email_origine_testo && (
+      {/* Conversazione (messaggi del thread Gmail, in e out) */}
+      {(r.email_origine_thread_id || (r.messaggi || []).length > 0) && (
+        <section className="card" style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+            <h3 style={{ ...styles.sezione, margin: 0 }}>
+              Conversazione
+              {(r.messaggi || []).length > 0 && (
+                <span style={{ fontSize: 12, color: '#6B6B6B', fontWeight: 400, marginLeft: 8 }}>
+                  {r.n_msg_in || 0} dal cliente · {r.n_msg_out || 0} nostre
+                </span>
+              )}
+            </h3>
+            <button className="btn-ghost" onClick={aggiornaConversazione} disabled={syncing}
+                    style={{ marginLeft: 'auto', fontSize: 12 }}>
+              {syncing ? 'Sincronizzo…' : '↻ Aggiorna conversazione'}
+            </button>
+          </div>
+          {(r.messaggi || []).length === 0 ? (
+            <div style={{ fontSize: 13, color: '#6B6B6B' }}>
+              Nessun messaggio sincronizzato ancora: premi “Aggiorna conversazione”
+              oppure aspetta il giro automatico delle 06:15.
+            </div>
+          ) : [...r.messaggi]
+              .sort((a, b) => (a.data || '').localeCompare(b.data || ''))
+              .map(m => <Messaggio key={m.id} m={m} />)
+          }
+        </section>
+      )}
+
+      {/* Email origine: solo quando non abbiamo ancora la conversazione */}
+      {r.email_origine_testo && (r.messaggi || []).length === 0 && (
         <section className="card" style={{ padding: 16, marginBottom: 16 }}>
           <h3 style={styles.sezione}>Email originale</h3>
-          {r.email_origine_link && (
-            <a href={r.email_origine_link} target="_blank" rel="noopener noreferrer"
-               style={{ fontSize: 12, color: '#185FA5' }}>
-              Apri in Gmail
-            </a>
-          )}
           <pre style={styles.pre}>{r.email_origine_testo}</pre>
         </section>
       )}
@@ -637,6 +724,41 @@ function Dato({ label, children }) {
     <div>
       <div style={{ fontSize: 11.5, color: '#6B6B6B', marginBottom: 2 }}>{label}</div>
       <div style={{ fontSize: 14 }}>{children}</div>
+    </div>
+  )
+}
+
+// Un messaggio della conversazione: in = cliente (grigio, a sinistra),
+// out = reception (giallo chiaro, a destra). Testo lungo troncato con
+// "mostra tutto".
+function Messaggio({ m }) {
+  const [tutto, setTutto] = useState(false)
+  const out = m.direzione === 'out'
+  const testo = (m.testo || m.snippet || '').trim()
+  const lungo = testo.length > 600
+  const mostrato = tutto || !lungo ? testo : testo.slice(0, 600) + '…'
+  return (
+    <div style={{
+      display: 'flex', justifyContent: out ? 'flex-end' : 'flex-start', marginBottom: 8,
+    }}>
+      <div style={{
+        maxWidth: '88%', padding: '10px 12px', borderRadius: 10,
+        background: out ? '#FFF8E1' : '#F6F5F1',
+        border: `0.5px solid ${out ? '#F5B301' : '#E5E3DC'}`,
+      }}>
+        <div style={{ fontSize: 11.5, color: '#6B6B6B', marginBottom: 4 }}>
+          <b style={{ color: '#333' }}>{out ? 'Reception' : (m.from_name || m.from_email || 'Cliente')}</b>
+          {' · '}{fmtDataOra(m.data)}
+          {m.subject && <span> · {m.subject}</span>}
+        </div>
+        <div style={{ fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{mostrato}</div>
+        {lungo && (
+          <button onClick={() => setTutto(t => !t)}
+                  style={{ background: 'none', border: 'none', color: '#185FA5', fontSize: 12, padding: 0, marginTop: 4, cursor: 'pointer' }}>
+            {tutto ? 'mostra meno' : 'mostra tutto'}
+          </button>
+        )}
+      </div>
     </div>
   )
 }

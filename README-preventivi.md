@@ -72,6 +72,55 @@ Schedulata su **Make**, cron alle **09:00 Europe/Rome**.
   `notify-order` non ne usano uno). Quando si decidera' il provider,
   aggiungere l'invio in questa funzione.
 
+### `preventivi-importa-ora`
+
+Chiamata dal bottone "Controlla Gmail adesso" (tab Oggi) e da "Aggiorna
+conversazione" (scheda). Fa partire via Make API lo scenario di import
+Gmail e poi quello di sync conversazioni. Body `{ "solo": "sync" }` per
+lanciare solo il secondo.
+
+- **Secret:** `MAKE_API_TOKEN` (scope `scenarios:run`), `MAKE_SCENARIO_ID_GMAIL`,
+  `MAKE_SCENARIO_ID_SYNC`, `MAKE_ZONE` (default `eu1`).
+
+### `preventivi-notify-nuovo`
+
+Chiamata dal trigger DB `trg_preventivi_notify_insert` su ogni INSERT in
+`richieste_preventivo` (email e manuali): manda a Telegram
+"Nuovo preventivo: X - tipo - N persone - date - link".
+
+### `preventivi-thread-aperti` + `preventivi-sync-thread`
+
+Traccia della conversazione. Lo scenario Make "Sync conversazioni Gmail"
+(daily 06:15, oppure dal bottone):
+
+1. `GET preventivi-thread-aperti` (header `x-cron-secret`) → thread delle
+   richieste in ricevuta/inviato/attesa.
+2. Per ogni thread, Gmail API `threads.get?format=full`.
+3. `POST preventivi-sync-thread` (urlencoded `richiesta_id`, `thread_json`)
+   → una riga in `richieste_messaggi` per messaggio (in/out dal mittente,
+   corpo pulito dalle citazioni), contatori `n_msg_in/n_msg_out`,
+   `ultimo_msg_*`, `data_ultimo_contatto`, promozione ricevuta→inviato
+   al primo messaggio in uscita, Telegram "Risposta del cliente" per
+   ogni nuovo messaggio in entrata.
+
+La scheda richiesta mostra la conversazione; "Rispondi in Gmail" apre
+il thread originale (`#all/<threadId>`, `authuser` sulla casella
+hotel) con la bozza copiata negli appunti, così la risposta resta nel
+thread del cliente. Il chip di fase (prima risposta inviata /
+conversazione / il cliente ha risposto) viene da `faseConversazione()`
+in `src/lib/preventivi.js`.
+
+## Scenari Make
+
+| ID | Nome | Quando |
+|---|---|---|
+| 8277056 | ASC Preventivi - Gmail label Preventivo | daily 06:00 + bottone |
+| 8279557 | ASC Preventivi - Sync conversazioni Gmail | daily 06:15 + bottone |
+| 8276506 | ASC Preventivi - Promemoria quotidiano 09:00 | daily 09:00 |
+
+Connessione Gmail Make: `arezzo.sport.college@gmail.com` (info@aschotel.com
+è un alias "Invia come" della stessa casella).
+
 ## Deploy
 
 ```bash
