@@ -1,8 +1,9 @@
 // ============================================================
 // Preventivi — layout con sub-nav (pattern Coworking subnav).
-// Tab principali: Oggi, Tutte, + Nuova. Contatti e Impostazioni
-// stanno nel menu "Altro" a destra, per non affollare la barra
-// (soprattutto da telefono). Rotte annidate sotto /admin/preventivi.
+// Tab principali: Oggi, Tutte, + Nuova. Statistiche, Contatti e
+// Impostazioni stanno nel menu "Altro" a destra, per non affollare
+// la barra (soprattutto da telefono). Rotte annidate sotto
+// /admin/preventivi.
 // ============================================================
 
 import { useEffect, useRef, useState } from 'react'
@@ -14,6 +15,13 @@ import NuovaRichiesta from './NuovaRichiesta.jsx'
 import Contatti from './Contatti.jsx'
 import SchedaContatto from './SchedaContatto.jsx'
 import Impostazioni from './Impostazioni.jsx'
+import Statistiche from './Statistiche.jsx'
+
+const PATH_ALTRO = [
+  '/admin/preventivi/statistiche',
+  '/admin/preventivi/contatti',
+  '/admin/preventivi/impostazioni',
+]
 
 export default function PreventiviLayout() {
   const location = useLocation()
@@ -32,7 +40,7 @@ export default function PreventiviLayout() {
   }, [altroAperto])
 
   const path = location.pathname
-  const inAltro = path.startsWith('/admin/preventivi/contatti') || path.startsWith('/admin/preventivi/impostazioni')
+  const inAltro = PATH_ALTRO.some(p => path.startsWith(p))
 
   return (
     <div>
@@ -48,6 +56,7 @@ export default function PreventiviLayout() {
           </button>
           {altroAperto && (
             <div style={styles.menu}>
+              <NavLink to="/admin/preventivi/statistiche" style={menuItemStyle}>Statistiche</NavLink>
               <NavLink to="/admin/preventivi/contatti" style={menuItemStyle}>Contatti</NavLink>
               <NavLink to="/admin/preventivi/impostazioni" style={menuItemStyle}>Impostazioni</NavLink>
             </div>
@@ -61,6 +70,7 @@ export default function PreventiviLayout() {
           <Route path="tutte" element={<PreventiviTutte />} />
           <Route path="nuova" element={<NuovaRichiesta />} />
           <Route path="richiesta/:id" element={<SchedaRichiesta />} />
+          <Route path="statistiche" element={<Statistiche />} />
           <Route path="contatti" element={<Contatti />} />
           <Route path="contatti/:id" element={<SchedaContatto />} />
           <Route path="impostazioni" element={<Impostazioni />} />
