@@ -11,6 +11,7 @@ import NuovaRichiesta from './NuovaRichiesta.jsx'
 import Contatti from './Contatti.jsx'
 import SchedaContatto from './SchedaContatto.jsx'
 import Impostazioni from './Impostazioni.jsx'
+import Statistiche from './Statistiche.jsx'
 
 export default function PreventiviLayout() {
   return (
@@ -20,6 +21,7 @@ export default function PreventiviLayout() {
         <NavLink to="/admin/preventivi/tutte" style={subStyle}>Tutte</NavLink>
         <NavLink to="/admin/preventivi/nuova" style={subStyle}>+ Nuova</NavLink>
         <NavLink to="/admin/preventivi/contatti" style={subStyle}>Contatti</NavLink>
+        <NavLink to="/admin/preventivi/statistiche" style={subStyle}>Statistiche</NavLink>
         <NavLink to="/admin/preventivi/impostazioni" style={subStyle}>Impostazioni</NavLink>
       </div>
 
@@ -31,6 +33,7 @@ export default function PreventiviLayout() {
           <Route path="richiesta/:id" element={<SchedaRichiesta />} />
           <Route path="contatti" element={<Contatti />} />
           <Route path="contatti/:id" element={<SchedaContatto />} />
+          <Route path="statistiche" element={<Statistiche />} />
           <Route path="impostazioni" element={<Impostazioni />} />
         </Routes>
       </div>
