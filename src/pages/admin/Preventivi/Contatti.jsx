@@ -180,7 +180,14 @@ export default function Contatti() {
                 style={{ textDecoration: 'none', color: 'inherit' }}>
             <div className="card" style={{ padding: 12, marginBottom: 6, display: 'flex',
                                            alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 14, fontWeight: 500 }}>{etichettaContatto(c)}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500 }}>
+                  {[c.nome, c.cognome].filter(Boolean).join(' ') || etichettaContatto(c)}
+                </div>
+                {c.societa_ente && (
+                  <div style={{ fontSize: 12, color: '#6B6B6B' }}>{c.societa_ente}</div>
+                )}
+              </div>
               {c.consenso_marketing && <span style={styles.chip}>mkt ✓</span>}
               {c.member_id && <span style={styles.chip}>coworking</span>}
               <span style={{ fontSize: 12, color: '#6B6B6B' }}>
