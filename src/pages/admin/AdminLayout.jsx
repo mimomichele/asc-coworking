@@ -20,6 +20,7 @@ import TurniPredefiniti from './Turni/TurniPredefiniti.jsx'
 import Dipendenti from './Turni/Dipendenti.jsx'
 import Richieste from './Turni/Richieste.jsx'
 import ReportOre from './Turni/ReportOre.jsx'
+import RiepilogoMese from './Turni/RiepilogoMese.jsx'
 import Comunicazioni from './Turni/Comunicazioni.jsx'
 
 // Regola ASC-DESIGN: la barra in alto tiene SOLO le sezioni native della
@@ -177,6 +178,7 @@ export default function AdminLayout() {
           <Route path="turni/dipendenti" element={<Dipendenti />} />
           <Route path="turni/richieste" element={<Richieste />} />
           <Route path="turni/report" element={<ReportOre />} />
+          <Route path="turni/riepilogo" element={<RiepilogoMese />} />
           <Route path="turni/comunicazioni" element={<Comunicazioni />} />
           <Route path="rosticceria/*" element={<RosticceriaPannello />} />
         </Routes>

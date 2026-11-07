@@ -183,6 +183,7 @@ export default function PlannerTurni() {
             <button className="btn-ghost" onClick={preparaCopia}>Copia settimana precedente</button>
           )}
           <Link to="/admin/turni/report" className="btn-ghost" style={{ textDecoration: 'none' }}>Report ore</Link>
+          <Link to="/admin/turni/riepilogo" className="btn-ghost" style={{ textDecoration: 'none' }}>Riepilogo mese</Link>
           <Link to="/admin/turni/predefiniti" className="btn-ghost" style={{ textDecoration: 'none' }}>Turni predefiniti</Link>
           <Link to="/admin/turni/comunicazioni" className="btn-ghost" style={{ textDecoration: 'none' }}>Comunicazioni</Link>
           <Link to="/admin/turni/dipendenti" className="btn-ghost" style={{ textDecoration: 'none' }}>Dipendenti</Link>
